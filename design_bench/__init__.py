@@ -1,5 +1,6 @@
 from design_bench.registration import registry, register, make, spec
 from design_bench.task import Task
+import numpy as np
 import requests
 import os
 
@@ -48,6 +49,23 @@ def save_response_content(response, destination):
 
 DATA_DIR = os.path.join(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))), 'data')
+
+
+register(
+    'GP1D-v0',
+    'design_bench.tasks.gp:GP1DTask',
+    kwargs=dict(
+        dataset_size=100,
+        upper_bound=(4.0,),
+        lower_bound=(-4.0,),
+        noise=0.2))
+register(
+    'GP2D-v0',
+    'design_bench.tasks.gp:GP2DTask',
+    kwargs=dict(
+        dataset_size=100,
+        upper_bound=(0.0, 15.0),
+        lower_bound=(-5.0, 10.0)))
 
 
 register(

@@ -4,8 +4,10 @@ This repository contains several benchmarks of design problems for model-based o
 
 In particular, we provide the following family of design problems:
 
-* MuJoCo Hopper Policy Optimization 
+* MuJoCo Hopper Controller Optimization 
 * Fluorescent Protein Design
+* 1D GP Function Optimization
+* 2D GP Function Optimization
 * ROBEL D'Kitty Morphology Design
 * MuJoCo Ant Morphology Design 
 * MuJoCo Dog Morphology Design 
@@ -25,4 +27,19 @@ You can instantiate a design problem using the `make` function. Note that the fi
 ```python
 import design_bench
 task = design_bench.make('HopperController-v0')
+```
+
+## Contributing
+
+To register new tasks with `design_bench` you need to call the `register` function. For example, suppose we have a custom module named `hello.world.task` that contains a custom task class `HelloWorldTask`. This new task may be registered using this function call.
+
+```python
+import design_bench
+design_bench.register(
+    'HelloWorld-v0',
+    'hello.world.task:HelloWorldTask',
+    kwargs={
+        'hello': 'world'
+    }
+)
 ```
