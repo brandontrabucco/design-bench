@@ -1,0 +1,10 @@
+*.tfevents**
+*.egg-info**
+*idea**
+*.out**
+*.pkl**
+*.txt**
+*.json**
+*.csv**
+*.npy**
+*.pyc**
