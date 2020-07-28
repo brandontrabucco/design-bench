@@ -31,7 +31,7 @@ task = design_bench.make('HopperController-v0')
 
 ## Contributing
 
-To register new tasks with `design_bench` you need to call the `register` function. For example, suppose we have a custom module named `hello.world.task` that contains a custom task class `HelloWorldTask`. This new task may be registered using this function call.
+To register new tasks with `design_bench` you need to call the `register` function. For example, suppose we have a custom module named `hello.world.task` that contains a custom task class `HelloWorldTask`.
 
 ```python
 import design_bench
