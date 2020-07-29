@@ -106,8 +106,8 @@ register(
         action_dim=3,
         hidden_dim=64,
         env_name='Hopper-v2',
-        x_file='data/hopper_controller_X.txt',
-        y_file='data/hopper_controller_y.txt'))
+        x_file='hopper_controller_X.txt',
+        y_file='hopper_controller_y.txt'))
 maybe_download('18yuyw8xSQa7ydIQN-_ajHPZXh1VQbT6o',
                os.path.join(DATA_DIR, 'hopper_controller_X.txt'))
 maybe_download('1nX0LObb4OWJQfcBbQxq2rdqiujUOF79y',

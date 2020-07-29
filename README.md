@@ -1,13 +1,16 @@
 # Design Benchmarks for Model-Based Optimization
 
-This repository contains several benchmarks of design problems for model-based optimization.
+This repository contains several design problem benchmarks for model-based optimization. Our hope is that this common interface and stable task nomenclature will encourage future research and comparability in model-based design.
 
-In particular, we provide the following family of design problems:
+## Available Tasks
 
-* MuJoCo Hopper Controller Optimization 
-* Fluorescent Protein Design with GFP
-* 1D GP Function Optimization
-* 2D GP Function Optimization
+We provide the following list of tasks and a corresponding build snippet.
+
+* GFP Protein Fluorescence: `design_bench.make('GFP-v0')`
+* Superconductor Critical Temperature: `design_bench.make('Superconductor-v0')`
+* Hopper Controller: `design_bench.make('HopperController-v0')`
+* 1-Dimension GP Function: `design_bench.make('GP1D-v0')`
+* 2-Dimension GP Function: `design_bench.make('GP2D-v0')`
 
 ## Setup
 
@@ -19,11 +22,14 @@ pip install -e git+git://github.com/brandontrabucco/design-bench.git#egg=design_
 
 ## Usage
 
-You can instantiate a design problem using the `make` function. Note that the first time you import `design_bench` many data files will be downloaded, so the first import may be slow.
+Every task inherits from the `design_bench.task.Task` class. This class provides access to attributes `task.x` and `task.y` that correspond to designs and labels as numpy arrays, respectively. In addition, every task implements a `score(x: np.ndarray)` function that provided an (approximate) oracle predictor for `task.y`.
 
 ```python
 import design_bench
 task = design_bench.make('HopperController-v0')
+designs = task.x[:10]
+real_score = task.y[:10]
+oracle_score = task.score(designs)
 ```
 
 ## Contributing
@@ -35,8 +41,5 @@ import design_bench
 design_bench.register(
     'HelloWorld-v0',
     'hello.world.task:HelloWorldTask',
-    kwargs={
-        'hello': 'world'
-    }
-)
+    kwargs=dict(hello='world'))
 ```
