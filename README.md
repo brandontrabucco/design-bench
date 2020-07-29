@@ -1,6 +1,6 @@
 # Design Benchmarks for Model-Based Optimization
 
-This repository contains several design problem benchmarks for model-based optimization. Our hope is that this common interface and stable task nomenclature will encourage future research and comparability in model-based design.
+This repository contains several design benchmarks for model-based optimization. Our hope is that a common interface and stable nomenclature will encourage future research and comparability in model-based design.
 
 ## Available Tasks
 
