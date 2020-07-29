@@ -94,7 +94,7 @@ maybe_download('1AguXqbNrSc665sablzVJh4RHLodeXglx',
                os.path.join(DATA_DIR, 'superconductor_unique_m.csv'))
 maybe_download('15luLFnXpKDBi1jPL-NJlfeIGNI1QyZsf',
                os.path.join(DATA_DIR, 'superconductor_train.csv'))
-maybe_download('15luLFnXpKDBi1jPL-NJlfeIGNI1QyZsf',
+maybe_download('1GvpMGXNuGVIoNgd0o7r-pXBQa1Zb-NSX',
                os.path.join(DATA_DIR, 'superconductor_oracle.pkl'))
 
 
