@@ -22,7 +22,7 @@ pip install -e git+git://github.com/brandontrabucco/design-bench.git#egg=design_
 
 ## Usage
 
-Every task inherits from the `design_bench.task.Task` class. This class provides access to attributes `task.x` and `task.y` that correspond to designs and labels as numpy arrays, respectively. In addition, every task implements a `score(x: np.ndarray)` function that provided an (approximate) oracle predictor for `task.y`.
+Every task inherits from the `design_bench.task.Task` class. This class provides access to attributes `task.x` and `task.y` that correspond to designs and labels as numpy arrays, respectively. In addition, every task implements a `task.score(x)` function that provides an (approximate) oracle predictor for `task.y`.
 
 ```python
 import design_bench
