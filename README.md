@@ -20,6 +20,8 @@ You can install our benchmarks with the following command.
 pip install -e git+git://github.com/brandontrabucco/design-bench.git#egg=design_bench
 ```
 
+Note the first import of `design_bench` may be slow as it will download all necessary data files.
+
 ## Usage
 
 Every task inherits from the `design_bench.task.Task` class. This class provides access to attributes `task.x` and `task.y` that correspond to designs and labels as numpy arrays, respectively. In addition, every task implements a `task.score(x)` function that provides an (approximate) oracle predictor for `task.y`.
