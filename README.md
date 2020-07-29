@@ -5,19 +5,16 @@ This repository contains several benchmarks of design problems for model-based o
 In particular, we provide the following family of design problems:
 
 * MuJoCo Hopper Controller Optimization 
-* Fluorescent Protein Design
+* Fluorescent Protein Design with GFP
 * 1D GP Function Optimization
 * 2D GP Function Optimization
-* ROBEL D'Kitty Morphology Design
-* MuJoCo Ant Morphology Design 
-* MuJoCo Dog Morphology Design 
 
 ## Setup
 
 You can install our benchmarks with the following command.
 
 ```bash
-pip install git+git://github.com/brandontrabucco/design-bench.git
+pip install -e git+git://github.com/brandontrabucco/design-bench.git#egg=design_bench
 ```
 
 ## Usage
