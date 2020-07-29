@@ -3,6 +3,7 @@ https://github.com/dhbrookes/CbAS/blob/master/util.py
 """
 
 
+from design_bench import DATA_DIR
 from design_bench.task import Task
 import pandas as pd
 import numpy as np
@@ -49,7 +50,7 @@ class SequenceGP(object):
                  y_train=None,
                  length_scale=1,
                  homo_noise=0.1,
-                 load_prefix="data/gfp_gp",
+                 load_prefix="gfp_gp",
                  k_beta=0.1,
                  c=1,
                  d=2):
@@ -126,22 +127,20 @@ class SequenceGP(object):
         return mu_star
 
     def save(self,
-             prefix="data/gfp_gp"):
-        basedir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        np.save(os.path.join(basedir, prefix + "X.npy", self.X_))
-        np.save(os.path.join(basedir, prefix + "y.npy", self.y_))
-        np.save(os.path.join(basedir, prefix + "K.npy", self.K_))
-        np.save(os.path.join(basedir, prefix + "Kinv.npy", self.Kinv_))
-        np.save(os.path.join(basedir, prefix + "params.npy", self.params_))
+             prefix="gfp_gp"):
+        np.save(os.path.join(DATA_DIR, prefix + "X.npy", self.X_))
+        np.save(os.path.join(DATA_DIR, prefix + "y.npy", self.y_))
+        np.save(os.path.join(DATA_DIR, prefix + "K.npy", self.K_))
+        np.save(os.path.join(DATA_DIR, prefix + "Kinv.npy", self.Kinv_))
+        np.save(os.path.join(DATA_DIR, prefix + "params.npy", self.params_))
 
     def load(self,
-             prefix="data/gfp_gp"):
-        basedir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        self.X_ = np.load(os.path.join(basedir, prefix + "X.npy"))
-        self.y_ = np.load(os.path.join(basedir, prefix + "y.npy"))
-        self.K_ = np.load(os.path.join(basedir, prefix + "K.npy"))
-        self.Kinv_ = np.load(os.path.join(basedir, prefix + "Kinv.npy"))
-        self.params_ = np.load(os.path.join(basedir, prefix + "params.npy"))
+             prefix="gfp_gp"):
+        self.X_ = np.load(os.path.join(DATA_DIR, prefix + "X.npy"))
+        self.y_ = np.load(os.path.join(DATA_DIR, prefix + "y.npy"))
+        self.K_ = np.load(os.path.join(DATA_DIR, prefix + "K.npy"))
+        self.Kinv_ = np.load(os.path.join(DATA_DIR, prefix + "Kinv.npy"))
+        self.params_ = np.load(os.path.join(DATA_DIR, prefix + "params.npy"))
         self.N_ = self.X_.shape[0]
 
 
@@ -212,10 +211,9 @@ def get_experimental_X_y(random_state=1,
                          train_size=5000,
                          return_test=False,
                          return_all=False):
-    basedir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    df = pd.read_csv(os.path.join(basedir, 'data/gfp_data.csv'))
+    df = pd.read_csv(os.path.join(DATA_DIR, 'gfp_data.csv'))
     X, _ = get_gfp_X_y_aa(df, large_only=True, ignore_stops=True)
-    y_gt = np.load(os.path.join(basedir, "data/gfp_gt_evals.npy"))
+    y_gt = np.load(os.path.join(DATA_DIR, "gfp_gt_evals.npy"))
     if return_test:
         X_train, gt_train, X_test, gt_test = partition_data(
             X, y_gt, percentile=20, train_size=train_size,

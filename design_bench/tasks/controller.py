@@ -1,3 +1,4 @@
+from design_bench import DATA_DIR
 from design_bench.task import Task
 import numpy as np
 import gym
@@ -14,8 +15,8 @@ class ControllerTask(Task):
                  action_dim=3,
                  hidden_dim=64,
                  env_name='Hopper-v2',
-                 x_file='data/hopper_controller_X.txt',
-                 y_file='data/hopper_controller_y.txt'):
+                 x_file='hopper_controller_X.txt',
+                 y_file='hopper_controller_y.txt'):
         """Load static datasets of weights and their corresponding
         expected returns from the disk
 
@@ -40,10 +41,8 @@ class ControllerTask(Task):
         self.hidden_dim = hidden_dim
         self.env_name = env_name
 
-        basedir = os.path.dirname(os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__))))
-        x = np.loadtxt(os.path.join(basedir, x_file))
-        y = np.loadtxt(os.path.join(basedir, y_file))
+        x = np.loadtxt(os.path.join(DATA_DIR, x_file))
+        y = np.loadtxt(os.path.join(DATA_DIR, y_file))
         x = x.astype(np.float32)
         y = y.astype(np.float32).reshape([-1, 1])
 

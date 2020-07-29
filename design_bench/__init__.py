@@ -1,6 +1,5 @@
 from design_bench.registration import registry, register, make, spec
 from design_bench.task import Task
-import numpy as np
 import requests
 import os
 
@@ -49,6 +48,7 @@ def save_response_content(response, destination):
 
 DATA_DIR = os.path.join(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))), 'data')
+os.makedirs(DATA_DIR, exist_ok=True)
 
 
 register(
@@ -85,6 +85,17 @@ maybe_download('1tRvY0W4ygoPxytdhAWZuwSQmvNj2QEtK',
                os.path.join(DATA_DIR, 'gfp_gpK.npy'))
 maybe_download('1_jcPkQ-M1FRhkEONoE57WEbp_Rivkho2',
                os.path.join(DATA_DIR, 'gfp_data.csv'))
+
+
+register(
+    'Superconductor-v0',
+    'design_bench.tasks.superconductor:SuperconductorTask')
+maybe_download('1AguXqbNrSc665sablzVJh4RHLodeXglx',
+               os.path.join(DATA_DIR, 'superconductor_unique_m.csv'))
+maybe_download('15luLFnXpKDBi1jPL-NJlfeIGNI1QyZsf',
+               os.path.join(DATA_DIR, 'superconductor_train.csv'))
+maybe_download('15luLFnXpKDBi1jPL-NJlfeIGNI1QyZsf',
+               os.path.join(DATA_DIR, 'superconductor_oracle.pkl'))
 
 
 register(
