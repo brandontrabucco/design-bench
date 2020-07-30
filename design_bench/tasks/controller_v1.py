@@ -1,7 +1,6 @@
 from design_bench import DATA_DIR
 from design_bench.task import Task
 import numpy as np
-import pickle as pkl
 import gym
 import os
 
@@ -16,8 +15,8 @@ class ControllerV1Task(Task):
                  action_dim=3,
                  hidden_dim=64,
                  env_name='Hopper-v2',
-                 x_file='hopper_controller_v1_X.pkl',
-                 y_file='hopper_controller_v1_y.pkl'):
+                 x_file='hopper_controller_v1_X.npy',
+                 y_file='hopper_controller_v1_y.npy'):
         """Load static datasets of weights and their corresponding
         expected returns from the disk
 
