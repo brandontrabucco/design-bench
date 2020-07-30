@@ -100,4 +100,4 @@ class SuperconductorTask(Task):
             in the function argument
         """
 
-        return self.est.predict(x)
+        return self.est.predict(x).reshape([-1, 1])
