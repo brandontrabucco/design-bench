@@ -9,6 +9,7 @@ We provide the following list of tasks and a corresponding build snippet.
 * GFP Protein Fluorescence: `design_bench.make('GFP-v0')`
 * Superconductor Critical Temperature: `design_bench.make('Superconductor-v0')`
 * Hopper Controller: `design_bench.make('HopperController-v0')`
+* Hopper Controller: `design_bench.make('HopperController-v1')`
 * 1-Dimension GP Function: `design_bench.make('GP1D-v0')`
 * 2-Dimension GP Function: `design_bench.make('GP2D-v0')`
 
@@ -29,9 +30,9 @@ Every task inherits from the `design_bench.task.Task` class. This class provides
 ```python
 import design_bench
 task = design_bench.make('HopperController-v0')
-designs = task.x[:10]
-real_score = task.y[:10]
-oracle_score = task.score(designs)
+x = task.x[:10]
+y = task.y[:10]
+oracle_y = task.score(designs)
 ```
 
 ## Contributing
@@ -43,5 +44,6 @@ import design_bench
 design_bench.register(
     'HelloWorld-v0',
     'hello.world.task:HelloWorldTask',
-    kwargs=dict(hello='world'))
+    kwargs=dict(
+        hello='world'))
 ```
