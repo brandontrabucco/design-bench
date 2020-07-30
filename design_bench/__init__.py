@@ -100,15 +100,31 @@ maybe_download('1GvpMGXNuGVIoNgd0o7r-pXBQa1Zb-NSX',
 
 register(
     'HopperController-v0',
-    'design_bench.tasks.controller:ControllerTask',
+    'design_bench.tasks.controller_v0:ControllerV0Task',
     kwargs=dict(
         obs_dim=11,
         action_dim=3,
         hidden_dim=64,
         env_name='Hopper-v2',
-        x_file='hopper_controller_X.txt',
-        y_file='hopper_controller_y.txt'))
-maybe_download('18yuyw8xSQa7ydIQN-_ajHPZXh1VQbT6o',
-               os.path.join(DATA_DIR, 'hopper_controller_X.txt'))
-maybe_download('1nX0LObb4OWJQfcBbQxq2rdqiujUOF79y',
-               os.path.join(DATA_DIR, 'hopper_controller_y.txt'))
+        x_file='hopper_controller_v0_X.npy',
+        y_file='hopper_controller_v0_y.npy'))
+maybe_download('1U997qfr5ZUNPFlC29jxdPjA42xCiohaV',
+               os.path.join(DATA_DIR, 'hopper_controller_v0_X.npy'))
+maybe_download('1AQmCaerm1gmlJdajBZm0JAsKjbAbR3r8',
+               os.path.join(DATA_DIR, 'hopper_controller_v0_y.npy'))
+
+
+register(
+    'HopperController-v1',
+    'design_bench.tasks.controller_v1:ControllerV1Task',
+    kwargs=dict(
+        obs_dim=11,
+        action_dim=3,
+        hidden_dim=256,
+        env_name='Hopper-v2',
+        x_file='hopper_controller_v1_X.npy',
+        y_file='hopper_controller_v1_y.npy'))
+maybe_download('14AdCoQT0F4YSOjJCtw3-CqlI18HyN3t1',
+               os.path.join(DATA_DIR, 'hopper_controller_v1_X.npy'))
+maybe_download('1uEiVCt2Da7BdMNQVk9gB13qra1ZPJt3w',
+               os.path.join(DATA_DIR, 'hopper_controller_v1_y.npy'))
