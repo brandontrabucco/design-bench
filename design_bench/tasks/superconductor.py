@@ -1,4 +1,5 @@
 from design_bench import DATA_DIR
+from design_bench import maybe_download
 from design_bench.task import Task
 from sklearn.ensemble import GradientBoostingRegressor
 import numpy as np
@@ -65,6 +66,13 @@ class SuperconductorTask(Task):
             the percentile (out of 100) to split the data set by and only
             include samples with critical_temp below this percentile
         """
+
+        maybe_download('1AguXqbNrSc665sablzVJh4RHLodeXglx',
+                       os.path.join(DATA_DIR, 'superconductor_unique_m.csv'))
+        maybe_download('15luLFnXpKDBi1jPL-NJlfeIGNI1QyZsf',
+                       os.path.join(DATA_DIR, 'superconductor_train.csv'))
+        maybe_download('1GvpMGXNuGVIoNgd0o7r-pXBQa1Zb-NSX',
+                       os.path.join(DATA_DIR, 'superconductor_oracle.pkl'))
 
         train = pd.read_csv(os.path.join(
             DATA_DIR, 'superconductor_train.csv'))

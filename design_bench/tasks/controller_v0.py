@@ -1,4 +1,5 @@
 from design_bench import DATA_DIR
+from design_bench import maybe_download
 from design_bench.task import Task
 import numpy as np
 import gym
@@ -35,6 +36,11 @@ class ControllerV0Task(Task):
         y_file: str
             the name of the dataset file to be loaded for y
         """
+
+        maybe_download('1U997qfr5ZUNPFlC29jxdPjA42xCiohaV',
+                       os.path.join(DATA_DIR, 'hopper_controller_v0_X.npy'))
+        maybe_download('1AQmCaerm1gmlJdajBZm0JAsKjbAbR3r8',
+                       os.path.join(DATA_DIR, 'hopper_controller_v0_y.npy'))
 
         self.obs_dim = obs_dim
         self.action_dim = action_dim

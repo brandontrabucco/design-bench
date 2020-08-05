@@ -4,6 +4,7 @@ https://github.com/dhbrookes/CbAS/blob/master/util.py
 
 
 from design_bench import DATA_DIR
+from design_bench import maybe_download
 from design_bench.task import Task
 import pandas as pd
 import numpy as np
@@ -16,6 +17,21 @@ class GFPTask(Task):
         """Load the GFP data set which includes maps from discrete
         protein designs to fluorescence scores
         """
+
+        maybe_download('1UO8L3uOp141m2v5dVlpGZ4tZ42XIJ4Vq',
+                       os.path.join(DATA_DIR, 'gfp_gt_evals.npy'))
+        maybe_download('1DeOoYQs5GEis3jIYsbGxuemjtsBiUSJm',
+                       os.path.join(DATA_DIR, 'gfp_gpy.npy'))
+        maybe_download('10xMOWXZjGOKLokO4jP6ya29-ZD2tb46X',
+                       os.path.join(DATA_DIR, 'gfp_gpX.npy'))
+        maybe_download('18EvOK25vmPvRGNbviv1Oep2CPXt3UrLt',
+                       os.path.join(DATA_DIR, 'gfp_gpparams.npy'))
+        maybe_download('1ySC8Rkfye6JfRKqoDS_KAXqUQTKtrbvZ',
+                       os.path.join(DATA_DIR, 'gfp_gpKinv.npy'))
+        maybe_download('1tRvY0W4ygoPxytdhAWZuwSQmvNj2QEtK',
+                       os.path.join(DATA_DIR, 'gfp_gpK.npy'))
+        maybe_download('1_jcPkQ-M1FRhkEONoE57WEbp_Rivkho2',
+                       os.path.join(DATA_DIR, 'gfp_data.csv'))
 
         self.sequence_gp = SequenceGP(load=True)
         self.x, self.y, gt = get_experimental_X_y()

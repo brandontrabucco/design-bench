@@ -1,11 +1,13 @@
 from design_bench.registration import registry, register, make, spec
 from design_bench.task import Task
 import requests
+import zipfile
 import os
 
 
 def maybe_download(fid,
-                   destination):
+                   destination,
+                   unzip=True):
     """If a file does not already exist then download it from
     google drive using a custom GET request
 
@@ -29,8 +31,10 @@ def maybe_download(fid,
             response = session.get(
                 "https://docs.google.com/uc?export=download",
                 params={'id': fid, 'confirm': token}, stream=True)
-        save_response_content(
-            response, destination)
+        save_response(response, destination)
+        if destination.endswith('.zip') and unzip:
+            with zipfile.ZipFile(destination, 'r') as zip_ref:
+                zip_ref.extractall(os.path.dirname(destination))
 
 
 def get_confirm_token(response):
@@ -39,7 +43,8 @@ def get_confirm_token(response):
             return value
 
 
-def save_response_content(response, destination):
+def save_response(response, destination):
+    os.makedirs(os.path.dirname(destination), exist_ok=True)
     with open(destination, "wb") as f:
         for chunk in response.iter_content(32768):
             if chunk:
@@ -48,7 +53,6 @@ def save_response_content(response, destination):
 
 DATA_DIR = os.path.join(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))), 'data')
-os.makedirs(DATA_DIR, exist_ok=True)
 
 
 register(
@@ -66,38 +70,15 @@ register(
         dataset_size=100,
         upper_bound=(0.0, 15.0),
         lower_bound=(-5.0, 10.0)))
-
-
 register(
     'GFP-v0',
     'design_bench.tasks.gfp:GFPTask')
-maybe_download('1UO8L3uOp141m2v5dVlpGZ4tZ42XIJ4Vq',
-               os.path.join(DATA_DIR, 'gfp_gt_evals.npy'))
-maybe_download('1DeOoYQs5GEis3jIYsbGxuemjtsBiUSJm',
-               os.path.join(DATA_DIR, 'gfp_gpy.npy'))
-maybe_download('10xMOWXZjGOKLokO4jP6ya29-ZD2tb46X',
-               os.path.join(DATA_DIR, 'gfp_gpX.npy'))
-maybe_download('18EvOK25vmPvRGNbviv1Oep2CPXt3UrLt',
-               os.path.join(DATA_DIR, 'gfp_gpparams.npy'))
-maybe_download('1ySC8Rkfye6JfRKqoDS_KAXqUQTKtrbvZ',
-               os.path.join(DATA_DIR, 'gfp_gpKinv.npy'))
-maybe_download('1tRvY0W4ygoPxytdhAWZuwSQmvNj2QEtK',
-               os.path.join(DATA_DIR, 'gfp_gpK.npy'))
-maybe_download('1_jcPkQ-M1FRhkEONoE57WEbp_Rivkho2',
-               os.path.join(DATA_DIR, 'gfp_data.csv'))
-
-
 register(
     'Superconductor-v0',
     'design_bench.tasks.superconductor:SuperconductorTask')
-maybe_download('1AguXqbNrSc665sablzVJh4RHLodeXglx',
-               os.path.join(DATA_DIR, 'superconductor_unique_m.csv'))
-maybe_download('15luLFnXpKDBi1jPL-NJlfeIGNI1QyZsf',
-               os.path.join(DATA_DIR, 'superconductor_train.csv'))
-maybe_download('1GvpMGXNuGVIoNgd0o7r-pXBQa1Zb-NSX',
-               os.path.join(DATA_DIR, 'superconductor_oracle.pkl'))
-
-
+register(
+    'MoleculeActivity-v0',
+    'design_bench.tasks.molecule_activity:MoleculeActivityTask')
 register(
     'HopperController-v0',
     'design_bench.tasks.controller_v0:ControllerV0Task',
@@ -108,12 +89,6 @@ register(
         env_name='Hopper-v2',
         x_file='hopper_controller_v0_X.npy',
         y_file='hopper_controller_v0_y.npy'))
-maybe_download('1U997qfr5ZUNPFlC29jxdPjA42xCiohaV',
-               os.path.join(DATA_DIR, 'hopper_controller_v0_X.npy'))
-maybe_download('1AQmCaerm1gmlJdajBZm0JAsKjbAbR3r8',
-               os.path.join(DATA_DIR, 'hopper_controller_v0_y.npy'))
-
-
 register(
     'HopperController-v1',
     'design_bench.tasks.controller_v1:ControllerV1Task',
@@ -124,7 +99,3 @@ register(
         env_name='Hopper-v2',
         x_file='hopper_controller_v1_X.npy',
         y_file='hopper_controller_v1_y.npy'))
-maybe_download('14AdCoQT0F4YSOjJCtw3-CqlI18HyN3t1',
-               os.path.join(DATA_DIR, 'hopper_controller_v1_X.npy'))
-maybe_download('1uEiVCt2Da7BdMNQVk9gB13qra1ZPJt3w',
-               os.path.join(DATA_DIR, 'hopper_controller_v1_y.npy'))
