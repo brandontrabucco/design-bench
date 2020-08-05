@@ -71,7 +71,7 @@ class MorphologyV0Task(Task):
                 "~/.mujoco/mjkey.txt"), os.path.join(DATA_DIR, 'mjkey.txt'))
 
             # build the docker image manually
-            self.client.build.build(path=DATA_DIR, tag='morphing-datasets')
+            self.client.images.build(path=DATA_DIR, tag='morphing-datasets')
 
         maybe_download('1ueVwGoKJarXLuOZkNP1dH0vt5Im9BbE-',
                        os.path.join(DATA_DIR, 'centered_ant_X.txt'))
