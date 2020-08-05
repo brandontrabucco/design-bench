@@ -8,10 +8,9 @@ We provide the following list of tasks and a corresponding build snippet.
 
 * GFP Protein Fluorescence: `design_bench.make('GFP-v0')`
 * Superconductor Critical Temperature: `design_bench.make('Superconductor-v0')`
+* Assay Molecule Activity: `design_bench.make('MoleculeActivity-v0')`
 * Hopper Controller: `design_bench.make('HopperController-v0')`
 * Hopper Controller: `design_bench.make('HopperController-v1')`
-* 1-Dimension GP Function: `design_bench.make('GP1D-v0')`
-* 2-Dimension GP Function: `design_bench.make('GP2D-v0')`
 
 ## Setup
 
@@ -20,8 +19,6 @@ You can install our benchmarks with the following command.
 ```bash
 pip install -e git+git://github.com/brandontrabucco/design-bench.git#egg=design_bench
 ```
-
-Note the first import of `design_bench` may be slow as it will download all necessary data files.
 
 ## Usage
 
