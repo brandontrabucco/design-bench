@@ -99,3 +99,23 @@ register(
         env_name='Hopper-v2',
         x_file='hopper_controller_v1_X.npy',
         y_file='hopper_controller_v1_y.npy'))
+register(
+    'AntMorphology-v0',
+    'design_bench.tasks.morphology_v0:MorphologyV0Task',
+    kwargs=dict(
+        num_parallel=1,
+        num_gpus=1,
+        n_envs=4,
+        max_episode_steps=500,
+        total_timesteps=1000000,
+        domain='ant'))
+register(
+    'DogMorphology-v0',
+    'design_bench.tasks.morphology_v0:MorphologyV0Task',
+    kwargs=dict(
+        num_parallel=1,
+        num_gpus=1,
+        n_envs=4,
+        max_episode_steps=500,
+        total_timesteps=1000000,
+        domain='dog'))

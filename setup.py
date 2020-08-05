@@ -2,7 +2,7 @@ from setuptools import find_packages
 from setuptools import setup
 
 
-PACKAGES = ['numpy', 'pandas', 'gym[mujoco]', 'requests', 'scikit-learn']
+PACKAGES = ['numpy', 'pandas', 'gym[mujoco]', 'requests', 'scikit-learn', 'docker']
 
 
 setup(name='design-bench',
