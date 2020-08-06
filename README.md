@@ -9,10 +9,10 @@ We provide the following list of tasks and a corresponding build snippet.
 * GFP Protein Fluorescence: `design_bench.make('GFP-v0')`
 * Superconductor Critical Temperature: `design_bench.make('Superconductor-v0')`
 * Molecule-Assay Activity: `design_bench.make('MoleculeActivity-v0')`
-* Hopper Controller: `design_bench.make('HopperController-v0')`
-* Hopper Controller: `design_bench.make('HopperController-v1')`
-* Ant Morphology: `design_bench.make('AntMorphology-v0')`
-* Dog Morphology: `design_bench.make('DogMorphology-v0')`
+* MuJoCo Hopper Controller: `design_bench.make('HopperController-v0')`
+* MuJoCo Hopper Controller: `design_bench.make('HopperController-v1')`
+* Robot Morphology: `design_bench.make('AntMorphology-v0')`
+* Robot Morphology: `design_bench.make('DogMorphology-v0')`
 
 ## Setup
 
