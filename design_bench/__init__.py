@@ -56,20 +56,13 @@ DATA_DIR = os.path.join(os.path.dirname(
 
 
 register(
-    'GP1D-v0',
-    'design_bench.tasks.gp:GP1DTask',
+    'Quadratic-v0',
+    'design_bench.tasks.quadratic:QuadraticTask',
     kwargs=dict(
+        global_optimum=(-1.0, 4.0, 2.0, -3.0, 5.0, 1.0,),
+        oracle_noise_std=0.2,
         dataset_size=100,
-        upper_bound=(4.0,),
-        lower_bound=(-4.0,),
-        noise=0.2))
-register(
-    'GP2D-v0',
-    'design_bench.tasks.gp:GP2DTask',
-    kwargs=dict(
-        dataset_size=100,
-        upper_bound=(0.0, 15.0),
-        lower_bound=(-5.0, 10.0)))
+        percentile=80))
 register(
     'GFP-v0',
     'design_bench.tasks.gfp:GFPTask')
