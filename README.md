@@ -14,6 +14,10 @@ We provide the following list of tasks and a corresponding build snippet.
 * Robot Morphology: `design_bench.make('AntMorphology-v0')`
 * Robot Morphology: `design_bench.make('DogMorphology-v0')`
 
+In addition, the following simple tasks are provided for debugging purposes.
+
+* Quadratic Function Maximization: `design_bench.make('Quadratic-v0')`
+
 ## Setup
 
 You can install our benchmarks with the following command.
