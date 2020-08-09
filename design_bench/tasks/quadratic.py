@@ -28,12 +28,13 @@ class QuadraticTask(Task):
             include samples with critical_temp below this percentile
         """
 
-        self.global_optimum = np.array(global_optimum)[np.newaxis]
+        global_optimum = np.array(global_optimum)[np.newaxis]
+        self.global_optimum = global_optimum.astype(np.float32)
         self.oracle_noise_std = oracle_noise_std
 
         z = np.random.randn(dataset_size, len(global_optimum))
         x = (self.global_optimum + z).astype(np.float32)
-        y = self.score(x)
+        y = self.score(x).astype(np.float32)
 
         split = np.percentile(y, percentile)
         indices = np.where(np.less_equal(y, split))[0]
