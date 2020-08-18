@@ -16,7 +16,7 @@ class GFPTask(Task):
     def __init__(self,
                  seed=0,
                  corrupt_min=0.0,
-                 corrupt_max=0.5):
+                 corrupt_max=0.0):
         """Load the GFP data set which includes maps from discrete
         protein designs to fluorescence scores
 
@@ -50,7 +50,7 @@ class GFPTask(Task):
 
         # load the static dataset
         self.sequence_gp = SequenceGP(load=True)
-        x, y, gt = get_experimental_X_y(random_state=seed)
+        x, _, y = get_experimental_X_y(random_state=seed)
 
         # cast everything to floats
         x = x.astype(np.float32)
