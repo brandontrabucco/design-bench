@@ -13,9 +13,24 @@ import os
 
 class GFPTask(Task):
 
-    def __init__(self):
+    def __init__(self,
+                 seed=0,
+                 corrupt_min=0.0,
+                 corrupt_max=0.5):
         """Load the GFP data set which includes maps from discrete
         protein designs to fluorescence scores
+
+        Args:
+
+        seed: int
+            the random seed used for this experiment that determines the
+            sampled values of data set noise
+        corrupt_min: float
+            the minimum probability mass to re-distribute when creating
+            floating point one-hot vectors
+        corrupt_max: float
+            the maximum probability mass to re-distribute when creating
+            floating point one-hot vectors
         """
 
         maybe_download('1UO8L3uOp141m2v5dVlpGZ4tZ42XIJ4Vq',
@@ -33,8 +48,27 @@ class GFPTask(Task):
         maybe_download('1_jcPkQ-M1FRhkEONoE57WEbp_Rivkho2',
                        os.path.join(DATA_DIR, 'gfp_data.csv'))
 
+        # load the static dataset
         self.sequence_gp = SequenceGP(load=True)
-        self.x, self.y, gt = get_experimental_X_y()
+        x, y, gt = get_experimental_X_y(random_state=seed)
+
+        # cast everything to floats
+        x = x.astype(np.float32)
+        y = y.astype(np.float32).reshape([-1, 1])
+
+        # sample random probability distributions
+        noise = np.random.uniform(0.0, 1.0, size=x.shape)
+        noise = noise / np.sum(noise, axis=-1, keepdims=True)
+
+        # corrupt the data set x probabilities by a certain amount
+        mass = np.random.uniform(corrupt_min,
+                                 corrupt_max,
+                                 size=x.shape[:-1])[..., np.newaxis]
+        x = x * (1. - mass) + noise * mass
+
+        # expose the designs
+        self.x = x
+        self.y = y
 
     def score(self,
               x: np.ndarray) -> np.ndarray:
