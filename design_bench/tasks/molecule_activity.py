@@ -137,6 +137,7 @@ class MoleculeActivityTask(ConditionalTask):
         self.c = np.concatenate(self.c, axis=0)
         self.y = np.concatenate(self.y, axis=0)
         self.assays = np.concatenate(self.assays, axis=0)
+        self.x = np.stack([1.0 - self.x, self.x], axis=2)
 
         self.oracles = []
         for assay_id in self.assays:
@@ -145,7 +146,7 @@ class MoleculeActivityTask(ConditionalTask):
                               f'_{assay_id}.pkl'), 'rb') as f:
                 self.oracles.append(pkl.load(f))
         self.score = np.vectorize(
-            self.scalar_score, signature='(n),()->(1)')
+            self.scalar_score, signature='(n,2),()->(1)')
 
     def scalar_score(self,
                      x: np.ndarray,
@@ -170,4 +171,4 @@ class MoleculeActivityTask(ConditionalTask):
         """
 
         est = self.oracles[int(np.where(np.equal(self.assays, c))[0])]
-        return est.predict(x[np.newaxis])
+        return est.predict((x[np.newaxis, :, 1] > 0.5).astype(np.float32))
