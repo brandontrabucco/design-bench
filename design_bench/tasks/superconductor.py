@@ -84,7 +84,7 @@ class SuperconductorTask(Task):
         indices = np.where(train["critical_temp"] < split_temp)
 
         self.y = y[indices]
-        self.x = np.log(x[indices])
+        self.x = np.log(x[indices] + 1e-7)
 
         with open(os.path.join(
                 DATA_DIR, 'superconductor_oracle.pkl'), 'rb') as f:
@@ -108,4 +108,4 @@ class SuperconductorTask(Task):
             in the function argument
         """
 
-        return self.est.predict(np.exp(x)).reshape([-1, 1])
+        return self.est.predict(np.exp(x) - 1e-7).reshape([-1, 1])
