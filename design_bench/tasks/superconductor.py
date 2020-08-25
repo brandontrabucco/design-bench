@@ -83,8 +83,14 @@ class SuperconductorTask(Task):
         split_temp = np.percentile(train["critical_temp"], split_percentile)
         indices = np.where(train["critical_temp"] < split_temp)
 
-        self.y = y[indices]
-        self.x = np.log(x[indices] + 1e-6)
+        y = y[indices]
+        x = x[indices]
+
+        self.m = np.mean(x, axis=0, keepdims=True)
+        self.st = np.std(x - self.m, axis=0, keepdims=True)
+
+        self.y = y
+        self.x = (x - self.m) / self.st
 
         with open(os.path.join(
                 DATA_DIR, 'superconductor_oracle.pkl'), 'rb') as f:
@@ -108,4 +114,4 @@ class SuperconductorTask(Task):
             in the function argument
         """
 
-        return self.est.predict(np.exp(x) - 1e-6).reshape([-1, 1])
+        return self.est.predict(x * self.st + self.m).reshape([-1, 1])
