@@ -93,8 +93,6 @@ class MoleculeActivityV0Task(Task):
         y = y[matches]
         x = np.stack([1.0 - x, x], axis=2)
 
-        print(y.max(0))
-
         # remove all samples above the qth percentile in the data set
         split_temp = np.percentile(y[:, 0], split_percentile)
         indices = np.where(y < split_temp)[0]
