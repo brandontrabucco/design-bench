@@ -69,8 +69,35 @@ register(
 register(
     'Superconductor-v0',
     'design_bench.tasks.superconductor:SuperconductorTask')
+
 register(
-    'MoleculeActivity-v0',
+    'MoleculeActivity688150-v0',
+    'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
+    kwargs=dict(target_assay=688150,
+                split_percentile=80))
+register(
+    'MoleculeActivity600886-v0',
+    'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
+    kwargs=dict(target_assay=600886,
+                split_percentile=80))
+register(
+    'MoleculeActivity600885-v0',
+    'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
+    kwargs=dict(target_assay=600885,
+                split_percentile=80))
+register(
+    'MoleculeActivity688537-v0',
+    'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
+    kwargs=dict(target_assay=688537,
+                split_percentile=80))
+register(
+    'MoleculeActivity688597-v0',
+    'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
+    kwargs=dict(target_assay=688597,
+                split_percentile=80))
+
+register(
+    'MoleculeActivity-v1',
     'design_bench.tasks.molecule_activity:MoleculeActivityTask')
 register(
     'HopperController-v0',

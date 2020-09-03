@@ -81,7 +81,7 @@ class SuperconductorTask(Task):
         x = data[:, :-1]
 
         split_temp = np.percentile(train["critical_temp"], split_percentile)
-        indices = np.where(train["critical_temp"] < split_temp)
+        indices = np.where(train["critical_temp"] < split_temp)[0]
 
         y = y[indices]
         x = x[indices]

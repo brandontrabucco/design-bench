@@ -90,7 +90,7 @@ class MoleculeActivityTask(ConditionalTask):
         return NotImplemented
 
     def __init__(self,
-                 min_validation_r2=0.3,
+                 min_validation_r2=0.0,
                  min_num_samples=100):
         """Create a task for designing super conducting materials that
         have a high critical temperature
@@ -124,6 +124,7 @@ class MoleculeActivityTask(ConditionalTask):
         self.c = []
         self.y = []
         self.assays = []
+        self.counts = []
 
         for idx in indices:
             unique_assay = unique[idx]
@@ -132,11 +133,14 @@ class MoleculeActivityTask(ConditionalTask):
             self.c.append(c[matches])
             self.y.append(y[matches])
             self.assays.append([unique_assay])
+            self.counts.append([counts[idx]])
 
         self.x = np.concatenate(self.x, axis=0)
         self.c = np.concatenate(self.c, axis=0)
         self.y = np.concatenate(self.y, axis=0)
+
         self.assays = np.concatenate(self.assays, axis=0)
+        self.counts = np.concatenate(self.counts, axis=0)
         self.x = np.stack([1.0 - self.x, self.x], axis=2)
 
         self.oracles = []
