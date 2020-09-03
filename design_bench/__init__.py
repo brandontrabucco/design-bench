@@ -68,8 +68,8 @@ register(
     'design_bench.tasks.gfp:GFPTask')
 register(
     'Superconductor-v0',
-    'design_bench.tasks.superconductor:SuperconductorTask')
-
+    'design_bench.tasks.superconductor:SuperconductorTask',
+    kwargs=dict(split_percentile=80))
 register(
     'MoleculeActivity688150-v0',
     'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
@@ -95,10 +95,6 @@ register(
     'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
     kwargs=dict(target_assay=688597,
                 split_percentile=80))
-
-register(
-    'MoleculeActivity-v1',
-    'design_bench.tasks.molecule_activity:MoleculeActivityTask')
 register(
     'HopperController-v0',
     'design_bench.tasks.controller_v0:ControllerV0Task',
