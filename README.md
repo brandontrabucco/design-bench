@@ -4,7 +4,7 @@ This repository contains several design benchmarks for model-based optimization.
 
 ## Available Tasks
 
-Current model-based design benchmarks used by researchers (circa 2020) typically vary from paper-to-paper. For example, tasks employed by biologists differ strongly from those of interest to roboticists. In this benchmark, we provide a common interface for tasks that span a wide-range of disciplines, from materials science, to reinforceent learning. We list these tasks below.
+Current model-based design benchmarks (circa 2020) typically vary from paper-to-paper. For example, tasks employed by biologists differ strongly from those of interest to roboticists. We provide a common interface for tasks that span a wide-range of disciplines, from materials science, to reinforceent learning. We list these tasks below.
 
 * __Biology__: Protein Fluorescence: `design_bench.make('GFP-v0')`
 * __Chemistry__: Molecule Activity: `design_bench.make('MoleculeActivity600885-v0')`
