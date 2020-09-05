@@ -9,7 +9,6 @@ We provide the following list of tasks and a corresponding build snippet.
 * Biology: Protein Fluorescence: `design_bench.make('GFP-v0')`
 * Chemistry: Molecule Activity: `design_bench.make('MoleculeActivity600885-v0')`
 * Materials Science: Superconductor Critical Temperature: `design_bench.make('Superconductor-v0')`
-
 * Robotics: Hopper Controller: `design_bench.make('HopperController-v0')`
 * Robotics: Ant Morphology: `design_bench.make('AntMorphology-v0')`
 * Robotics: DKitty Morphology: `design_bench.make('DKittyMorphology-v0')`
