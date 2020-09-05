@@ -22,7 +22,9 @@ class MorphologyV0Task(Task):
                  env_element=LEG,
                  env_element_lb=LEG_LOWER_BOUND,
                  env_element_ub=LEG_UPPER_BOUND,
-                 oracle_weights='ant_oracle.pkl'):
+                 oracle_weights='ant_oracle.pkl',
+                 x_file='ant_morphology_X.npy',
+                 y_file='ant_morphology_y.npy'):
         """Load static datasets of weights and their corresponding
         expected returns from the disk
 
@@ -42,6 +44,19 @@ class MorphologyV0Task(Task):
             the particular morphology domain such as 'ant' or 'dog'
         """
 
+        maybe_download('12H-4AvzpMVmq7M7b7nD_RPu5GNeCuCbu',
+                       os.path.join(DATA_DIR, 'ant_morphology_X.npy'))
+        maybe_download('1uSF6oc7OlLGioe_sZQwmjibuRbPCYRGu',
+                       os.path.join(DATA_DIR, 'ant_morphology_y.npy'))
+        maybe_download('1FJY6LQG3kvLIx00WT2XVGyfU9JrmO0T0',
+                       os.path.join(DATA_DIR, 'ant_oracle.pkl'))
+        maybe_download('17PqWmmbIiUwNBxLwhjTnV38Dx2ejefCQ',
+                       os.path.join(DATA_DIR, 'dkitty_morphology_X.npy'))
+        maybe_download('1DggTSnRn_SzmYonbLgLppzWC8OtqYAb8',
+                       os.path.join(DATA_DIR, 'dkitty_morphology_y.npy'))
+        maybe_download('1GpZc9UezjyvAn_ejwG3cibq1stQMjiiM',
+                       os.path.join(DATA_DIR, 'dkitty_oracle.pkl'))
+
         self.env_class = env_class
         self.elements = elements
         self.env_element = env_element
@@ -51,8 +66,14 @@ class MorphologyV0Task(Task):
                 DATA_DIR, oracle_weights), 'rb') as f:
             self.weights = pkl.load(f)
 
-        self.score = np.vectorize(self.scalar_score,
-                                  signature='(n)->(1)')
+        x = np.load(os.path.join(DATA_DIR, x_file))
+        y = np.load(os.path.join(DATA_DIR, y_file))
+        x = x.astype(np.float32)
+        y = y.astype(np.float32).reshape([-1, 1])
+
+        self.x = x
+        self.y = y
+        self.score = np.vectorize(self.scalar_score, signature='(n)->(1)')
 
     def scalar_score(self,
                      x: np.ndarray) -> np.ndarray:

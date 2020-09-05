@@ -7,7 +7,8 @@ PACKAGES = ['numpy',
             'gym[mujoco]',
             'requests',
             'scikit-learn',
-            'docker']
+            'matplotlib',
+            'tqdm']
 
 
 setup(name='design-bench',
