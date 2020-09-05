@@ -10,9 +10,8 @@ We provide the following list of tasks and a corresponding build snippet.
 * Superconductor Critical Temperature: `design_bench.make('Superconductor-v0')`
 * Molecule-Assay Activity: `design_bench.make('MoleculeActivity-v0')`
 * MuJoCo Hopper Controller: `design_bench.make('HopperController-v0')`
-* MuJoCo Hopper Controller: `design_bench.make('HopperController-v1')`
 * Robot Morphology: `design_bench.make('AntMorphology-v0')`
-* Robot Morphology: `design_bench.make('DogMorphology-v0')`
+* Robot Morphology: `design_bench.make('DKittyMorphology-v0')`
 
 In addition, the following simple tasks are provided for debugging purposes.
 
@@ -24,6 +23,7 @@ You can install our benchmarks with the following command.
 
 ```bash
 pip install -e git+git://github.com/brandontrabucco/design-bench.git#egg=design_bench
+pip install -e git+git://github.com/brandontrabucco/morphing-agents.git#egg=morphing_agents
 ```
 
 ## Usage
