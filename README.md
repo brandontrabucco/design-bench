@@ -13,9 +13,9 @@ Current model-based design benchmarks (circa 2020) typically vary from paper-to-
 * __Robotics__: Ant Morphology: `design_bench.make('AntMorphology-v0')`
 * __Robotics__: DKitty Morphology: `design_bench.make('DKittyMorphology-v0')`
 
-In addition, the following simple tasks are provided for debugging purposes.
+In addition, the following debugging tasks are provided.
 
-* Quadratic Function Maximization: `design_bench.make('Quadratic-v0')`
+* __Debugging__: Quadratic Maximization: `design_bench.make('Quadratic-v0')`
 
 ## Setup
 
