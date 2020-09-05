@@ -37,15 +37,3 @@ x = task.x[:10]
 y = task.y[:10]
 oracle_y = task.score(designs)
 ```
-
-## Contributing
-
-To register new tasks with `design_bench` you need to call the `register` function. For example, suppose we have a custom module named `hello.world.task` that contains a custom task class `HelloWorldTask`.
-
-```python
-import design_bench
-design_bench.register(
-    'HelloWorld-v0',
-    'hello.world.task:HelloWorldTask',
-    kwargs=dict(hello='world'))
-```
