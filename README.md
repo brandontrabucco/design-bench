@@ -6,12 +6,13 @@ This repository contains several design benchmarks for model-based optimization.
 
 We provide the following list of tasks and a corresponding build snippet.
 
-* GFP Protein Fluorescence: `design_bench.make('GFP-v0')`
-* Superconductor Critical Temperature: `design_bench.make('Superconductor-v0')`
-* Molecule-Assay Activity: `design_bench.make('MoleculeActivity-v0')`
-* MuJoCo Hopper Controller: `design_bench.make('HopperController-v0')`
-* Robot Morphology: `design_bench.make('AntMorphology-v0')`
-* Robot Morphology: `design_bench.make('DKittyMorphology-v0')`
+* Biology: Protein Fluorescence: `design_bench.make('GFP-v0')`
+* Chemistry: Molecule Activity: `design_bench.make('MoleculeActivity600885-v0')`
+* Materials Science: Superconductor Critical Temperature: `design_bench.make('Superconductor-v0')`
+
+* Robotics: Hopper Controller: `design_bench.make('HopperController-v0')`
+* Robotics: Ant Morphology: `design_bench.make('AntMorphology-v0')`
+* Robotics: DKitty Morphology: `design_bench.make('DKittyMorphology-v0')`
 
 In addition, the following simple tasks are provided for debugging purposes.
 
