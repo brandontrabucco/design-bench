@@ -4,7 +4,7 @@ This repository contains several design benchmarks for model-based optimization.
 
 ## Available Tasks
 
-We provide the following list of tasks and a corresponding build snippet.
+Current model-based design benchmarks (circa 2020) typically vary from paper-to-paper. For example, tasks employed by biologists differ strongly from those of interest to roboticists. We provide a common interface for tasks that span a wide-range of disciplines, from materials science, to reinforcement learning. We list these tasks below.
 
 * __Biology__: Protein Fluorescence: `design_bench.make('GFP-v0')`
 * __Chemistry__: Molecule Activity: `design_bench.make('MoleculeActivity600885-v0')`
@@ -13,9 +13,9 @@ We provide the following list of tasks and a corresponding build snippet.
 * __Robotics__: Ant Morphology: `design_bench.make('AntMorphology-v0')`
 * __Robotics__: DKitty Morphology: `design_bench.make('DKittyMorphology-v0')`
 
-In addition, the following simple tasks are provided for debugging purposes.
+In addition, the following debugging tasks are provided.
 
-* Quadratic Function Maximization: `design_bench.make('Quadratic-v0')`
+* __Debugging__: Quadratic Maximization: `design_bench.make('Quadratic-v0')`
 
 ## Setup
 
@@ -36,16 +36,4 @@ task = design_bench.make('HopperController-v0')
 x = task.x[:10]
 y = task.y[:10]
 oracle_y = task.score(designs)
-```
-
-## Contributing
-
-To register new tasks with `design_bench` you need to call the `register` function. For example, suppose we have a custom module named `hello.world.task` that contains a custom task class `HelloWorldTask`.
-
-```python
-import design_bench
-design_bench.register(
-    'HelloWorld-v0',
-    'hello.world.task:HelloWorldTask',
-    kwargs=dict(hello='world'))
 ```
