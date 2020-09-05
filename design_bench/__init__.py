@@ -1,5 +1,13 @@
 from design_bench.registration import registry, register, make, spec
 from design_bench.task import Task
+from morphing_agents.mujoco.ant.env import MorphingAntEnv
+from morphing_agents.mujoco.ant.elements import LEG as ANT_LEG
+from morphing_agents.mujoco.ant.elements import LEG_LOWER_BOUND as ANT_LEG_LOWER_BOUND
+from morphing_agents.mujoco.ant.elements import LEG_UPPER_BOUND as ANT_LEG_UPPER_BOUND
+from morphing_agents.mujoco.dkitty.env import MorphingDKittyEnv
+from morphing_agents.mujoco.dkitty.elements import LEG as DKITTY_LEG
+from morphing_agents.mujoco.dkitty.elements import LEG_LOWER_BOUND as DKITTY_LEG_LOWER_BOUND
+from morphing_agents.mujoco.dkitty.elements import LEG_UPPER_BOUND as DKITTY_LEG_UPPER_BOUND
 import requests
 import zipfile
 import os
@@ -119,19 +127,19 @@ register(
     'AntMorphology-v0',
     'design_bench.tasks.morphology_v0:MorphologyV0Task',
     kwargs=dict(
-        num_parallel=1,
-        num_gpus=1,
-        n_envs=4,
-        max_episode_steps=500,
-        total_timesteps=1000000,
-        domain='ant'))
+        env_class=MorphingAntEnv,
+        elements=4,
+        env_element=ANT_LEG,
+        env_element_lb=ANT_LEG_LOWER_BOUND,
+        env_element_ub=ANT_LEG_UPPER_BOUND,
+        oracle_weights='ant_oracle.pkl'))
 register(
-    'DogMorphology-v0',
+    'DKittyMorphology-v0',
     'design_bench.tasks.morphology_v0:MorphologyV0Task',
     kwargs=dict(
-        num_parallel=1,
-        num_gpus=1,
-        n_envs=4,
-        max_episode_steps=500,
-        total_timesteps=1000000,
-        domain='dog'))
+        env_class=MorphingDKittyEnv,
+        elements=4,
+        env_element=DKITTY_LEG,
+        env_element_lb=DKITTY_LEG_LOWER_BOUND,
+        env_element_ub=DKITTY_LEG_UPPER_BOUND,
+        oracle_weights='dkitty_oracle.pkl'))
