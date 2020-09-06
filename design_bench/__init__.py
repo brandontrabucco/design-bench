@@ -132,7 +132,10 @@ register(
         env_element=ANT_LEG,
         env_element_lb=ANT_LEG_LOWER_BOUND,
         env_element_ub=ANT_LEG_UPPER_BOUND,
-        oracle_weights='ant_oracle.pkl'))
+        oracle_weights='ant_oracle.pkl',
+        x_file='ant_morphology_X.npy',
+        y_file='ant_morphology_y.npy',
+        split_percentile=80))
 register(
     'DKittyMorphology-v0',
     'design_bench.tasks.morphology_v0:MorphologyV0Task',
@@ -142,4 +145,7 @@ register(
         env_element=DKITTY_LEG,
         env_element_lb=DKITTY_LEG_LOWER_BOUND,
         env_element_ub=DKITTY_LEG_UPPER_BOUND,
-        oracle_weights='dkitty_oracle.pkl'))
+        oracle_weights='dkitty_oracle.pkl',
+        x_file='dkitty_morphology_X.npy',
+        y_file='dkitty_morphology_y.npy',
+        split_percentile=80))

@@ -24,7 +24,8 @@ class MorphologyV0Task(Task):
                  env_element_ub=LEG_UPPER_BOUND,
                  oracle_weights='ant_oracle.pkl',
                  x_file='ant_morphology_X.npy',
-                 y_file='ant_morphology_y.npy'):
+                 y_file='ant_morphology_y.npy',
+                 split_percentile=80):
         """Load static datasets of weights and their corresponding
         expected returns from the disk
 
@@ -71,8 +72,11 @@ class MorphologyV0Task(Task):
         x = x.astype(np.float32)
         y = y.astype(np.float32).reshape([-1, 1])
 
-        self.x = x
-        self.y = y
+        # remove all samples above the qth percentile in the data set
+        split_temp = np.percentile(y[:, 0], split_percentile)
+        indices = np.where(y < split_temp)[0]
+        self.x = x[indices].astype(np.float32)
+        self.y = y[indices].astype(np.float32)
         self.score = np.vectorize(self.scalar_score, signature='(n)->(1)')
 
     def scalar_score(self,
