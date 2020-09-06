@@ -9,8 +9,13 @@ import matplotlib.pyplot as plt
 
 
 def score(z):
-    return design_bench.make('DKittyMorphology-v0') \
-                       .score(z[np.newaxis, :])[0, :]
+    t = design_bench.make('DKittyMorphology-v0')
+    s0 = t.score(z[np.newaxis, :])[0, :]
+    s1 = t.score(z[np.newaxis, :])[0, :]
+    s2 = t.score(z[np.newaxis, :])[0, :]
+    s3 = t.score(z[np.newaxis, :])[0, :]
+    s4 = t.score(z[np.newaxis, :])[0, :]
+    return (s0 + s1 + s2 + s3 + s4) / 5.
 
 
 if __name__ == '__main__':
