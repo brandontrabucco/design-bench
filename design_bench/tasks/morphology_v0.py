@@ -45,6 +45,7 @@ class MorphologyV0Task(Task):
             the particular morphology domain such as 'ant' or 'dog'
         """
 
+        self.score = np.vectorize(self.scalar_score, signature='(n)->(1)')
         maybe_download('12H-4AvzpMVmq7M7b7nD_RPu5GNeCuCbu',
                        os.path.join(DATA_DIR, 'ant_morphology_X.npy'))
         maybe_download('1uSF6oc7OlLGioe_sZQwmjibuRbPCYRGu',
@@ -75,9 +76,13 @@ class MorphologyV0Task(Task):
         # remove all samples above the qth percentile in the data set
         split_temp = np.percentile(y[:, 0], split_percentile)
         indices = np.where(y < split_temp)[0]
-        self.x = x[indices].astype(np.float32)
-        self.y = y[indices].astype(np.float32)
-        self.score = np.vectorize(self.scalar_score, signature='(n)->(1)')
+        x = x[indices].astype(np.float32)
+        y = y[indices].astype(np.float32)
+
+        self.m = np.mean(x, axis=0, keepdims=True)
+        self.st = np.std(x - self.m, axis=0, keepdims=True)
+        self.y = y
+        self.x = (x - self.m) / self.st
 
     def scalar_score(self,
                      x: np.ndarray) -> np.ndarray:
@@ -105,6 +110,7 @@ class MorphologyV0Task(Task):
             return np.tanh(np.split(h, 2)[0])
 
         # split x into a morphology supported by the environment
+        x = x * self.st[0] + self.m[0]
         design = [self.env_element(
             *np.clip(np.array(xi), self.env_element_lb, self.env_element_ub))
             for xi in np.split(x, self.elements)]
