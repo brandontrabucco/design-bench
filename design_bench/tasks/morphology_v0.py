@@ -77,11 +77,11 @@ class MorphologyV0Task(Task):
         split_temp = np.percentile(y[:, 0], split_percentile)
         indices = np.where(y < split_temp)[0]
         x = x[indices].astype(np.float32)
-        y = y[indices].astype(np.float32)
+        self.y = y[indices].astype(np.float32)
 
         self.m = np.mean(x, axis=0, keepdims=True)
         self.st = np.std(x - self.m, axis=0, keepdims=True)
-        self.y = y
+        self.st = np.where(np.equal(self.st, 0.0), 1.0, self.st)
         self.x = (x - self.m) / self.st
 
     def scalar_score(self,
