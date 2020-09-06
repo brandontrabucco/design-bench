@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     x = np.concatenate(DEFAULT_DESIGN, axis=0)[np.newaxis, :]
     x = np.tile(x, (5000, 1))
-    x = np.clip(x + np.random.normal(0, 0.015, x.shape) * size, lb, ub)
+    x = np.clip(x + np.random.normal(0, 0.025, x.shape) * size, lb, ub)
 
     pool = Pool(12)
     *xs, = x  # unstack the dataset
