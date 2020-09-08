@@ -107,13 +107,12 @@ class MorphologyV0Task(Task):
             h = h @ self.weights[4] + self.weights[5]
             return np.tanh(np.split(h, 2)[0])
 
-        # split x into a morphology supported by the environment
-        x = x
-        design = [self.env_element(*np.clip(np.array(xi), self.lb, self.ub))
-                  for xi in np.split(x, self.elements)]
+        # convert vectors to morphologies
+        env = self.env_class(expose_design=False, fixed_design=[
+            self.env_element(*np.clip(np.array(xi), self.lb, self.ub))
+            for xi in np.split(x, self.elements)])
 
-        # build an agent with this morphology in sim
-        env = self.env_class(expose_design=False, fixed_design=design)
+        # do many rollouts using a pretrained agent
         average_returns = []
         for i in range(self.num_rollouts):
             obs = env.reset()
@@ -125,5 +124,4 @@ class MorphologyV0Task(Task):
                     break
 
         # we average here so as to reduce randomness
-        return np.mean(
-            average_returns)
+        return np.mean(average_returns).reshape([1])
