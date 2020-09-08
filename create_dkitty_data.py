@@ -21,8 +21,8 @@ def log_result(map_return):
     if len(final_xs) % (len(x) // 100) == 0:
         xs = np.stack(final_xs, axis=0)
         ys = np.stack(final_ys, axis=0)
-        np.save('ant_morphology_X.npy', xs)
-        np.save('ant_morphology_y.npy', ys)
+        np.save('dkitty_morphology_X.npy', xs)
+        np.save('dkitty_morphology_y.npy', ys)
 
         mean = np.mean(ys)
         stdv = np.std(ys - mean)
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('DKittyData')
     parser.add_argument('--cores', type=int, default=1)
     parser.add_argument('--num-samples', type=int, default=20)
-    parser.add_argument('--noise', type=float, default=.01)
+    parser.add_argument('--noise', type=float, default=.02)
     args = parser.parse_args()
 
     lb = np.concatenate([LEG_LOWER_BOUND] * 4, axis=0)[np.newaxis, :]
