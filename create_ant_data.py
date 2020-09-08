@@ -21,8 +21,8 @@ def log_result(map_return):
     if len(final_xs) % max(1, len(x) // 100) == 0:
         xs = np.stack(final_xs, axis=0)
         ys = np.stack(final_ys, axis=0)
-        np.save('ant_morphology_X.npy', xs)
-        np.save('ant_morphology_y.npy', ys)
+        np.save(f'{args.out}_X.npy', xs)
+        np.save(f'{args.out}_y.npy', ys)
 
         mean = np.mean(ys)
         stdv = np.std(ys - mean)
@@ -38,6 +38,7 @@ if __name__ == '__main__':
     parser.add_argument('--cores', type=int, default=1)
     parser.add_argument('--num-samples', type=int, default=20)
     parser.add_argument('--noise', type=float, default=.015)
+    parser.add_argument('--out', type=str, default='ant_morphology')
     args = parser.parse_args()
 
     lb = np.concatenate([LEG_LOWER_BOUND] * 4, axis=0)[np.newaxis, :]
@@ -60,5 +61,5 @@ if __name__ == '__main__':
     # save the final results to the disk
     pool.close()
     pool.join()
-    np.save('ant_morphology_X.npy', np.stack(final_xs, axis=0))
-    np.save('ant_morphology_y.npy', np.stack(final_ys, axis=0))
+    np.save(f'{args.out}_X.npy', np.stack(final_xs, axis=0))
+    np.save(f'{args.out}_y.npy', np.stack(final_ys, axis=0))
