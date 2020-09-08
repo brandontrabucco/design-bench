@@ -41,6 +41,7 @@ if __name__ == '__main__':
     parser.add_argument('--out', type=str, default='dkitty_morphology')
     args = parser.parse_args()
 
+    np.random.seed(np.random.randint(999999))
     lb = np.concatenate([LEG_LOWER_BOUND] * 4, axis=0)[np.newaxis, :]
     ub = np.concatenate([LEG_UPPER_BOUND] * 4, axis=0)[np.newaxis, :]
     size = (ub - lb) / 2.0
