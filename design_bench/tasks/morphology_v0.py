@@ -24,7 +24,9 @@ class MorphologyV0Task(Task):
                  oracle_weights='ant_oracle.pkl',
                  x_file='ant_morphology_X.npy',
                  y_file='ant_morphology_y.npy',
-                 split_percentile=80):
+                 split_percentile=80,
+                 num_rollouts=5,
+                 rollout_horizon=1000):
         """Load static datasets of weights and their corresponding
         expected returns from the disk
 
@@ -61,8 +63,10 @@ class MorphologyV0Task(Task):
         self.env_class = env_class
         self.elements = elements
         self.env_element = env_element
-        self.env_element_lb = env_element_lb
-        self.env_element_ub = env_element_ub
+        self.lb = env_element_lb
+        self.ub = env_element_ub
+        self.num_rollouts = num_rollouts
+        self.rollout_horizon = rollout_horizon
         with open(os.path.join(
                 DATA_DIR, oracle_weights), 'rb') as f:
             self.weights = pkl.load(f)
@@ -105,19 +109,21 @@ class MorphologyV0Task(Task):
 
         # split x into a morphology supported by the environment
         x = x
-        design = [self.env_element(
-            *np.clip(np.array(xi), self.env_element_lb, self.env_element_ub))
-            for xi in np.split(x, self.elements)]
+        design = [self.env_element(*np.clip(np.array(xi), self.lb, self.ub))
+                  for xi in np.split(x, self.elements)]
 
         # build an agent with this morphology in sim
         env = self.env_class(expose_design=False, fixed_design=design)
-        obs = env.reset()
-        ret = np.zeros([1], dtype=np.float32)
+        average_returns = []
+        for i in range(self.num_rollouts):
+            obs = env.reset()
+            average_returns.append(np.zeros([], dtype=np.float32))
+            for t in range(self.rollout_horizon):
+                obs, rew, done, info = env.step(mlp_policy(obs))
+                average_returns[-1] += rew.astype(np.float32)
+                if done:
+                    break
 
-        # perform a single roll out for quick evaluation
-        for i in range(1000):
-            obs, rew, done, info = env.step(mlp_policy(obs))
-            ret += rew.astype(np.float32)
-            if done:
-                break
-        return ret
+        # we average here so as to reduce randomness
+        return np.mean(
+            average_returns)

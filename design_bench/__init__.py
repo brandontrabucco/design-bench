@@ -135,7 +135,9 @@ register(
         oracle_weights='ant_oracle.pkl',
         x_file='ant_morphology_X.npy',
         y_file='ant_morphology_y.npy',
-        split_percentile=60))
+        split_percentile=80,
+        num_rollouts=5,
+        rollout_horizon=1000))
 register(
     'DKittyMorphology-v0',
     'design_bench.tasks.morphology_v0:MorphologyV0Task',
@@ -148,4 +150,6 @@ register(
         oracle_weights='dkitty_oracle.pkl',
         x_file='dkitty_morphology_X.npy',
         y_file='dkitty_morphology_y.npy',
-        split_percentile=80))
+        split_percentile=80,
+        num_rollouts=5,
+        rollout_horizon=1000))
