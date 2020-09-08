@@ -9,12 +9,7 @@ import argparse
 
 def score(design):
     task = design_bench.make('DKittyMorphology-v0')
-    s0 = task.score(design[np.newaxis, :])[0, :]
-    s1 = task.score(design[np.newaxis, :])[0, :]
-    s2 = task.score(design[np.newaxis, :])[0, :]
-    s3 = task.score(design[np.newaxis, :])[0, :]
-    s4 = task.score(design[np.newaxis, :])[0, :]
-    return design, (s0 + s1 + s2 + s3 + s4) / 5.
+    return design, task.score(design[np.newaxis, :])[0, :]
 
 
 def log_result(map_return):

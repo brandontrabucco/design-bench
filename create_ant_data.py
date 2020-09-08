@@ -9,12 +9,7 @@ import argparse
 
 def score(design):
     task = design_bench.make('AntMorphology-v0')
-    s0 = task.score(design[np.newaxis, :])[0, :]
-    s1 = task.score(design[np.newaxis, :])[0, :]
-    s2 = task.score(design[np.newaxis, :])[0, :]
-    s3 = task.score(design[np.newaxis, :])[0, :]
-    s4 = task.score(design[np.newaxis, :])[0, :]
-    return design, (s0 + s1 + s2 + s3 + s4) / 5.
+    return design, task.score(design[np.newaxis, :])[0, :]
 
 
 def log_result(map_return):
@@ -42,7 +37,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('AntData')
     parser.add_argument('--cores', type=int, default=1)
     parser.add_argument('--num-samples', type=int, default=20)
-    parser.add_argument('--noise', type=float, default=.02)
+    parser.add_argument('--noise', type=float, default=.015)
     args = parser.parse_args()
 
     lb = np.concatenate([LEG_LOWER_BOUND] * 4, axis=0)[np.newaxis, :]
