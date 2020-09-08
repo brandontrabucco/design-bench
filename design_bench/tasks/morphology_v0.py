@@ -2,7 +2,6 @@ from design_bench import DATA_DIR
 from design_bench import maybe_download
 from design_bench.task import Task
 from morphing_agents.mujoco.ant.env import MorphingAntEnv
-from morphing_agents.mujoco.ant.designs import DEFAULT_DESIGN
 from morphing_agents.mujoco.ant.elements import LEG
 from morphing_agents.mujoco.ant.elements import LEG_LOWER_BOUND
 from morphing_agents.mujoco.ant.elements import LEG_UPPER_BOUND
@@ -76,13 +75,8 @@ class MorphologyV0Task(Task):
         # remove all samples above the qth percentile in the data set
         split_temp = np.percentile(y[:, 0], split_percentile)
         indices = np.where(y < split_temp)[0]
-        x = x[indices].astype(np.float32)
+        self.x = x[indices].astype(np.float32)
         self.y = y[indices].astype(np.float32)
-
-        self.m = np.mean(x, axis=0, keepdims=True)
-        self.st = np.std(x - self.m, axis=0, keepdims=True)
-        self.st = np.where(np.equal(self.st, 0.0), 1.0, self.st)
-        self.x = (x - self.m) / self.st
 
     def scalar_score(self,
                      x: np.ndarray) -> np.ndarray:
@@ -110,7 +104,7 @@ class MorphologyV0Task(Task):
             return np.tanh(np.split(h, 2)[0])
 
         # split x into a morphology supported by the environment
-        x = x * self.st[0] + self.m[0]
+        x = x
         design = [self.env_element(
             *np.clip(np.array(xi), self.env_element_lb, self.env_element_ub))
             for xi in np.split(x, self.elements)]

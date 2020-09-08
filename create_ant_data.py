@@ -4,40 +4,66 @@ from morphing_agents.mujoco.ant.elements import LEG_UPPER_BOUND
 from multiprocessing import Pool
 import design_bench
 import numpy as np
-import tqdm
-import matplotlib.pyplot as plt
+import argparse
 
 
-def score(z):
-    t = design_bench.make('AntMorphology-v0')
-    s0 = t.score(z[np.newaxis, :])[0, :]
-    s1 = t.score(z[np.newaxis, :])[0, :]
-    s2 = t.score(z[np.newaxis, :])[0, :]
-    s3 = t.score(z[np.newaxis, :])[0, :]
-    s4 = t.score(z[np.newaxis, :])[0, :]
-    return (s0 + s1 + s2 + s3 + s4) / 5.
+def score(design):
+    task = design_bench.make('AntMorphology-v0')
+    s0 = task.score(design[np.newaxis, :])[0, :]
+    s1 = task.score(design[np.newaxis, :])[0, :]
+    s2 = task.score(design[np.newaxis, :])[0, :]
+    s3 = task.score(design[np.newaxis, :])[0, :]
+    s4 = task.score(design[np.newaxis, :])[0, :]
+    return design, (s0 + s1 + s2 + s3 + s4) / 5.
+
+
+def log_result(map_return):
+    inner_x, inner_y = map_return
+    final_xs.append(inner_x)
+    final_ys.append(inner_y)
+
+    # only save every percent of completion
+    if len(final_xs) % max(1, len(x) // 100) == 0:
+        xs = np.stack(final_xs, axis=0)
+        ys = np.stack(final_ys, axis=0)
+        np.save('ant_morphology_X.npy', xs)
+        np.save('ant_morphology_y.npy', ys)
+
+        mean = np.mean(ys)
+        stdv = np.std(ys - mean)
+        print('{:.0%} done: {} {}'.format(
+            len(final_ys) / len(x),
+            mean,
+            stdv))
 
 
 if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser('AntData')
+    parser.add_argument('--cores', type=int, default=1)
+    parser.add_argument('--num-samples', type=int, default=20)
+    parser.add_argument('--noise', type=float, default=.02)
+    args = parser.parse_args()
 
     lb = np.concatenate([LEG_LOWER_BOUND] * 4, axis=0)[np.newaxis, :]
     ub = np.concatenate([LEG_UPPER_BOUND] * 4, axis=0)[np.newaxis, :]
     size = (ub - lb) / 2.0
 
+    # perturb the gold standard morphology
     x = np.concatenate(DEFAULT_DESIGN, axis=0)[np.newaxis, :]
-    x = np.tile(x, (5000, 1))
-    x = np.clip(x + np.random.normal(0, 0.015, x.shape) * size, lb, ub)
+    x = np.tile(x, (args.num_samples, 1))
+    x = np.clip(x + np.random.normal(0, args.noise, x.shape) * size, lb, ub)
 
-    pool = Pool(12)
-    *xs, = x  # unstack the dataset
-    ys = pool.map(score, tqdm.tqdm(xs))
+    final_xs = []
+    final_ys = []
 
-    y = np.stack(ys, axis=0)
-    np.save('ant_morphology_X.npy', x)
-    np.save('ant_morphology_y.npy', y)
+    # apply the scoring function asynchronously
+    pool = Pool(args.cores)
+    for x_i in x:
+        pool.apply_async(score, args=[x_i], callback=log_result)
 
-    plt.hist(y, 1000)
-    plt.title('Coverage Of Ant Morphology Data')
-    plt.xlabel('Average Return')
-    plt.ylabel('Number Of Examples')
-    plt.show()
+    # save the final results to the disk
+    pool.close()
+    pool.join()
+    np.save('ant_morphology_X.npy', np.stack(final_xs, axis=0))
+    np.save('ant_morphology_y.npy', np.stack(final_ys, axis=0))
