@@ -79,8 +79,8 @@ class MorphologyV0Task(Task):
         # remove all samples above the qth percentile in the data set
         split_temp = np.percentile(y[:, 0], split_percentile)
         indices = np.where(y < split_temp)[0]
-        x = x[indices].astype(np.float32)
-        y = y[indices].astype(np.float32)
+        self.x = x[indices].astype(np.float32)
+        self.y = y[indices].astype(np.float32)
 
     def scalar_score(self,
                      x: np.ndarray) -> np.ndarray:
