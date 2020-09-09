@@ -82,13 +82,6 @@ class MorphologyV0Task(Task):
         x = x[indices].astype(np.float32)
         y = y[indices].astype(np.float32)
 
-        # normalize the x values
-        self.m = np.mean(x, axis=0, keepdims=True)
-        self.st = np.std(x - self.m, axis=0, keepdims=True)
-        self.st = np.where(np.equal(self.st, 0), 1.0, self.st)
-        self.y = y
-        self.x = (x - self.m) / self.st
-
     def scalar_score(self,
                      x: np.ndarray) -> np.ndarray:
         """Calculates a score for the provided tensor x using a ground truth
@@ -115,7 +108,6 @@ class MorphologyV0Task(Task):
             return np.tanh(np.split(h, 2)[0])
 
         # convert vectors to morphologies
-        x = x * self.st[0] + self.m[0]
         env = self.env_class(expose_design=False, fixed_design=[
             self.env_element(*np.clip(np.array(xi), self.lb, self.ub))
             for xi in np.split(x, self.elements)])

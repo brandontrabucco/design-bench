@@ -88,7 +88,7 @@ class SuperconductorTask(Task):
 
         self.m = np.mean(x, axis=0, keepdims=True)
         self.st = np.std(x - self.m, axis=0, keepdims=True)
-        self.st = np.where(np.equal(self.st, 0), 1.0, self.st)
+
         self.y = y
         self.x = (x - self.m) / self.st
 
