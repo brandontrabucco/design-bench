@@ -24,9 +24,9 @@ class MorphologyV0Task(Task):
                  oracle_weights='ant_oracle.pkl',
                  x_file='ant_morphology_X.npy',
                  y_file='ant_morphology_y.npy',
-                 split_percentile=80,
-                 num_rollouts=5,
-                 rollout_horizon=1000):
+                 split_percentile=60,
+                 num_rollouts=16,
+                 rollout_horizon=100):
         """Load static datasets of weights and their corresponding
         expected returns from the disk
 
