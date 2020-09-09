@@ -18,7 +18,7 @@ def log_result(map_return):
     final_ys.append(inner_y)
 
     # only save every percent of completion
-    if len(final_xs) % (len(x) // 100) == 0:
+    if len(final_xs) % max(1, len(x) // 100) == 0:
         xs = np.stack(final_xs, axis=0)
         ys = np.stack(final_ys, axis=0)
         np.save(f'{args.out}_X.npy', xs)
