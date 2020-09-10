@@ -5,15 +5,13 @@ from morphing_agents.mujoco.ant.env import MorphingAntEnv
 from morphing_agents.mujoco.ant.elements import LEG
 from morphing_agents.mujoco.ant.elements import LEG_LOWER_BOUND
 from morphing_agents.mujoco.ant.elements import LEG_UPPER_BOUND
+from multiprocessing import Pool
 import numpy as np
 import os
 import pickle as pkl
 
 
 class MorphologyV0Task(Task):
-
-    def score(self, x):
-        return NotImplemented
 
     def __init__(self,
                  env_class=MorphingAntEnv,
@@ -26,7 +24,8 @@ class MorphologyV0Task(Task):
                  y_file='ant_morphology_y.npy',
                  split_percentile=60,
                  num_rollouts=16,
-                 rollout_horizon=100):
+                 rollout_horizon=100,
+                 num_parallel=8):
         """Load static datasets of weights and their corresponding
         expected returns from the disk
 
@@ -46,7 +45,7 @@ class MorphologyV0Task(Task):
             the particular morphology domain such as 'ant' or 'dog'
         """
 
-        self.score = np.vectorize(self.scalar_score, signature='(n)->(1)')
+        self.pool = Pool(num_parallel)
         maybe_download('12H-4AvzpMVmq7M7b7nD_RPu5GNeCuCbu',
                        os.path.join(DATA_DIR, 'ant_morphology_X.npy'))
         maybe_download('1uSF6oc7OlLGioe_sZQwmjibuRbPCYRGu',
@@ -65,6 +64,7 @@ class MorphologyV0Task(Task):
         self.env_element = env_element
         self.lb = env_element_lb
         self.ub = env_element_ub
+
         self.num_rollouts = num_rollouts
         self.rollout_horizon = rollout_horizon
         with open(os.path.join(
@@ -82,8 +82,8 @@ class MorphologyV0Task(Task):
         self.x = x[indices].astype(np.float32)
         self.y = y[indices].astype(np.float32)
 
-    def scalar_score(self,
-                     x: np.ndarray) -> np.ndarray:
+    def score(self,
+              x: np.ndarray) -> np.ndarray:
         """Calculates a score for the provided tensor x using a ground truth
         oracle function (the goal of the task is to maximize this)
 
@@ -100,28 +100,70 @@ class MorphologyV0Task(Task):
             in the function argument
         """
 
-        # create a policy forward pass in numpy
-        def mlp_policy(h):
-            h = np.maximum(0.0, h @ self.weights[0] + self.weights[1])
-            h = np.maximum(0.0, h @ self.weights[2] + self.weights[3])
-            h = h @ self.weights[4] + self.weights[5]
-            return np.tanh(np.split(h, 2)[0])
+        return np.stack(
+            self.pool.map(scalar_score, [
+                (self.weights,
+                 self.env_class,
+                 self.env_element,
+                 self.ub,
+                 self.lb,
+                 self.elements,
+                 self.num_rollouts,
+                 self.rollout_horizon,
+                 xi) for xi in x]), axis=0)
 
-        # convert vectors to morphologies
-        env = self.env_class(expose_design=False, fixed_design=[
-            self.env_element(*np.clip(np.array(xi), self.lb, self.ub))
-            for xi in np.split(x, self.elements)])
 
-        # do many rollouts using a pretrained agent
-        average_returns = []
-        for i in range(self.num_rollouts):
-            obs = env.reset()
-            average_returns.append(np.zeros([], dtype=np.float32))
-            for t in range(self.rollout_horizon):
-                obs, rew, done, info = env.step(mlp_policy(obs))
-                average_returns[-1] += rew.astype(np.float32)
-                if done:
-                    break
+def scalar_score(args):
+    """Calculates a score for the provided tensor x using a ground truth
+    oracle function (the goal of the task is to maximize this)
 
-        # we average here so as to reduce randomness
-        return np.mean(average_returns).reshape([1])
+    Args:
+
+    x: np.ndarray
+        a batch of sampled designs that will be evaluated by
+        an oracle score function
+
+    Returns:
+
+    scores: np.ndarray
+        a batch of scores that correspond to the x values provided
+        in the function argument
+    """
+
+    # unpack the list of args
+    (weights,
+     env_class,
+     env_element,
+     ub,
+     lb,
+     elements,
+     num_rollouts,
+     rollout_horizon,
+     x) = args
+
+    # create a policy forward pass in numpy
+    def mlp_policy(h):
+        h = np.maximum(0.0, h @ weights[0] + weights[1])
+        h = np.maximum(0.0, h @ weights[2] + weights[3])
+        return np.tanh(np.split(
+            h @ weights[4] + weights[5], 2)[0])
+
+    # convert vectors to morphologies
+    env = env_class(expose_design=False, fixed_design=[
+        env_element(*np.clip(np.array(xi), lb, ub))
+        for xi in np.split(x, elements)])
+
+    # do many rollouts using a pretrained agent
+    average_returns = []
+    for i in range(num_rollouts):
+        obs = env.reset()
+        average_returns.append(np.zeros([], dtype=np.float32))
+        for t in range(rollout_horizon):
+            obs, rew, done, info = env.step(mlp_policy(obs))
+            average_returns[-1] += rew.astype(np.float32)
+            if done:
+                break
+
+    # we average here so as to reduce randomness
+    return np.mean(
+        average_returns).reshape([1])

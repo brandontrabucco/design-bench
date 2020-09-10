@@ -137,7 +137,8 @@ register(
         y_file='ant_morphology_y.npy',
         split_percentile=60,
         num_rollouts=16,
-        rollout_horizon=100))
+        rollout_horizon=100,
+        num_parallel=8))
 register(
     'DKittyMorphology-v0',
     'design_bench.tasks.morphology_v0:MorphologyV0Task',
@@ -152,4 +153,5 @@ register(
         y_file='dkitty_morphology_y.npy',
         split_percentile=60,
         num_rollouts=16,
-        rollout_horizon=100))
+        rollout_horizon=100,
+        num_parallel=8))
