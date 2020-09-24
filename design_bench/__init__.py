@@ -79,29 +79,9 @@ register(
     'design_bench.tasks.superconductor:SuperconductorTask',
     kwargs=dict(split_percentile=80))
 register(
-    'MoleculeActivity688150-v0',
-    'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
-    kwargs=dict(target_assay=688150,
-                split_percentile=80))
-register(
-    'MoleculeActivity600886-v0',
-    'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
-    kwargs=dict(target_assay=600886,
-                split_percentile=80))
-register(
-    'MoleculeActivity600885-v0',
+    'MoleculeActivity-v0',
     'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
     kwargs=dict(target_assay=600885,
-                split_percentile=80))
-register(
-    'MoleculeActivity688537-v0',
-    'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
-    kwargs=dict(target_assay=688537,
-                split_percentile=80))
-register(
-    'MoleculeActivity688597-v0',
-    'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
-    kwargs=dict(target_assay=688597,
                 split_percentile=80))
 register(
     'HopperController-v0',
@@ -135,7 +115,7 @@ register(
         oracle_weights='ant_oracle.pkl',
         x_file='ant_morphology_X.npy',
         y_file='ant_morphology_y.npy',
-        split_percentile=60,
+        split_percentile=20,
         num_rollouts=16,
         rollout_horizon=100,
         num_parallel=8))
@@ -151,7 +131,7 @@ register(
         oracle_weights='dkitty_oracle.pkl',
         x_file='dkitty_morphology_X.npy',
         y_file='dkitty_morphology_y.npy',
-        split_percentile=60,
+        split_percentile=40,
         num_rollouts=16,
         rollout_horizon=100,
         num_parallel=8))
