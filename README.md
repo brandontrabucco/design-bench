@@ -7,7 +7,7 @@ This repository contains several design benchmarks for model-based optimization.
 Current model-based design benchmarks (circa 2020) typically vary from paper-to-paper. For example, tasks employed by biologists differ strongly from those of interest to roboticists. We provide a common interface for tasks that span a wide-range of disciplines, from materials science, to reinforcement learning. We list these tasks below.
 
 * __Biology__: Protein Fluorescence: `design_bench.make('GFP-v0')`
-* __Chemistry__: Molecule Activity: `design_bench.make('MoleculeActivity-v0')`
+* __Chemistry__: Molecule Activity: `design_bench.make('MoleculeActivity600885-v0')`
 * __Materials Science__: Superconductor Critical Temperature: `design_bench.make('Superconductor-v0')`
 * __Robotics__: Hopper Controller: `design_bench.make('HopperController-v0')`
 * __Robotics__: Ant Morphology: `design_bench.make('AntMorphology-v0')`
@@ -22,8 +22,7 @@ In addition, the following debugging tasks are provided.
 You can install our benchmarks with the following command.
 
 ```bash
-pip install -e git+git://github.com/brandontrabucco/design-bench.git#egg=design_bench
-pip install -e git+git://github.com/brandontrabucco/morphing-agents.git#egg=morphing_agents
+pip install design-bench
 ```
 
 ## Usage
@@ -35,5 +34,5 @@ import design_bench
 task = design_bench.make('HopperController-v0')
 x = task.x[:10]
 y = task.y[:10]
-oracle_y = task.score(designs)
+oracle_y = task.score(x)
 ```
