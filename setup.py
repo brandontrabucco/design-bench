@@ -1,21 +1,42 @@
-from setuptools import find_packages
 from setuptools import setup
 
 
-PACKAGES = ['numpy',
-            'pandas',
-            'gym[mujoco]',
-            'requests',
-            'scikit-learn',
-            'matplotlib',
-            'tqdm']
+INSTALL_REQUIRES = [
+    'numpy',
+    'pandas',
+    'gym[mujoco]',
+    'requests',
+    'scikit-learn',
+    'morphing-agents']
 
 
-setup(name='design-bench',
-      description='Design Benchmarks for Model-Based Optimization',
-      license='MIT',
-      version='0.1',
-      zip_safe=True,
-      include_package_data=True,
-      packages=find_packages(),
-      install_requires=PACKAGES)
+CLASSIFIERS = [
+    'Intended Audience :: Developers',
+    'Intended Audience :: Science/Research',
+    'Topic :: Scientific/Engineering',
+    'Topic :: Scientific/Engineering :: Artificial Intelligence',
+    'Topic :: Scientific/Engineering :: Mathematics',
+    'Topic :: Software Development',
+    'Topic :: Software Development :: Libraries',
+    'Topic :: Software Development :: Libraries :: Python Modules',
+    'License :: OSI Approved :: MIT License',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.5',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8']
+
+
+setup(
+    name='design-bench',
+    packages=['design_bench'],
+    version='1.0',
+    license='MIT',
+    description='Design-Bench: Benchmarks for Data-Driven Offline Model-Based Optimization',
+    author='Brandon Trabucco',
+    author_email='brandon@btrabucco.com',
+    url='https://github.com/brandontrabucco/design-bench',
+    download_url='https://github.com/brandontrabucco/design-bench/archive/v1.tar.gz',
+    keywords=['Offline', 'Benchmark', 'Model-Based Optimization'],
+    install_requires=INSTALL_REQUIRES,
+    classifiers=CLASSIFIERS)
