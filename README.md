@@ -9,7 +9,6 @@ Current model-based design benchmarks (circa 2020) typically vary from paper-to-
 * __Biology__: Protein Fluorescence: `design_bench.make('GFP-v0')`
 * __Chemistry__: Molecule Activity: `design_bench.make('MoleculeActivity-v0')`
 * __Materials Science__: Superconductor Critical Temperature: `design_bench.make('Superconductor-v0')`
-
 * __Robotics__: Hopper Controller: `design_bench.make('HopperController-v0')`
 * __Robotics__: Ant Morphology: `design_bench.make('AntMorphology-v0')`
 * __Robotics__: DKitty Morphology: `design_bench.make('DKittyMorphology-v0')`
