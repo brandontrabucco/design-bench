@@ -1,13 +1,5 @@
 from design_bench.registration import registry, register, make, spec
 from design_bench.task import Task
-from morphing_agents.mujoco.ant.env import MorphingAntEnv
-from morphing_agents.mujoco.ant.elements import LEG as ANT_LEG
-from morphing_agents.mujoco.ant.elements import LEG_LOWER_BOUND as ANT_LEG_LOWER_BOUND
-from morphing_agents.mujoco.ant.elements import LEG_UPPER_BOUND as ANT_LEG_UPPER_BOUND
-from morphing_agents.mujoco.dkitty.env import MorphingDKittyEnv
-from morphing_agents.mujoco.dkitty.elements import LEG as DKITTY_LEG
-from morphing_agents.mujoco.dkitty.elements import LEG_LOWER_BOUND as DKITTY_LEG_LOWER_BOUND
-from morphing_agents.mujoco.dkitty.elements import LEG_UPPER_BOUND as DKITTY_LEG_UPPER_BOUND
 import requests
 import zipfile
 import os
@@ -62,7 +54,6 @@ def save_response(response, destination):
 DATA_DIR = os.path.join(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))), 'data')
 
-
 register(
     'Quadratic-v0',
     'design_bench.tasks.quadratic:QuadraticTask',
@@ -71,67 +62,102 @@ register(
         oracle_noise_std=0.2,
         dataset_size=100,
         percentile=80))
+
 register(
     'GFP-v0',
     'design_bench.tasks.gfp:GFPTask')
+
 register(
     'Superconductor-v0',
     'design_bench.tasks.superconductor:SuperconductorTask',
     kwargs=dict(split_percentile=80))
+
 register(
     'MoleculeActivity-v0',
     'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
     kwargs=dict(target_assay=600885,
                 split_percentile=80))
-register(
-    'HopperController-v0',
-    'design_bench.tasks.controller_v0:ControllerV0Task',
-    kwargs=dict(
-        obs_dim=11,
-        action_dim=3,
-        hidden_dim=64,
-        env_name='Hopper-v2',
-        x_file='hopper_controller_v0_X.npy',
-        y_file='hopper_controller_v0_y.npy'))
-register(
-    'HopperController-v1',
-    'design_bench.tasks.controller_v1:ControllerV1Task',
-    kwargs=dict(
-        obs_dim=11,
-        action_dim=3,
-        hidden_dim=256,
-        env_name='Hopper-v2',
-        x_file='hopper_controller_v1_X.npy',
-        y_file='hopper_controller_v1_y.npy'))
-register(
-    'AntMorphology-v0',
-    'design_bench.tasks.morphology_v0:MorphologyV0Task',
-    kwargs=dict(
-        env_class=MorphingAntEnv,
-        elements=4,
-        env_element=ANT_LEG,
-        env_element_lb=ANT_LEG_LOWER_BOUND,
-        env_element_ub=ANT_LEG_UPPER_BOUND,
-        oracle_weights='ant_oracle.pkl',
-        x_file='ant_morphology_X.npy',
-        y_file='ant_morphology_y.npy',
-        split_percentile=20,
-        num_rollouts=16,
-        rollout_horizon=100,
-        num_parallel=8))
-register(
-    'DKittyMorphology-v0',
-    'design_bench.tasks.morphology_v0:MorphologyV0Task',
-    kwargs=dict(
-        env_class=MorphingDKittyEnv,
-        elements=4,
-        env_element=DKITTY_LEG,
-        env_element_lb=DKITTY_LEG_LOWER_BOUND,
-        env_element_ub=DKITTY_LEG_UPPER_BOUND,
-        oracle_weights='dkitty_oracle.pkl',
-        x_file='dkitty_morphology_X.npy',
-        y_file='dkitty_morphology_y.npy',
-        split_percentile=40,
-        num_rollouts=16,
-        rollout_horizon=100,
-        num_parallel=8))
+
+try:
+
+    import mujoco_py  # test that MuJoCo is installed
+    import morphing_agents  # test that Morphing-Agents is installed
+    from morphing_agents.mujoco.ant.env \
+        import MorphingAntEnv
+    from morphing_agents.mujoco.ant.elements \
+        import LEG as ANT_LEG
+    from morphing_agents.mujoco.ant.elements \
+        import LEG_LOWER_BOUND as ANT_LEG_LOWER_BOUND
+    from morphing_agents.mujoco.ant.elements \
+        import LEG_UPPER_BOUND as ANT_LEG_UPPER_BOUND
+    from morphing_agents.mujoco.dkitty.env \
+        import MorphingDKittyEnv
+    from morphing_agents.mujoco.dkitty.elements \
+        import LEG as DKITTY_LEG
+    from morphing_agents.mujoco.dkitty.elements \
+        import LEG_LOWER_BOUND as DKITTY_LEG_LOWER_BOUND
+    from morphing_agents.mujoco.dkitty.elements \
+        import LEG_UPPER_BOUND as DKITTY_LEG_UPPER_BOUND
+
+    register(
+        'HopperController-v0',
+        'design_bench.tasks.controller_v0:ControllerV0Task',
+        kwargs=dict(
+            obs_dim=11,
+            action_dim=3,
+            hidden_dim=64,
+            env_name='Hopper-v2',
+            x_file='hopper_controller_v0_X.npy',
+            y_file='hopper_controller_v0_y.npy'))
+
+    register(
+        'HopperController-v1',
+        'design_bench.tasks.controller_v1:ControllerV1Task',
+        kwargs=dict(
+            obs_dim=11,
+            action_dim=3,
+            hidden_dim=256,
+            env_name='Hopper-v2',
+            x_file='hopper_controller_v1_X.npy',
+            y_file='hopper_controller_v1_y.npy'))
+
+    register(
+        'AntMorphology-v0',
+        'design_bench.tasks.morphology_v0:MorphologyV0Task',
+        kwargs=dict(
+            env_class=MorphingAntEnv,
+            elements=4,
+            env_element=ANT_LEG,
+            env_element_lb=ANT_LEG_LOWER_BOUND,
+            env_element_ub=ANT_LEG_UPPER_BOUND,
+            oracle_weights='ant_oracle.pkl',
+            x_file='ant_morphology_X.npy',
+            y_file='ant_morphology_y.npy',
+            split_percentile=20,
+            num_rollouts=16,
+            rollout_horizon=100,
+            num_parallel=8))
+
+    register(
+        'DKittyMorphology-v0',
+        'design_bench.tasks.morphology_v0:MorphologyV0Task',
+        kwargs=dict(
+            env_class=MorphingDKittyEnv,
+            elements=4,
+            env_element=DKITTY_LEG,
+            env_element_lb=DKITTY_LEG_LOWER_BOUND,
+            env_element_ub=DKITTY_LEG_UPPER_BOUND,
+            oracle_weights='dkitty_oracle.pkl',
+            x_file='dkitty_morphology_X.npy',
+            y_file='dkitty_morphology_y.npy',
+            split_percentile=40,
+            num_rollouts=16,
+            rollout_horizon=100,
+            num_parallel=8))
+
+except ImportError as e:
+
+    print('Skipping registration of: '
+          'HopperController-v0, '
+          'AntMorphology-v0, '
+          'DKittyMorphology-v0')

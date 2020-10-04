@@ -1,4 +1,4 @@
-# Design Benchmarks for Model-Based Optimization
+# Benchmarks for Data-Driven Offline Model-Based Optimization
 
 This repository contains several design benchmarks for model-based optimization. Our hope is that a common interface and stable nomenclature will encourage future research and comparability in model-based design.
 
@@ -22,6 +22,12 @@ In addition, the following debugging tasks are provided.
 You can install our benchmarks with the following command.
 
 ```bash
+pip install design-bench[all]
+```
+
+If you do not have a MuJoCo License you can install the base benchmark.
+
+```bash
 pip install design-bench
 ```
 
@@ -31,7 +37,7 @@ Every task inherits from the `design_bench.task.Task` class. This class provides
 
 ```python
 import design_bench
-task = design_bench.make('HopperController-v0')
+task = design_bench.make('Superconductor-v0')
 x = task.x[:10]
 y = task.y[:10]
 oracle_y = task.score(x)
