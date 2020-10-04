@@ -1,13 +1,14 @@
+from setuptools import find_packages
 from setuptools import setup
 
 
-INSTALL_REQUIRES = [
-    'numpy',
-    'pandas',
-    'gym[mujoco]',
-    'requests',
-    'scikit-learn',
-    'morphing-agents']
+F = 'README.md'
+with open(F, 'r') as readme:
+    LONG_DESCRIPTION = readme.read()
+
+
+INSTALL_REQUIRES = ['numpy', 'pandas', 'requests', 'scikit-learn']
+EXTRA_REQUIRES = ['gym[mujoco]', 'morphing-agents']
 
 
 CLASSIFIERS = [
@@ -29,14 +30,17 @@ CLASSIFIERS = [
 
 setup(
     name='design-bench',
-    packages=['design_bench'],
+    packages=find_packages(include=['design_bench', 'design_bench.*']),
     version='1.0',
     license='MIT',
     description='Design-Bench: Benchmarks for Data-Driven Offline Model-Based Optimization',
+    long_description=LONG_DESCRIPTION,
+    long_description_content_type='text/markdown',
     author='Brandon Trabucco',
     author_email='brandon@btrabucco.com',
     url='https://github.com/brandontrabucco/design-bench',
     download_url='https://github.com/brandontrabucco/design-bench/archive/v1.tar.gz',
     keywords=['Offline', 'Benchmark', 'Model-Based Optimization'],
     install_requires=INSTALL_REQUIRES,
+    extras_require={'all': EXTRA_REQUIRES},
     classifiers=CLASSIFIERS)
