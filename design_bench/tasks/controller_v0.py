@@ -17,7 +17,8 @@ class ControllerV0Task(Task):
                  hidden_dim=64,
                  env_name='Hopper-v2',
                  x_file='hopper_controller_v0_X.npy',
-                 y_file='hopper_controller_v0_y.npy'):
+                 y_file='hopper_controller_v0_y.npy',
+                 split_percentile=100):
         """Load static datasets of weights and their corresponding
         expected returns from the disk
 
@@ -35,6 +36,9 @@ class ControllerV0Task(Task):
             the name of the dataset file to be loaded for x
         y_file: str
             the name of the dataset file to be loaded for y
+        split_percentile: int
+            the percentile (out of 100) to split the data set by and only
+            include samples with score below this percentile
         """
 
         maybe_download('1U997qfr5ZUNPFlC29jxdPjA42xCiohaV',
@@ -51,6 +55,11 @@ class ControllerV0Task(Task):
         y = np.load(os.path.join(DATA_DIR, y_file))
         x = x.astype(np.float32)
         y = y.astype(np.float32).reshape([-1, 1])
+
+        split_value = np.percentile(y[:, 0], split_percentile)
+        indices = np.where(y <= split_value)[0]
+        y = y[indices]
+        x = x[indices]
 
         self.x = x
         self.y = y

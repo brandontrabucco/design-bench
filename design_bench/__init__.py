@@ -61,11 +61,12 @@ register(
         global_optimum=(-1.0, 4.0, 2.0, -3.0, 5.0, 1.0,),
         oracle_noise_std=0.2,
         dataset_size=100,
-        percentile=80))
+        split_percentile=80))
 
 register(
     'GFP-v0',
-    'design_bench.tasks.gfp:GFPTask')
+    'design_bench.tasks.gfp:GFPTask',
+    kwargs=dict(split_percentile=100))
 
 register(
     'Superconductor-v0',
@@ -108,7 +109,8 @@ try:
             hidden_dim=64,
             env_name='Hopper-v2',
             x_file='hopper_controller_v0_X.npy',
-            y_file='hopper_controller_v0_y.npy'))
+            y_file='hopper_controller_v0_y.npy',
+            split_percentile=100))
 
     register(
         'HopperController-v1',
@@ -119,7 +121,8 @@ try:
             hidden_dim=256,
             env_name='Hopper-v2',
             x_file='hopper_controller_v1_X.npy',
-            y_file='hopper_controller_v1_y.npy'))
+            y_file='hopper_controller_v1_y.npy',
+            split_percentile=80))
 
     register(
         'AntMorphology-v0',
@@ -159,5 +162,6 @@ except ImportError as e:
 
     print('Skipping registration of: '
           'HopperController-v0, '
+          'HopperController-v1, '
           'AntMorphology-v0, '
           'DKittyMorphology-v0')

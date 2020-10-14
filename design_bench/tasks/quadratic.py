@@ -8,7 +8,7 @@ class QuadraticTask(Task):
                  global_optimum=(-1.0, 4.0, 2.0, -3.0, 5.0, 1.0,),
                  oracle_noise_std=0.2,
                  dataset_size=100,
-                 percentile=80):
+                 split_percentile=80):
         """Create a toy Gaussian Process optimization task using
         the provided sampling bounds
 
@@ -23,9 +23,9 @@ class QuadraticTask(Task):
         dataset_size: int
             the number of initial samples to populate the dataset with
             must be a positive integer
-        percentile: int
+        split_percentile: int
             the percentile (out of 100) to split the data set by and only
-            include samples with critical_temp below this percentile
+            include samples with score below this percentile
         """
 
         global_optimum = np.array(global_optimum)[np.newaxis]
@@ -36,8 +36,10 @@ class QuadraticTask(Task):
         x = (self.global_optimum + z).astype(np.float32)
         y = self.score(x).astype(np.float32)
 
-        split = np.percentile(y, percentile)
-        indices = np.where(np.less_equal(y, split))[0]
+        split_value = np.percentile(y[:, 0], split_percentile)
+        indices = np.where(y <= split_value)[0]
+        y = y[indices]
+        x = x[indices]
         self.x = x[indices]
         self.y = y[indices]
 

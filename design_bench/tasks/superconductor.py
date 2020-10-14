@@ -64,7 +64,7 @@ class SuperconductorTask(Task):
 
         split_percentile: int
             the percentile (out of 100) to split the data set by and only
-            include samples with critical_temp below this percentile
+            include samples with score below this percentile
         """
 
         maybe_download('1AguXqbNrSc665sablzVJh4RHLodeXglx',
@@ -74,15 +74,13 @@ class SuperconductorTask(Task):
         maybe_download('1GvpMGXNuGVIoNgd0o7r-pXBQa1Zb-NSX',
                        os.path.join(DATA_DIR, 'superconductor_oracle.pkl'))
 
-        train = pd.read_csv(os.path.join(
-            DATA_DIR, 'superconductor_train.csv'))
+        train = pd.read_csv(os.path.join(DATA_DIR, 'superconductor_train.csv'))
         data = train.to_numpy()
         y = data[:, -1:]
         x = data[:, :-1]
 
-        split_temp = np.percentile(train["critical_temp"], split_percentile)
-        indices = np.where(train["critical_temp"] < split_temp)[0]
-
+        split_value = np.percentile(y[:, 0], split_percentile)
+        indices = np.where(y <= split_value)[0]
         y = y[indices]
         x = x[indices]
 

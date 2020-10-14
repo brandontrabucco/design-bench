@@ -43,6 +43,9 @@ class MorphologyV0Task(Task):
             the maximum number of samples to collect from the environment
         domain: str
             the particular morphology domain such as 'ant' or 'dog'
+        split_percentile: int
+            the percentile (out of 100) to split the data set by and only
+            include samples with score below this percentile
         """
 
         self.pool = Pool(num_parallel)
@@ -78,7 +81,7 @@ class MorphologyV0Task(Task):
 
         # remove all samples above the qth percentile in the data set
         split_temp = np.percentile(y[:, 0], split_percentile)
-        indices = np.where(y < split_temp)[0]
+        indices = np.where(y <= split_temp)[0]
         self.x = x[indices].astype(np.float32)
         self.y = y[indices].astype(np.float32)
 

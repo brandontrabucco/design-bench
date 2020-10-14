@@ -69,6 +69,12 @@ class MoleculeActivityV0Task(Task):
         600885,               5k
         688537,               3k
         688597,               3k
+
+        Args:
+
+        split_percentile: int
+            the percentile (out of 100) to split the data set by and only
+            include samples with score below this percentile
         """
 
         maybe_download('1_8c7uln7vzLbMmoviJhGWRqy-OyMZovc',
@@ -95,7 +101,7 @@ class MoleculeActivityV0Task(Task):
 
         # remove all samples above the qth percentile in the data set
         split_temp = np.percentile(y[:, 0], split_percentile)
-        indices = np.where(y < split_temp)[0]
+        indices = np.where(y <= split_temp)[0]
         self.x = x[indices].astype(np.float32)
         self.y = y[indices].astype(np.float32)
 
