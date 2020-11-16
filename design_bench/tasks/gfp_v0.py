@@ -11,7 +11,7 @@ import numpy as np
 import os
 
 
-class GFPTask(Task):
+class GFPV0Task(Task):
 
     def __init__(self,
                  seed=0,

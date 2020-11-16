@@ -65,7 +65,11 @@ register(
 
 register(
     'GFP-v0',
-    'design_bench.tasks.gfp:GFPTask',
+    'design_bench.tasks.gfp_v0:GFPV0Task',
+    kwargs=dict(split_percentile=100))
+register(
+    'GFP-v1',
+    'design_bench.tasks.gfp_v1:GFPV1Task',
     kwargs=dict(split_percentile=100))
 
 register(
