@@ -19,7 +19,7 @@ def onehottify(x, n=None, dtype=float):
 class GFPV1Task(Task):
 
     def __init__(self,
-                 split_percentile=100,
+                 split_percentile=20,
                  internal_batch_size=1,
                  use_cuda=True):
         """Load the GFP data set which includes maps from discrete

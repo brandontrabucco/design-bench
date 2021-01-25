@@ -23,9 +23,9 @@ class MorphologyV0Task(Task):
                  x_file='ant_morphology_X.npy',
                  y_file='ant_morphology_y.npy',
                  split_percentile=60,
-                 num_rollouts=16,
+                 num_rollouts=1,
                  rollout_horizon=100,
-                 num_parallel=8):
+                 num_parallel=1):
         """Load static datasets of weights and their corresponding
         expected returns from the disk
 

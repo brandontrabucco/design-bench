@@ -70,7 +70,7 @@ register(
 register(
     'GFP-v1',
     'design_bench.tasks.gfp_v1:GFPV1Task',
-    kwargs=dict(split_percentile=100))
+    kwargs=dict(split_percentile=20))
 
 register(
     'Superconductor-v0',
@@ -141,9 +141,9 @@ try:
             x_file='ant_morphology_X.npy',
             y_file='ant_morphology_y.npy',
             split_percentile=20,
-            num_rollouts=16,
+            num_rollouts=1,
             rollout_horizon=100,
-            num_parallel=8))
+            num_parallel=1))
 
     register(
         'DKittyMorphology-v0',
@@ -158,9 +158,9 @@ try:
             x_file='dkitty_morphology_X.npy',
             y_file='dkitty_morphology_y.npy',
             split_percentile=40,
-            num_rollouts=16,
+            num_rollouts=1,
             rollout_horizon=100,
-            num_parallel=8))
+            num_parallel=1))
 
 except ImportError as e:
 
