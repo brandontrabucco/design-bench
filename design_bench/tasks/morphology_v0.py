@@ -25,7 +25,8 @@ class MorphologyV0Task(Task):
                  split_percentile=60,
                  num_rollouts=1,
                  rollout_horizon=100,
-                 num_parallel=1):
+                 num_parallel=1,
+                 ys_noise=0.0):
         """Load static datasets of weights and their corresponding
         expected returns from the disk
 
@@ -46,6 +47,9 @@ class MorphologyV0Task(Task):
         split_percentile: int
             the percentile (out of 100) to split the data set by and only
             include samples with score below this percentile
+        ys_noise: float
+            the number of standard deviations of noise to add to
+            the static training dataset y values accompanying this task
         """
 
         self.pool = Pool(num_parallel)
@@ -84,6 +88,11 @@ class MorphologyV0Task(Task):
         indices = np.where(y <= split_temp)[0]
         self.x = x[indices].astype(np.float32)
         self.y = y[indices].astype(np.float32)
+
+        mean_y = np.mean(self.y, axis=0, keepdims=True)
+        st_y = np.std(self.y - mean_y, axis=0, keepdims=True)
+        self.y = self.y + np.random.normal(
+            0.0, 1.0, self.y.shape) * st_y * ys_noise
 
     def score(self,
               x: np.ndarray) -> np.ndarray:

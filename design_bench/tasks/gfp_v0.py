@@ -15,7 +15,8 @@ class GFPV0Task(Task):
 
     def __init__(self,
                  seed=0,
-                 split_percentile=100):
+                 split_percentile=100,
+                 ys_noise=0.0):
         """Load the GFP data set which includes maps from discrete
         protein designs to fluorescence scores
 
@@ -27,6 +28,9 @@ class GFPV0Task(Task):
         split_percentile: int
             the percentile (out of 100) to split the data set by and only
             include samples with score below this percentile
+        ys_noise: float
+            the number of standard deviations of noise to add to
+            the static training dataset y values accompanying this task
         """
 
         maybe_download('1UO8L3uOp141m2v5dVlpGZ4tZ42XIJ4Vq',
@@ -56,6 +60,10 @@ class GFPV0Task(Task):
         indices = np.where(y <= split_value)[0]
         y = y[indices]
         x = x[indices]
+
+        mean_y = np.mean(y, axis=0, keepdims=True)
+        st_y = np.std(y - mean_y, axis=0, keepdims=True)
+        y = y + np.random.normal(0.0, 1.0, y.shape) * st_y * ys_noise
 
         # expose the designs
         self.x = x

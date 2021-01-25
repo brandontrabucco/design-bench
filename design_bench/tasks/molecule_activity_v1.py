@@ -91,9 +91,14 @@ class MoleculeActivityTask(ConditionalTask):
 
     def __init__(self,
                  min_validation_r2=0.0,
-                 min_num_samples=100):
+                 min_num_samples=100,
+                 ys_noise=0.0):
         """Create a task for designing super conducting materials that
         have a high critical temperature
+
+        ys_noise: float
+            the number of standard deviations of noise to add to
+            the static training dataset y values accompanying this task
         """
 
         maybe_download('1_8c7uln7vzLbMmoviJhGWRqy-OyMZovc',
@@ -142,6 +147,11 @@ class MoleculeActivityTask(ConditionalTask):
         self.assays = np.concatenate(self.assays, axis=0)
         self.counts = np.concatenate(self.counts, axis=0)
         self.x = np.stack([1.0 - self.x, self.x], axis=2)
+
+        mean_y = np.mean(self.y, axis=0, keepdims=True)
+        st_y = np.std(self.y - mean_y, axis=0, keepdims=True)
+        self.y = self.y + np.random.normal(
+            0.0, 1.0, self.y.shape) * st_y * ys_noise
 
         self.oracles = []
         for assay_id in self.assays:

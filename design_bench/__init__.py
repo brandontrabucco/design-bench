@@ -61,27 +61,32 @@ register(
         global_optimum=(-1.0, 4.0, 2.0, -3.0, 5.0, 1.0,),
         oracle_noise_std=0.2,
         dataset_size=100,
-        split_percentile=80))
+        split_percentile=80,
+        ys_noise=0.0))
 
 register(
     'GFP-v0',
     'design_bench.tasks.gfp_v0:GFPV0Task',
-    kwargs=dict(split_percentile=100))
+    kwargs=dict(split_percentile=100,
+                ys_noise=0.0))
 register(
     'GFP-v1',
     'design_bench.tasks.gfp_v1:GFPV1Task',
-    kwargs=dict(split_percentile=20))
+    kwargs=dict(split_percentile=20,
+                ys_noise=0.0))
 
 register(
     'Superconductor-v0',
     'design_bench.tasks.superconductor:SuperconductorTask',
-    kwargs=dict(split_percentile=80))
+    kwargs=dict(split_percentile=80,
+                ys_noise=0.0))
 
 register(
     'MoleculeActivity-v0',
     'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
     kwargs=dict(target_assay=600885,
-                split_percentile=80))
+                split_percentile=80,
+                ys_noise=0.0))
 
 try:
 
@@ -114,7 +119,8 @@ try:
             env_name='Hopper-v2',
             x_file='hopper_controller_v0_X.npy',
             y_file='hopper_controller_v0_y.npy',
-            split_percentile=100))
+            split_percentile=100,
+            ys_noise=0.0))
 
     register(
         'HopperController-v1',
@@ -126,7 +132,8 @@ try:
             env_name='Hopper-v2',
             x_file='hopper_controller_v1_X.npy',
             y_file='hopper_controller_v1_y.npy',
-            split_percentile=80))
+            split_percentile=80,
+            ys_noise=0.0))
 
     register(
         'AntMorphology-v0',
@@ -143,7 +150,8 @@ try:
             split_percentile=20,
             num_rollouts=1,
             rollout_horizon=100,
-            num_parallel=1))
+            num_parallel=1,
+            ys_noise=0.0))
 
     register(
         'DKittyMorphology-v0',
@@ -160,7 +168,8 @@ try:
             split_percentile=40,
             num_rollouts=1,
             rollout_horizon=100,
-            num_parallel=1))
+            num_parallel=1,
+            ys_noise=0.0))
 
 except ImportError as e:
 

@@ -56,7 +56,8 @@ def train_oracle(x, y):
 class SuperconductorTask(Task):
 
     def __init__(self,
-                 split_percentile=80):
+                 split_percentile=80,
+                 ys_noise=0.0):
         """Create a task for designing super conducting materials that
         have a high critical temperature
 
@@ -65,6 +66,9 @@ class SuperconductorTask(Task):
         split_percentile: int
             the percentile (out of 100) to split the data set by and only
             include samples with score below this percentile
+        ys_noise: float
+            the number of standard deviations of noise to add to
+            the static training dataset y values accompanying this task
         """
 
         maybe_download('1AguXqbNrSc665sablzVJh4RHLodeXglx',
@@ -86,6 +90,10 @@ class SuperconductorTask(Task):
 
         self.m = np.mean(x, axis=0, keepdims=True)
         self.st = np.std(x - self.m, axis=0, keepdims=True)
+
+        mean_y = np.mean(y, axis=0, keepdims=True)
+        st_y = np.std(y - mean_y, axis=0, keepdims=True)
+        y = y + np.random.normal(0.0, 1.0, y.shape) * st_y * ys_noise
 
         self.y = y
         self.x = (x - self.m) / self.st

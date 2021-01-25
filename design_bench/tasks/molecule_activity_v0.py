@@ -59,7 +59,8 @@ class MoleculeActivityV0Task(Task):
 
     def __init__(self,
                  target_assay=600885,
-                 split_percentile=80):  # this choice has the most spread
+                 split_percentile=80,
+                 ys_noise=0.0):  # this choice has the most spread
         """Create a task for designing super conducting materials that
         have a high critical temperature
 
@@ -75,6 +76,9 @@ class MoleculeActivityV0Task(Task):
         split_percentile: int
             the percentile (out of 100) to split the data set by and only
             include samples with score below this percentile
+        ys_noise: float
+            the number of standard deviations of noise to add to
+            the static training dataset y values accompanying this task
         """
 
         maybe_download('1_8c7uln7vzLbMmoviJhGWRqy-OyMZovc',
@@ -102,8 +106,14 @@ class MoleculeActivityV0Task(Task):
         # remove all samples above the qth percentile in the data set
         split_temp = np.percentile(y[:, 0], split_percentile)
         indices = np.where(y <= split_temp)[0]
-        self.x = x[indices].astype(np.float32)
-        self.y = y[indices].astype(np.float32)
+        x = x[indices].astype(np.float32)
+        y = y[indices].astype(np.float32)
+
+        mean_y = np.mean(y, axis=0, keepdims=True)
+        st_y = np.std(y - mean_y, axis=0, keepdims=True)
+        y = y + np.random.normal(0.0, 1.0, y.shape) * st_y * ys_noise
+        self.x = x
+        self.y = y
 
         # load the oracle for this assay
         with open(os.path.join(

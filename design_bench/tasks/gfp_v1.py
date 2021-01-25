@@ -21,7 +21,8 @@ class GFPV1Task(Task):
     def __init__(self,
                  split_percentile=20,
                  internal_batch_size=1,
-                 use_cuda=True):
+                 use_cuda=True,
+                 ys_noise=0.0):
         """Load the GFP data set which includes maps from discrete
         protein designs to fluorescence scores
 
@@ -30,6 +31,9 @@ class GFPV1Task(Task):
         split_percentile: int
             the percentile (out of 100) to split the data set by and only
             include samples with score below this percentile
+        ys_noise: float
+            the number of standard deviations of noise to add to
+            the static training dataset y values accompanying this task
         """
 
         maybe_download('1_jcPkQ-M1FRhkEONoE57WEbp_Rivkho2',
@@ -73,8 +77,16 @@ class GFPV1Task(Task):
             y[:, 0], split_percentile))[0]
 
         # expose the designs
-        self.x = x[ind]
-        self.y = y[ind]
+        x = x[ind]
+        y = y[ind]
+
+        mean_y = np.mean(y, axis=0, keepdims=True)
+        st_y = np.std(y - mean_y, axis=0, keepdims=True)
+        y = y + np.random.normal(0.0, 1.0, y.shape) * st_y * ys_noise
+
+        # expose the designs
+        self.x = x
+        self.y = y
 
     def score(self,
               x: np.ndarray) -> np.ndarray:

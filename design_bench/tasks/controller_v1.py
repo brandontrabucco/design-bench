@@ -18,7 +18,8 @@ class ControllerV1Task(Task):
                  env_name='Hopper-v2',
                  x_file='hopper_controller_v1_X.npy',
                  y_file='hopper_controller_v1_y.npy',
-                 split_percentile=100):
+                 split_percentile=100,
+                 ys_noise=0.0):
         """Load static datasets of weights and their corresponding
         expected returns from the disk
 
@@ -39,6 +40,9 @@ class ControllerV1Task(Task):
         split_percentile: int
             the percentile (out of 100) to split the data set by and only
             include samples with score below this percentile
+        ys_noise: float
+            the number of standard deviations of noise to add to
+            the static training dataset y values accompanying this task
         """
 
         maybe_download('14AdCoQT0F4YSOjJCtw3-CqlI18HyN3t1',
@@ -60,6 +64,10 @@ class ControllerV1Task(Task):
         indices = np.where(y <= split_value)[0]
         y = y[indices]
         x = x[indices]
+
+        mean_y = np.mean(y, axis=0, keepdims=True)
+        st_y = np.std(y - mean_y, axis=0, keepdims=True)
+        y = y + np.random.normal(0.0, 1.0, y.shape) * st_y * ys_noise
 
         self.x = x
         self.y = y
