@@ -7,7 +7,8 @@ with open(F, 'r') as readme:
     LONG_DESCRIPTION = readme.read()
 
 
-INSTALL_REQUIRES = ['numpy', 'pandas', 'requests', 'scikit-learn', 'tape_proteins']
+INSTALL_REQUIRES = ['numpy', 'pandas', 'requests', 'scikit-learn',
+                    'tape_proteins', 'keras', 'tensorflow>=2.2']
 EXTRA_REQUIRES = ['gym[mujoco]', 'morphing-agents']
 
 
@@ -31,7 +32,7 @@ CLASSIFIERS = [
 setup(
     name='design-bench',
     packages=find_packages(include=['design_bench', 'design_bench.*']),
-    version='1.4',
+    version='1.5',
     license='MIT',
     description='Design-Bench: Benchmarks for Data-Driven Offline Model-Based Optimization',
     long_description=LONG_DESCRIPTION,
@@ -39,7 +40,7 @@ setup(
     author='Brandon Trabucco',
     author_email='brandon@btrabucco.com',
     url='https://github.com/brandontrabucco/design-bench',
-    download_url='https://github.com/brandontrabucco/design-bench/archive/v1_4.tar.gz',
+    download_url='https://github.com/brandontrabucco/design-bench/archive/v1_5.tar.gz',
     keywords=['Offline', 'Benchmark', 'Model-Based Optimization'],
     install_requires=INSTALL_REQUIRES,
     extras_require={'all': EXTRA_REQUIRES},

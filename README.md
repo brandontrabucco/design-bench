@@ -7,6 +7,8 @@ This repository contains several design benchmarks for model-based optimization.
 Current model-based design benchmarks (circa 2020) typically vary from paper-to-paper. For example, tasks employed by biologists differ strongly from those of interest to roboticists. We provide a common interface for tasks that span a wide-range of disciplines, from materials science, to reinforcement learning. We list these tasks below.
 
 * __Biology__: Protein Fluorescence: `design_bench.make('GFP-v0')`
+* __Biology__: Transcription Factor Binding Affinity: `design_bench.make('TfBind8-v0')`
+* __Biology__: Gene Expression: `design_bench.make('UTRExpression-v0')`
 * __Chemistry__: Molecule Activity: `design_bench.make('MoleculeActivity-v0')`
 * __Materials Science__: Superconductor Critical Temperature: `design_bench.make('Superconductor-v0')`
 * __Robotics__: Hopper Controller: `design_bench.make('HopperController-v0')`

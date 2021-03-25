@@ -76,16 +76,29 @@ register(
                 ys_noise=0.0))
 
 register(
-    'Superconductor-v0',
-    'design_bench.tasks.superconductor:SuperconductorTask',
-    kwargs=dict(split_percentile=80,
-                ys_noise=0.0))
-
-register(
     'MoleculeActivity-v0',
     'design_bench.tasks.molecule_activity_v0:MoleculeActivityV0Task',
     kwargs=dict(target_assay=600885,
                 split_percentile=80,
+                ys_noise=0.0))
+
+register(
+    'TfBind8-v0',
+    'design_bench.tasks.tfbind8_v0:TfBind8V0Task',
+    kwargs=dict(split_percentile=20,
+                transcription_factor='SIX6_REF_R1',
+                ys_noise=0.0))
+
+register(
+    'UTRExpression-v0',
+    'design_bench.tasks.utr_expression_v0:UTRExpressionV0Task',
+    kwargs=dict(split_percentile=20,
+                ys_noise=0.0))
+
+register(
+    'Superconductor-v0',
+    'design_bench.tasks.superconductor:SuperconductorTask',
+    kwargs=dict(split_percentile=80,
                 ys_noise=0.0))
 
 try:
