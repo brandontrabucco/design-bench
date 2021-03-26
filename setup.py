@@ -32,7 +32,7 @@ CLASSIFIERS = [
 setup(
     name='design-bench',
     packages=find_packages(include=['design_bench', 'design_bench.*']),
-    version='1.5',
+    version='1.6',
     license='MIT',
     description='Design-Bench: Benchmarks for Data-Driven Offline Model-Based Optimization',
     long_description=LONG_DESCRIPTION,
@@ -40,7 +40,7 @@ setup(
     author='Brandon Trabucco',
     author_email='brandon@btrabucco.com',
     url='https://github.com/brandontrabucco/design-bench',
-    download_url='https://github.com/brandontrabucco/design-bench/archive/v1_5.tar.gz',
+    download_url='https://github.com/brandontrabucco/design-bench/archive/v1_6.tar.gz',
     keywords=['Offline', 'Benchmark', 'Model-Based Optimization'],
     install_requires=INSTALL_REQUIRES,
     extras_require={'all': EXTRA_REQUIRES},

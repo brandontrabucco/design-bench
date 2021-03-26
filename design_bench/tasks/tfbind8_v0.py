@@ -81,8 +81,8 @@ class TfBind8V0Task(Task):
         # expose the designs
         self.x = x
         self.y = y
-        self.sequences = dict(zip(seq0, y))
-        self.sequences.update(zip(seq1, y))
+        self.sequences = dict(zip(seq0, y0))
+        self.sequences.update(zip(seq1, y0))
         self.score = np.vectorize(self.scalar_score,
                                   signature='(n,4)->(1)')
 
