@@ -21,6 +21,12 @@ class Task(abc.ABC):
     input_size: int
         Returns the size of a single sample of x from the data set
         and excludes the batch 'axis'
+    oracle_type: str
+        Specifies the oracle being used within the Task.score method
+        For example: "exact" uses a simulator or real-world measurement
+                     "neural_network" uses a proxy neural network
+                     "random_forest" uses a proxy random forest
+                     "gaussian_process" uses a proxy gaussian process
 
     Methods:
 
@@ -31,6 +37,7 @@ class Task(abc.ABC):
 
     x: np.ndarray = None
     y: np.ndarray = None
+    oracle_type: str = None
 
     @abc.abstractmethod
     def score(self,

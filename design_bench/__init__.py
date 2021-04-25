@@ -90,6 +90,13 @@ register(
                 ys_noise=0.0))
 
 register(
+    'TfBind10-v0',
+    'design_bench.tasks.tfbind10_v0:TfBind10V0Task',
+    kwargs=dict(split_percentile=20,
+                transcription_factor='pho4',
+                ys_noise=0.0))
+
+register(
     'UTRExpression-v0',
     'design_bench.tasks.utr_expression_v0:UTRExpressionV0Task',
     kwargs=dict(split_percentile=20,
