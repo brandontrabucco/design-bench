@@ -1,4 +1,4 @@
-from design_bench.core.dataset_builder import DatasetBuilder
+from design_bench.core.datasets.dataset_builder import DatasetBuilder
 import abc as abc
 
 
@@ -55,11 +55,17 @@ class ContinuousDataset(DatasetBuilder, abc.ABC):
         the percentile between 0 and 100 of prediction values 'y' below
         which are hidden from access by members outside the class
 
-    x_resources: list of RemoteResource
+    x_shards: Union[np.ndarray,
+                    RemoteResource,
+                    List[np.ndarray],
+                    List[RemoteResource]]
         a list of RemoteResource that should be downloaded before the
         dataset can be loaded and used for model-based optimization
 
-    y_resources: list of RemoteResource
+    y_shards: Union[np.ndarray,
+                    RemoteResource,
+                    List[np.ndarray],
+                    List[RemoteResource]]
         a list of RemoteResource that should be downloaded before the
         dataset can be loaded and used for model-based optimization
 

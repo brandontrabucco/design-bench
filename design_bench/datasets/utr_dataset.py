@@ -1,4 +1,4 @@
-from design_bench.core.discrete_dataset import DiscreteDataset
+from design_bench.core.datasets.discrete_dataset import DiscreteDataset
 from design_bench.utils.remote_resource import RemoteResource
 
 
@@ -55,11 +55,17 @@ class UTRDataset(DiscreteDataset):
         the percentile between 0 and 100 of prediction values 'y' below
         which are hidden from access by members outside the class
 
-    x_resources: list of RemoteResource
+    x_shards: Union[np.ndarray,
+                    RemoteResource,
+                    List[np.ndarray],
+                    List[RemoteResource]]
         a list of RemoteResource that should be downloaded before the
         dataset can be loaded and used for model-based optimization
 
-    y_resources: list of RemoteResource
+    y_shards: Union[np.ndarray,
+                    RemoteResource,
+                    List[np.ndarray],
+                    List[RemoteResource]]
         a list of RemoteResource that should be downloaded before the
         dataset can be loaded and used for model-based optimization
 
@@ -141,6 +147,48 @@ class UTRDataset(DiscreteDataset):
 
     """
 
+    @staticmethod
+    def register_x_shards():
+        """Registers a remote file for download that contains design values
+        in a format compatible with the dataset builder class;
+        these files are downloaded all at once in the dataset initialization
+
+        Returns:
+
+        resources: list of RemoteResource
+            a list of RemoteResource objects specific to this dataset, which
+            will be automatically downloaded while the dataset is built
+            and may serve as shards if the dataset is large
+
+        """
+
+        return [RemoteResource(f"utr/utr-x-{i}.npy",
+                               is_absolute=False,
+                               download_target=None,
+                               download_method=None)
+                for i in range(28)]
+
+    @staticmethod
+    def register_y_shards():
+        """Registers a remote file for download that contains prediction
+        values in a format compatible with the dataset builder class;
+        these files are downloaded all at once in the dataset initialization
+
+        Returns:
+
+        resources: list of RemoteResource
+            a list of RemoteResource objects specific to this dataset, which
+            will be automatically downloaded while the dataset is built
+            and may serve as shards if the dataset is large
+
+        """
+
+        return [RemoteResource(f"utr/utr-y-{i}.npy",
+                               is_absolute=False,
+                               download_target=None,
+                               download_method=None)
+                for i in range(28)]
+
     def __init__(self, soft_interpolation=0.6, **kwargs):
         """Initialize a model-based optimization dataset and prepare
         that dataset by loading that dataset from disk and modifying
@@ -154,65 +202,15 @@ class UTRDataset(DiscreteDataset):
             interpolates between a uniform and dirac distribution
             1.0 = dirac, 0.0 -> uniform
         **kwargs: dict
-            additional keyword arguments passed to the "load_dataset" method,
-            which may be data specific and depend on whether the dataset
-            contains discrete or continuous data points
+            additional keyword arguments which are used to parameterize the
+            data set generation process, including which shard files are used
+            if multiple sets of data set shard files can be loaded
 
         """
 
         # initialize the dataset using the method in the base class
         super(UTRDataset, self).__init__(
+            self.register_x_shards(),
+            self.register_y_shards(),
             is_logits=False, num_classes=4,
             soft_interpolation=soft_interpolation, **kwargs)
-
-    @staticmethod
-    def register_x_resources(**kwargs):
-        """Registers a remote file for download that contains design values
-        in a format compatible with the dataset builder class;
-        these files are downloaded all at once in the dataset initialization
-
-        Arguments:
-
-        **kwargs: dict
-            additional keyword arguments used for building the dataset,
-            which may be domain specific and depend on whether the dataset
-            contains discrete or continuous data points
-
-        Returns:
-
-        resources: list of RemoteResource
-            a list of RemoteResource objects specific to this dataset, which
-            will be automatically downloaded while the dataset is built
-            and may serve as shards if the dataset is large
-
-        """
-
-        return [RemoteResource(
-            f"utr/utr-x-{i}.npy", is_absolute=False,
-            download_target=None, download_method=None) for i in range(28)]
-
-    @staticmethod
-    def register_y_resources(**kwargs):
-        """Registers a remote file for download that contains prediction
-        values in a format compatible with the dataset builder class;
-        these files are downloaded all at once in the dataset initialization
-
-        Arguments:
-
-        **kwargs: dict
-            additional keyword arguments used for building the dataset,
-            which may be domain specific and depend on whether the dataset
-            contains discrete or continuous data points
-
-        Returns:
-
-        resources: list of RemoteResource
-            a list of RemoteResource objects specific to this dataset, which
-            will be automatically downloaded while the dataset is built
-            and may serve as shards if the dataset is large
-
-        """
-
-        return [RemoteResource(
-            f"utr/utr-y-{i}.npy", is_absolute=False,
-            download_target=None, download_method=None) for i in range(28)]

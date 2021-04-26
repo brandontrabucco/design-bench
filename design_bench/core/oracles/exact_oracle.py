@@ -1,8 +1,8 @@
-from design_bench.core.oracle_builder import OracleBuilder
+from design_bench.core.oracles.oracle_builder import OracleBuilder
 import abc
 
 
-class ApproximateOracle(OracleBuilder, abc.ABC):
+class ExactOracle(OracleBuilder, abc.ABC):
     """An abstract class for managing the ground truth score functions f(x)
     for model-based optimization problems, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
@@ -41,6 +41,11 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         implemented for a particular oracle is batched, which effects
         the scaling coefficient of its computational cost
 
+    correct_set: set of DatasetBuilder subclasses
+        a set of python classes that inherit from DatasetBuilder but have a
+        defined "load_dataset" instance method, for which this exact oracle
+        is a correct ground truth score function f(x)
+
     Public Methods:
 
     score(np.ndarray) -> np.ndarray:
@@ -53,57 +58,14 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         regression model to estimate the computational cost in seconds
         for making that many predictions using this oracle model
 
-    fit(np.ndarray, np.ndarray):
-        a function that accepts a data set of design values 'x' and prediction
-        values 'y' and fits an approximate oracle to serve as the ground
-        truth function f(x) in a model-based optimization problem
-
-    check_input_format(list of int) -> bool:
-        a function that accepts a list of integers as input and returns true
-        when design values 'x' with the shape specified by that list are
-        compatible with this class of approximate oracle
-
     """
 
+    @property
     @abc.abstractmethod
-    def check_input_format(self, shape, dtype):
-        """a function that accepts a list of integers as input and is true
-        when design values 'x' with the shape specified by that list are
-        compatible with this class of approximate oracle
-
-        Arguments:
-
-        shape: list of int
-            the shape of a single design value 'x' without a batch dimension
-            that would be passed to the ground truth score function
-        dtype: np.dtype
-            the data type (such as np.float32) of the design values 'x' that
-            will be passed to the ground truth score function
-
-        Returns:
-
-        is_compatible: bool
-            a boolean indicator that is true when the specified input format
-            is compatible with this ground truth score function
-
-        """
-
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def fit(self, x, y):
-        """a function that accepts a set of design values 'x' and prediction
-        values 'y' and fits an approximate oracle to serve as the ground
-        truth function f(x) in a model-based optimization problem
-
-        Arguments:
-
-        x: np.ndarray
-            the design values 'x' for a model-based optimization problem
-            represented as a numpy array of arbitrary type
-        y: np.ndarray
-            the prediction values 'y' for a model-based optimization problem
-            represented by a scalar floating point value per 'x'
+    def correct_set(self):
+        """a set of python classes that inherit from DatasetBuilder but have a
+        defined "load_dataset" instance method, for which this exact oracle
+        is a correct ground truth score function f(x)
 
         """
 
@@ -140,12 +102,12 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         """
 
-        # check if the given dataset matches the supported criteria
-        if not self.check_input_format(
-                dataset.input_shape, dataset.input_dtype):
+        # check if the given dataset is in the supported set
+        if not any([isinstance(
+                dataset, cls) for cls in self.correct_set]):
             raise ValueError("oracle cannot be used with unsupported dataset")
 
         # initialize using the superclass method
-        super(ApproximateOracle, self).__init__(
+        super(ExactOracle, self).__init__(
             dataset, sample_designs=sample_designs,
             is_batched=is_batched, noise_std=noise_std, **kwargs)

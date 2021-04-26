@@ -1,8 +1,7 @@
 from design_bench.utils.remote_resource import RemoteResource
-from typing import List, Tuple, Iterable
-import abc as abc
+from typing import Tuple, Iterable
 import numpy as np
-import math
+import abc
 
 
 class DatasetBuilder(abc.ABC):
@@ -58,11 +57,17 @@ class DatasetBuilder(abc.ABC):
         the percentile between 0 and 100 of prediction values 'y' below
         which are hidden from access by members outside the class
 
-    x_resources: list of RemoteResource
+    x_shards: Union[np.ndarray,
+                    RemoteResource,
+                    List[np.ndarray],
+                    List[RemoteResource]]
         a list of RemoteResource that should be downloaded before the
         dataset can be loaded and used for model-based optimization
 
-    y_resources: list of RemoteResource
+    y_shards: Union[np.ndarray,
+                    RemoteResource,
+                    List[np.ndarray],
+                    List[RemoteResource]]
         a list of RemoteResource that should be downloaded before the
         dataset can be loaded and used for model-based optimization
 
@@ -121,56 +126,6 @@ class DatasetBuilder(abc.ABC):
         expected to have zero empirical mean and unit variance
 
     """
-
-    @staticmethod
-    @abc.abstractmethod
-    def register_x_resources(**kwargs) -> List[RemoteResource]:
-        """Registers a remote file for download that contains design values
-        in a format compatible with the dataset builder class;
-        these files are downloaded all at once in the dataset initialization
-
-        Arguments:
-
-        **kwargs: dict
-            additional keyword arguments used for building the dataset,
-            which may be domain specific and depend on whether the dataset
-            contains discrete or continuous data points
-
-        Returns:
-
-        resources: list of RemoteResource
-            a list of RemoteResource objects specific to this dataset, which
-            will be automatically downloaded while the dataset is built
-            and may serve as shards if the dataset is large
-
-        """
-
-        raise NotImplementedError
-
-    @staticmethod
-    @abc.abstractmethod
-    def register_y_resources(**kwargs) -> List[RemoteResource]:
-        """Registers a remote file for download that contains prediction
-        values in a format compatible with the dataset builder class;
-        these files are downloaded all at once in the dataset initialization
-
-        Arguments:
-
-        **kwargs: dict
-            additional keyword arguments used for building the dataset,
-            which may be domain specific and depend on whether the dataset
-            contains discrete or continuous data points
-
-        Returns:
-
-        resources: list of RemoteResource
-            a list of RemoteResource objects specific to this dataset, which
-            will be automatically downloaded while the dataset is built
-            and may serve as shards if the dataset is large
-
-        """
-
-        raise NotImplementedError
 
     def batch_transform(self, x_batch, y_batch,
                         return_x=True, return_y=True):
@@ -265,31 +220,33 @@ class DatasetBuilder(abc.ABC):
         if batch_size < 1 or (not return_x and not return_y):
             raise ValueError("invalid arguments passed to batch generator")
 
-        # prepare a list of file shards to load batches from from
-        shards = [(x_resource.disk_target, y_resource.disk_target)
-                  for x_resource, y_resource in
-                  zip(self.x_resources, self.y_resources)]
-
         # track a list of incomplete batches between shards
         y_batch_size = 0
         x_batch = [] if return_x else None
         y_batch = [] if return_y else None
 
         # iterate through every registered shard
-        num_shards = len(shards)
-        for shard_id, (x_shard, y_shard) in enumerate(shards):
+        num_shards = len(self.x_shards)
+        for shard_id, (x_shard, y_shard) in \
+                enumerate(zip(self.x_shards, self.y_shards)):
 
-            # load both the design and prediction shards from the disk
-            x_shard_data = np.load(x_shard) if return_x else None
-            y_shard_data = np.load(y_shard)
-            shard_position = 0
+            # load a shard of design values potentially from disk
+            x_shard_data = None
+            if isinstance(x_shard, RemoteResource) and return_x:
+                x_shard_data = np.load(x_shard.disk_target)
+            elif isinstance(x_shard, np.ndarray) and return_x:
+                x_shard_data = x_shard
 
-            # calculate the number of batches per single shard
-            batch_per_shard = int(math.ceil(
-                y_shard_data.shape[0] / batch_size))
+            # load a shard of prediction values potentially from disk
+            y_shard_data = None
+            if isinstance(y_shard, RemoteResource):
+                y_shard_data = np.load(y_shard.disk_target)
+            elif isinstance(y_shard, np.ndarray):
+                y_shard_data = y_shard
 
             # loop once per batch contained in the shard
-            for i in range(batch_per_shard):
+            shard_position = 0
+            while shard_position < y_shard_data.shape[0]:
 
                 # how many samples will be attempted to read
                 target_size = batch_size - y_batch_size
@@ -302,12 +259,14 @@ class DatasetBuilder(abc.ABC):
 
                 # take a subset of the sliced arrays using a pre-defined
                 # transformation that sub-samples and normalizes
-                x_sliced, y_sliced = self.batch_transform(
-                    x_sliced, y_sliced, return_x=return_x, return_y=return_y)
+                if not self.disable_transform:
+                    x_sliced, y_sliced = self.batch_transform(
+                        x_sliced, y_sliced,
+                        return_x=return_x, return_y=return_y)
 
                 # update the read position in the shard tensor
                 samples_read = (y_sliced if return_y else x_sliced).shape[0]
-                shard_position += samples_read
+                shard_position += target_size
 
                 # update the current batch to be yielded
                 y_batch_size += samples_read
@@ -317,7 +276,7 @@ class DatasetBuilder(abc.ABC):
                 # yield the current batch when enough samples are loaded
                 if y_batch_size >= batch_size \
                         or (not drop_remainder
-                            and i + 1 == batch_per_shard
+                            and shard_position >= y_shard_data.shape[0]
                             and shard_id + 1 == num_shards):
 
                     try:
@@ -332,6 +291,8 @@ class DatasetBuilder(abc.ABC):
                             yield np.concatenate(y_batch, axis=0)
 
                     except GeneratorExit:
+
+                        # handle cleanup when break is called
                         return
 
                     # reset the buffer for incomplete batches
@@ -525,30 +486,22 @@ class DatasetBuilder(abc.ABC):
         if min_percentile > max_percentile:
             raise ValueError("invalid arguments provided")
 
-        # remove the old sub sampling thresholds for the dataset
-        self.dataset_min_percentile = 0.0
-        self.dataset_max_percentile = 100.0
-        self.dataset_min_output = np.NINF
-        self.dataset_max_output = np.PINF
-
-        # set the sub sampled data set to not be normalized
-        original_is_normalized_x = self.is_normalized_x
-        original_is_normalized_y = self.is_normalized_y
-        self.is_normalized_x = False
-        self.is_normalized_y = False
-
         # convert the original prediction generator to a numpy tensor
+        self.disable_transform = True
         y = np.concatenate(list(self.iterate_batches(
             self.internal_batch_size,
             return_x=False, drop_remainder=False)), axis=0)
+        self.disable_transform = False
 
         # calculate the min threshold for predictions in the dataset
-        min_output = np.percentile(y[:, 0], min_percentile)
+        min_output = np.percentile(y[:, 0], min_percentile) \
+            if min_percentile > 0.0 else np.NINF
         self.dataset_min_percentile = min_percentile
         self.dataset_min_output = min_output
 
         # calculate the max threshold for predictions in the dataset
-        max_output = np.percentile(y[:, 0], max_percentile)
+        max_output = np.percentile(y[:, 0], max_percentile) \
+            if max_percentile < 100.0 else np.PINF
         self.dataset_max_percentile = max_percentile
         self.dataset_max_output = max_output
 
@@ -559,12 +512,12 @@ class DatasetBuilder(abc.ABC):
             y <= max_output, y >= min_output))[0].size
 
         # update normalization statistics for design values
-        if original_is_normalized_x:
-            self.map_normalize_x()
+        if self.is_normalized_x:
+            self.update_x_statistics()
 
         # update normalization statistics for prediction values
-        if original_is_normalized_y:
-            self.map_normalize_y()
+        if self.is_normalized_y:
+            self.update_y_statistics()
 
     @property
     def x(self) -> np.ndarray:
@@ -602,21 +555,31 @@ class DatasetBuilder(abc.ABC):
             self.internal_batch_size,
             return_x=False, drop_remainder=False)], axis=0)
 
-    def __init__(self, internal_batch_size=32, **kwargs):
+    def __init__(self, x_shards, y_shards, internal_batch_size=32):
         """Initialize a model-based optimization dataset and prepare
         that dataset by loading that dataset from disk and modifying
         its distribution
 
         Arguments:
 
+        x_shards: Union[np.ndarray,
+                        RemoteResource,
+                        List[np.ndarray],
+                        List[RemoteResource]]
+            a single shard or a list of shards representing the design values
+            in a model-based optimization dataset; shards are loaded lazily
+            if RemoteResource otherwise loaded in memory immediately
+        y_shards: Union[np.ndarray,
+                        RemoteResource,
+                        List[np.ndarray],
+                        List[RemoteResource]]
+            a single shard or a list of shards representing prediction values
+            in a model-based optimization dataset; shards are loaded lazily
+            if RemoteResource otherwise loaded in memory immediately
         internal_batch_size: int
             the number of samples per batch to use when computing
             normalization statistics of the data set and while relabeling
             the prediction values of the data set
-        **kwargs: dict
-            additional keyword arguments passed to the "load_dataset" method,
-            which may be data specific and depend on whether the data set
-            contains discrete or continuous data points
 
         """
 
@@ -627,8 +590,10 @@ class DatasetBuilder(abc.ABC):
         self.dataset_max_output = np.PINF
 
         # initialize the normalization state to False
+        self.internal_batch_size = internal_batch_size
         self.is_normalized_x = False
         self.is_normalized_y = False
+        self.disable_transform = False
 
         # initialize statistics for data set normalization
         self.x_mean = None
@@ -636,23 +601,24 @@ class DatasetBuilder(abc.ABC):
         self.x_standard_dev = None
         self.y_standard_dev = None
 
-        # pointers to remote files to be downloaded before data set use
-        self.x_resources = self.register_x_resources(**kwargs)
-        self.y_resources = self.register_y_resources(**kwargs)
-        self.internal_batch_size = internal_batch_size
+        # save the provided dataset shards to be loaded into batches
+        self.x_shards = [x_shards] if \
+            not isinstance(x_shards, list) else x_shards
+        self.y_shards = [y_shards] if \
+            not isinstance(y_shards, list) else y_shards
 
         # assert same number of x resources and y resources are provided
-        if len(self.x_resources) != len(self.y_resources):
-            raise ValueError("different num of x and y files not supported")
+        if len(self.x_shards) != len(self.y_shards):
+            raise ValueError("different num x and y shards not supported")
 
         # download the remote resources
-        for file in self.x_resources + self.y_resources:
-            if not file.is_downloaded:
+        for file in self.x_shards + self.y_shards:
+            if isinstance(file, RemoteResource) and not file.is_downloaded:
                 file.download()  # downloaded any file not present on disk
 
         # sample initial x and y values from the data set
-        x0 = y0 = None
         self.dataset_size = 0
+        x0 = y0 = None
         for x0 in self.iterate_samples(return_y=False):
             break
         for y0 in self.iterate_samples(return_x=False):
@@ -672,8 +638,7 @@ class DatasetBuilder(abc.ABC):
         self.output_size = 1
         self.output_dtype = y0.dtype
 
-    def relabel(self, relabel_function,
-                shard_name="dataset_shard", shard_size=None):
+    def relabel(self, relabel_function):
         """a function that accepts a function that maps from a dataset of
         design values 'x' and prediction values y to a new set of
         prediction values 'y' and relabels a model-based optimization dataset
@@ -684,97 +649,90 @@ class DatasetBuilder(abc.ABC):
             a function capable of mapping from a numpy array of design
             values 'x' and prediction values 'y' to new predictions 'y' 
             using batching to prevent memory overflow
-        shard_name: str
-            the string base name of the new shards to write for this dataset
-            which does not contain a file extension appended to it, and
-            will be written as f'{shard_name}-y-{shard_id}.npy'
-        shard_size: int
-            an integer specifying the intended number of training examples
-            per shard in the new serialized set of prediction values;
-            should be set to match the number of design values per shard
 
         """
 
-        # prevent the data set for being sub-sampled
-        self.dataset_min_output = np.NINF
-        self.dataset_max_output = np.PINF
-        num_examples = self.y.shape[0]
+        # prevent the data set for being sub-sampled or normalized
+        self.disable_transform = True
+        examples = self.y.shape[0]
+        examples_processed = 0
 
         # track a list of incomplete batches between shards
-        new_y_resources = []
-        y_shard_size = 0
         y_shard = []
+        y_shard_size = 0
 
-        # track the number of examples and shards processed
-        examples_processed = 0
-        shard_id = -1
+        # calculate the appropriate size of the first shard
+        shard_id = 0
+        shard = self.y_shards[shard_id]
+        shard_size = np.load(shard.disk_target).shape[0] \
+            if isinstance(shard, RemoteResource) else shard.shape[0]
 
         # relabel the prediction values of the internal data set
         for x_batch, y_batch in \
                 self.iterate_batches(self.internal_batch_size):
 
             # calculate the new prediction values to be stored as shards
-            new_y_batch = relabel_function(x_batch, y_batch)
+            y_batch = relabel_function(x_batch, y_batch)
             read_position = 0
 
-            # handle when y is already normalized
-            if self.is_normalized_y:
-                new_y_batch = self.denormalize_y(new_y_batch)
-
-            # calculate the number of batches per single shard
-            shard_per_batch = int(math.ceil(
-                shard_size / new_y_batch.shape[0])) if shard_size else 1
-
             # loop once per batch contained in the shard
-            for i in range(shard_per_batch):
+            while read_position < y_batch.shape[0]:
 
                 # calculate the intended number of samples to serialize
-                target_size = shard_size - y_shard_size \
-                              if shard_size else new_y_batch.shape[0]
+                target_size = shard_size - y_shard_size
 
                 # slice out a component of the current shard
-                y_sliced = new_y_batch[
-                    read_position:read_position + target_size]
+                y_sliced = y_batch[read_position:read_position + target_size]
+                samples_read = y_sliced.shape[0]
 
                 # increment the read position in the prediction tensor
-                samples_read = y_sliced.shape[0]
-                read_position += samples_read
-
-                # update the number of shards and examples processed
+                # and update the number of shards and examples processed
+                read_position += target_size
                 examples_processed += samples_read
 
                 # update the current shard to be serialized
-                y_shard_size += samples_read
                 y_shard.append(y_sliced)
+                y_shard_size += samples_read
 
                 # yield the current batch when enough samples are loaded
-                if y_shard_size == shard_size \
-                        or (i + 1 == shard_per_batch
-                            and examples_processed == num_examples):
+                if y_shard_size >= shard_size \
+                        or examples_processed >= examples:
 
-                    # increment the total number of shards
-                    shard_id += 1
+                    # check if this shard is a remote resource
+                    if isinstance(shard, RemoteResource):
 
-                    # serialize a new resource file with the specified name
-                    # and register the shard as a y resource
-                    resource_file = RemoteResource(
-                        f"{shard_name}-y-{shard_id}.npy",
-                        is_absolute=False,
-                        download_method=None, download_target=None)
+                        # serialize a resource file with the specified name
+                        # and register the shard as a y resource
+                        resource_file = RemoteResource(
+                            shard.disk_target, is_absolute=True,
+                            download_method=None, download_target=None)
 
-                    # write the shard using numpy
-                    new_y_resources.append(resource_file)
-                    np.save(resource_file.disk_target,
-                            np.concatenate(y_shard, axis=0))
+                        # write the shard using numpy
+                        self.y_shards[shard_id] = resource_file
+                        np.save(resource_file.disk_target,
+                                np.concatenate(y_shard, axis=0))
+
+                    # check if this shard is a numpy ndarray
+                    elif isinstance(shard, np.ndarray):
+
+                        # write the shard using numpy
+                        self.y_shards[shard_id] = \
+                            np.concatenate(y_shard, axis=0)
 
                     # reset the buffer for incomplete batches
-                    y_shard_size = 0
                     y_shard = []
+                    y_shard_size = 0
 
-        # set the resource file shards to new shard locations
-        self.y_resources = new_y_resources
+                    # calculate the appropriate size for the next shard
+                    if not examples_processed >= examples:
+                        shard_id += 1
+                        shard = self.y_shards[shard_id]
+                        shard_size = np.load(shard.disk_target).shape[0] \
+                            if isinstance(shard, RemoteResource) \
+                            else shard.shape[0]
 
         # re-sample the data set and recalculate statistics
+        self.disable_transform = False
         self.subsample(max_percentile=self.dataset_max_percentile,
                        min_percentile=self.dataset_min_percentile)
 
@@ -784,12 +742,12 @@ class DatasetBuilder(abc.ABC):
 
         """
 
-        # calculate the normalization statistics in advance
-        self.update_x_statistics()
-
         # check design values and prediction values are not normalized
         if not self.is_normalized_x:
             self.is_normalized_x = True
+
+        # calculate the normalization statistics in advance
+        self.update_x_statistics()
 
     def map_normalize_y(self):
         """a function that standardizes the prediction values 'y' to have
@@ -797,12 +755,12 @@ class DatasetBuilder(abc.ABC):
 
         """
 
-        # calculate the normalization statistics in advance
-        self.update_y_statistics()
-
         # check design values and prediction values are not normalized
         if not self.is_normalized_y:
             self.is_normalized_y = True
+
+        # calculate the normalization statistics in advance
+        self.update_y_statistics()
 
     def normalize_x(self, x):
         """a function that standardizes the design values 'x' to have

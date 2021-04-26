@@ -1,4 +1,4 @@
-from design_bench.core.dataset_builder import DatasetBuilder
+from design_bench.core.datasets.dataset_builder import DatasetBuilder
 import abc as abc
 import numpy as np
 
@@ -70,11 +70,17 @@ class DiscreteDataset(DatasetBuilder, abc.ABC):
         the percentile between 0 and 100 of prediction values 'y' below
         which are hidden from access by members outside the class
 
-    x_resources: list of RemoteResource
+    x_shards: Union[np.ndarray,
+                    RemoteResource,
+                    List[np.ndarray],
+                    List[RemoteResource]]
         a list of RemoteResource that should be downloaded before the
         dataset can be loaded and used for model-based optimization
 
-    y_resources: list of RemoteResource
+    y_shards: Union[np.ndarray,
+                    RemoteResource,
+                    List[np.ndarray],
+                    List[RemoteResource]]
         a list of RemoteResource that should be downloaded before the
         dataset can be loaded and used for model-based optimization
 
@@ -156,14 +162,18 @@ class DiscreteDataset(DatasetBuilder, abc.ABC):
 
     """
 
-    def __init__(self, is_logits=False, num_classes=2,
-                 soft_interpolation=0.6, **kwargs):
+    def __init__(self, *args, is_logits=False,
+                 num_classes=2, soft_interpolation=0.6, **kwargs):
         """Initialize a model-based optimization dataset and prepare
         that dataset by loading that dataset from disk and modifying
         its distribution
 
         Arguments:
 
+        *args: list
+            a list of positional arguments passed to the super class
+            constructor of the DiscreteDataset class, which typically
+            includes a list of x shards and y shards; see dataset_builder.py
         is_logits: bool
             a value that indicates whether the design values contained in the
             model-based optimization dataset have already been converted to
@@ -178,22 +188,20 @@ class DiscreteDataset(DatasetBuilder, abc.ABC):
             interpolates between a uniform and dirac distribution
             1.0 = dirac, 0.0 -> uniform
         **kwargs: dict
-            additional keyword arguments passed to the "load_dataset" method,
-            which may be data specific and depend on whether the dataset
-            contains discrete or continuous data points
+            additional keyword arguments which are used to parameterize the
+            data set generation process, including which shard files are used
+            if multiple sets of data set shard files can be loaded
 
         """
 
         # set a hyper parameter that controls the conversion from
-        # integers to floating point logits
+        # integers to floating point logits for the dataset
         self.soft_interpolation = soft_interpolation
         self.num_classes = num_classes
-
-        # set if the dataset is already mapped to logits
         self.is_logits = is_logits
 
         # initialize the dataset using the method in the base class
-        super(DiscreteDataset, self).__init__(**kwargs)
+        super(DiscreteDataset, self).__init__(*args, **kwargs)
 
     def batch_transform(self, x_batch, y_batch,
                         return_x=True, return_y=True):
