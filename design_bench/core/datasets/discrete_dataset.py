@@ -1,5 +1,5 @@
 from design_bench.core.datasets.dataset_builder import DatasetBuilder
-import abc as abc
+import abc
 import numpy as np
 
 
@@ -433,14 +433,11 @@ class DiscreteDataset(DatasetBuilder, abc.ABC):
             self.is_logits = True
 
             # check shape and data type of a single design value x
-            x0 = None
             for x0 in self.iterate_samples(return_y=False):
+                self.input_shape = x0.shape
+                self.input_size = int(np.prod(x0.shape))
+                self.input_dtype = x0.dtype
                 break
-
-            # assign variables that describe the design values 'x'
-            self.input_shape = x0.shape
-            self.input_size = int(np.prod(x0.shape))
-            self.input_dtype = x0.dtype
 
     def map_to_integers(self):
         """a function that processes the dataset corresponding to this
@@ -460,11 +457,8 @@ class DiscreteDataset(DatasetBuilder, abc.ABC):
             self.is_logits = False
 
             # check shape and data type of a single design value x
-            x0 = None
             for x0 in self.iterate_samples(return_y=False):
+                self.input_shape = x0.shape
+                self.input_size = int(np.prod(x0.shape))
+                self.input_dtype = x0.dtype
                 break
-
-            # assign variables that describe the design values 'x'
-            self.input_shape = x0.shape
-            self.input_size = int(np.prod(x0.shape))
-            self.input_dtype = x0.dtype

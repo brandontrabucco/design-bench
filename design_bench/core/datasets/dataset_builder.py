@@ -1,4 +1,4 @@
-from design_bench.utils.remote_resource import RemoteResource
+from design_bench.core.remote_resource import RemoteResource
 import numpy as np
 import abc
 
@@ -263,8 +263,9 @@ class DatasetBuilder(abc.ABC):
                         return_x=return_x, return_y=return_y)
 
                 # update the read position in the shard tensor
-                samples_read = (y_sliced if return_y else x_sliced).shape[0]
                 shard_position += target_size
+                samples_read = (y_sliced if
+                                return_y else x_sliced).shape[0]
 
                 # update the current batch to be yielded
                 y_batch_size += samples_read
@@ -273,9 +274,9 @@ class DatasetBuilder(abc.ABC):
 
                 # yield the current batch when enough samples are loaded
                 if y_batch_size >= batch_size \
-                        or (not drop_remainder
-                            and shard_position >= y_shard_data.shape[0]
-                            and shard_id + 1 == num_shards):
+                        or (shard_position >= y_shard_data.shape[0]
+                            and shard_id + 1 == num_shards
+                            and not drop_remainder):
 
                     try:
 
@@ -324,10 +325,7 @@ class DatasetBuilder(abc.ABC):
 
         # create a generator that only returns single samples
         for batch in self.iterate_batches(
-                1, return_x=return_x,
-                return_y=return_y, drop_remainder=False):
-
-            # determine which tensors to yield
+                1, return_x=return_x, return_y=return_y):
             if return_x and return_y:
                 yield batch[0][0], batch[1][0]
             if return_x or return_y:
@@ -347,8 +345,8 @@ class DatasetBuilder(abc.ABC):
         """
 
         # create a generator that returns batches of designs and predictions
-        for x_batch, y_batch in self.iterate_batches(
-                self.internal_batch_size, drop_remainder=False):
+        for x_batch, y_batch in \
+                self.iterate_batches(self.internal_batch_size):
             yield x_batch, y_batch
 
     def update_x_statistics(self):
@@ -365,8 +363,7 @@ class DatasetBuilder(abc.ABC):
         # iterate through the entire dataset a first time
         samples = x_mean = 0
         for x_batch in self.iterate_batches(
-                self.internal_batch_size,
-                return_y=False, drop_remainder=False):
+                self.internal_batch_size, return_y=False):
 
             # calculate how many samples are actually in the current batch
             batch_size = np.array(x_batch.shape[0], dtype=np.float32)
@@ -382,8 +379,7 @@ class DatasetBuilder(abc.ABC):
         # iterate through the entire dataset a second time
         samples = x_variance = 0
         for x_batch in self.iterate_batches(
-                self.internal_batch_size,
-                return_y=False, drop_remainder=False):
+                self.internal_batch_size, return_y=False):
 
             # calculate how many samples are actually in the current batch
             batch_size = np.array(x_batch.shape[0], dtype=np.float32)
@@ -421,8 +417,7 @@ class DatasetBuilder(abc.ABC):
         # iterate through the entire dataset a first time
         samples = y_mean = 0
         for y_batch in self.iterate_batches(
-                self.internal_batch_size,
-                return_x=False, drop_remainder=False):
+                self.internal_batch_size, return_x=False):
 
             # calculate how many samples are actually in the current batch
             batch_size = np.array(y_batch.shape[0], dtype=np.float32)
@@ -438,8 +433,7 @@ class DatasetBuilder(abc.ABC):
         # iterate through the entire dataset a second time
         samples = y_variance = 0
         for y_batch in self.iterate_batches(
-                self.internal_batch_size,
-                return_x=False, drop_remainder=False):
+                self.internal_batch_size, return_x=False):
 
             # calculate how many samples are actually in the current batch
             batch_size = np.array(y_batch.shape[0], dtype=np.float32)
@@ -486,8 +480,7 @@ class DatasetBuilder(abc.ABC):
         # convert the original prediction generator to a numpy tensor
         self.disable_transform = True
         y = np.concatenate(list(self.iterate_batches(
-            self.internal_batch_size,
-            return_x=False, drop_remainder=False)), axis=0)
+            self.internal_batch_size, return_x=False)), axis=0)
         self.disable_transform = False
 
         # calculate the min threshold for predictions in the dataset
@@ -531,8 +524,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         return np.concatenate([x for x in self.iterate_batches(
-            self.internal_batch_size,
-            return_y=False, drop_remainder=False)], axis=0)
+            self.internal_batch_size, return_y=False)], axis=0)
 
     @property
     def y(self) -> np.ndarray:
@@ -549,8 +541,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         return np.concatenate([y for y in self.iterate_batches(
-            self.internal_batch_size,
-            return_x=False, drop_remainder=False)], axis=0)
+            self.internal_batch_size, return_x=False)], axis=0)
 
     def __init__(self, x_shards, y_shards, internal_batch_size=32):
         """Initialize a model-based optimization dataset and prepare
@@ -609,9 +600,9 @@ class DatasetBuilder(abc.ABC):
             raise ValueError("different num x and y shards not supported")
 
         # download the remote resources
-        for file in self.x_shards + self.y_shards:
-            if isinstance(file, RemoteResource) and not file.is_downloaded:
-                file.download()  # downloaded any file not present on disk
+        for f in self.x_shards + self.y_shards:
+            if isinstance(f, RemoteResource) and not f.is_downloaded:
+                f.download()  # downloaded any file not present on disk
 
         # sample initial x and y values from the data set
         self.dataset_size = 0
@@ -679,8 +670,8 @@ class DatasetBuilder(abc.ABC):
                 target_size = shard_size - y_shard_size
 
                 # slice out a component of the current shard
-                y_sliced = y_batch[read_position:read_position + target_size]
-                samples_read = y_sliced.shape[0]
+                y_slice = y_batch[read_position:read_position + target_size]
+                samples_read = y_slice.shape[0]
 
                 # increment the read position in the prediction tensor
                 # and update the number of shards and examples processed
@@ -688,7 +679,7 @@ class DatasetBuilder(abc.ABC):
                 examples_processed += samples_read
 
                 # update the current shard to be serialized
-                y_shard.append(y_sliced)
+                y_shard.append(y_slice)
                 y_shard_size += samples_read
 
                 # yield the current batch when enough samples are loaded

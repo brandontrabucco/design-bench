@@ -1,5 +1,12 @@
 from design_bench.core.datasets.continuous_dataset import ContinuousDataset
-from design_bench.utils.remote_resource import RemoteResource
+from design_bench.core.remote_resource import RemoteResource
+
+
+SUPERCONDUCTOR_FILES = ["superconductor/superconductor-x-2.npy",
+                        "superconductor/superconductor-x-0.npy",
+                        "superconductor/superconductor-x-1.npy",
+                        "superconductor/superconductor-x-3.npy",
+                        "superconductor/superconductor-x-4.npy"]
 
 
 class SuperconductorDataset(ContinuousDataset):
@@ -140,10 +147,11 @@ class SuperconductorDataset(ContinuousDataset):
 
         """
 
-        return [RemoteResource(f"superconductor/"
-                               f"superconductor-x-{i}.npy",
-                               is_absolute=False, download_target=None,
-                               download_method=None) for i in range(5)]
+        return [RemoteResource(
+            file, is_absolute=False,
+            download_target=f"https://design-bench."
+                            f"s3-us-west-1.amazonaws.com/{file}",
+            download_method="direct") for file in SUPERCONDUCTOR_FILES]
 
     @staticmethod
     def register_y_shards():
@@ -160,10 +168,12 @@ class SuperconductorDataset(ContinuousDataset):
 
         """
 
-        return [RemoteResource(f"superconductor/"
-                               f"superconductor-y-{i}.npy",
-                               is_absolute=False, download_target=None,
-                               download_method=None) for i in range(5)]
+        return [RemoteResource(
+            file.replace("-x-", "-y-"), is_absolute=False,
+            download_target=f"https://design-bench."
+                            f"s3-us-west-1.amazonaws.com/"
+                            f"{file.replace('-x-', '-y-')}",
+            download_method="direct") for file in SUPERCONDUCTOR_FILES]
 
     def __init__(self, **kwargs):
         """Initialize a model-based optimization dataset and prepare

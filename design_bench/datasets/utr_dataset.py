@@ -1,5 +1,35 @@
 from design_bench.core.datasets.discrete_dataset import DiscreteDataset
-from design_bench.utils.remote_resource import RemoteResource
+from design_bench.core.remote_resource import RemoteResource
+
+
+UTR_FILES = ["utr/utr-x-11.npy",
+             "utr/utr-x-12.npy",
+             "utr/utr-x-3.npy",
+             "utr/utr-x-16.npy",
+             "utr/utr-x-4.npy",
+             "utr/utr-x-5.npy",
+             "utr/utr-x-2.npy",
+             "utr/utr-x-8.npy",
+             "utr/utr-x-15.npy",
+             "utr/utr-x-17.npy",
+             "utr/utr-x-6.npy",
+             "utr/utr-x-21.npy",
+             "utr/utr-x-25.npy",
+             "utr/utr-x-13.npy",
+             "utr/utr-x-14.npy",
+             "utr/utr-x-22.npy",
+             "utr/utr-x-7.npy",
+             "utr/utr-x-20.npy",
+             "utr/utr-x-0.npy",
+             "utr/utr-x-27.npy",
+             "utr/utr-x-26.npy",
+             "utr/utr-x-18.npy",
+             "utr/utr-x-23.npy",
+             "utr/utr-x-10.npy",
+             "utr/utr-x-9.npy",
+             "utr/utr-x-19.npy",
+             "utr/utr-x-24.npy",
+             "utr/utr-x-1.npy"]
 
 
 class UTRDataset(DiscreteDataset):
@@ -162,11 +192,11 @@ class UTRDataset(DiscreteDataset):
 
         """
 
-        return [RemoteResource(f"utr/utr-x-{i}.npy",
-                               is_absolute=False,
-                               download_target=None,
-                               download_method=None)
-                for i in range(28)]
+        return [RemoteResource(
+            file, is_absolute=False,
+            download_target=f"https://design-bench."
+                            f"s3-us-west-1.amazonaws.com/{file}",
+            download_method="direct") for file in UTR_FILES]
 
     @staticmethod
     def register_y_shards():
@@ -183,11 +213,12 @@ class UTRDataset(DiscreteDataset):
 
         """
 
-        return [RemoteResource(f"utr/utr-y-{i}.npy",
-                               is_absolute=False,
-                               download_target=None,
-                               download_method=None)
-                for i in range(28)]
+        return [RemoteResource(
+            file.replace("-x-", "-y-"), is_absolute=False,
+            download_target=f"https://design-bench."
+                            f"s3-us-west-1.amazonaws.com/"
+                            f"{file.replace('-x-', '-y-')}",
+            download_method="direct") for file in UTR_FILES]
 
     def __init__(self, soft_interpolation=0.6, **kwargs):
         """Initialize a model-based optimization dataset and prepare

@@ -1,5 +1,19 @@
 from design_bench.core.datasets.discrete_dataset import DiscreteDataset
-from design_bench.utils.remote_resource import RemoteResource
+from design_bench.core.remote_resource import RemoteResource
+
+
+GFP_FILES = ["gfp/gfp-x-6.npy",
+             "gfp/gfp-x-11.npy",
+             "gfp/gfp-x-1.npy",
+             "gfp/gfp-x-9.npy",
+             "gfp/gfp-x-0.npy",
+             "gfp/gfp-x-4.npy",
+             "gfp/gfp-x-3.npy",
+             "gfp/gfp-x-2.npy",
+             "gfp/gfp-x-7.npy",
+             "gfp/gfp-x-8.npy",
+             "gfp/gfp-x-10.npy",
+             "gfp/gfp-x-5.npy"]
 
 
 class GFPDataset(DiscreteDataset):
@@ -162,9 +176,11 @@ class GFPDataset(DiscreteDataset):
 
         """
 
-        return [RemoteResource(f"gfp/gfp-x-{i}.npy",
-                               is_absolute=False, download_target=None,
-                               download_method=None) for i in range(12)]
+        return [RemoteResource(
+            file, is_absolute=False,
+            download_target=f"https://design-bench."
+                            f"s3-us-west-1.amazonaws.com/{file}",
+            download_method="direct") for file in GFP_FILES]
 
     @staticmethod
     def register_y_shards():
@@ -181,9 +197,12 @@ class GFPDataset(DiscreteDataset):
 
         """
 
-        return [RemoteResource(f"gfp/gfp-y-{i}.npy",
-                               is_absolute=False, download_target=None,
-                               download_method=None) for i in range(12)]
+        return [RemoteResource(
+            file.replace("-x-", "-y-"), is_absolute=False,
+            download_target=f"https://design-bench."
+                            f"s3-us-west-1.amazonaws.com/"
+                            f"{file.replace('-x-', '-y-')}",
+            download_method="direct") for file in GFP_FILES]
 
     def __init__(self, soft_interpolation=0.6, **kwargs):
         """Initialize a model-based optimization dataset and prepare

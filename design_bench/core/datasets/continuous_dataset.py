@@ -1,5 +1,5 @@
 from design_bench.core.datasets.dataset_builder import DatasetBuilder
-import abc as abc
+import abc
 
 
 class ContinuousDataset(DatasetBuilder, abc.ABC):
