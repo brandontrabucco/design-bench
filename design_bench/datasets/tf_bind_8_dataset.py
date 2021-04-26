@@ -230,5 +230,4 @@ class TfBind8Dataset(DiscreteDataset):
             self.register_x_shards(transcription_factor=transcription_factor),
             self.register_y_shards(transcription_factor=transcription_factor),
             is_logits=False, num_classes=4,
-            soft_interpolation=soft_interpolation,
-            transcription_factor=transcription_factor, **kwargs)
+            soft_interpolation=soft_interpolation, **kwargs)

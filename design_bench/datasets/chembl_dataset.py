@@ -247,8 +247,9 @@ class ChEMBLDataset(DiscreteDataset):
 
         # initialize the dataset using the method in the base class
         super(ChEMBLDataset, self).__init__(
-            self.register_x_shards(),
-            self.register_y_shards(),
+            self.register_x_shards(assay_chembl_id=assay_chembl_id,
+                                   standard_type=standard_type),
+            self.register_y_shards(assay_chembl_id=assay_chembl_id,
+                                   standard_type=standard_type),
             is_logits=False, num_classes=591,
-            assay_chembl_id=assay_chembl_id, standard_type=standard_type,
             soft_interpolation=soft_interpolation, **kwargs)
