@@ -1,5 +1,4 @@
 from design_bench.utils.remote_resource import RemoteResource
-from typing import Tuple, Iterable
 import numpy as np
 import abc
 
@@ -183,8 +182,7 @@ class DatasetBuilder(abc.ABC):
                 y_batch if return_y else None)
 
     def iterate_batches(self, batch_size, return_x=True,
-                        return_y=True, drop_remainder=False) \
-            -> Iterable[Tuple[np.ndarray, np.ndarray]]:
+                        return_y=True, drop_remainder=False):
         """Returns an object that supports iterations, which yields tuples of
         design values 'x' and prediction values 'y' from a model-based
         optimization data set for training a model
@@ -300,8 +298,7 @@ class DatasetBuilder(abc.ABC):
                     x_batch = [] if return_x else None
                     y_batch = [] if return_y else None
 
-    def iterate_samples(self, return_x=True, return_y=True) -> \
-            Iterable[Tuple[np.ndarray, np.ndarray]]:
+    def iterate_samples(self, return_x=True, return_y=True):
         """Returns an object that supports iterations, which yields tuples of
         design values 'x' and prediction values 'y' from a model-based
         optimization data set for training a model
