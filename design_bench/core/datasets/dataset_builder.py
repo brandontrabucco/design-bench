@@ -160,26 +160,7 @@ class DatasetBuilder(abc.ABC):
 
         """
 
-        # take a subset of the sliced arrays
-        mask = np.logical_and(y_batch <= self.dataset_max_output,
-                              y_batch >= self.dataset_min_output)
-        indices = np.where(mask)[0]
-
-        # sub sample the design and prediction values
-        x_batch = x_batch[indices] if return_x else None
-        y_batch = y_batch[indices] if return_y else None
-
-        # normalize the design values in the batch
-        if self.is_normalized_x and return_x:
-            x_batch = self.normalize_x(x_batch)
-
-        # normalize the prediction values in the batch
-        if self.is_normalized_y and return_y:
-            y_batch = self.normalize_y(y_batch)
-
-        # return processed batches of designs an predictions
-        return (x_batch if return_x else None,
-                y_batch if return_y else None)
+        raise NotImplementedError
 
     def iterate_batches(self, batch_size, return_x=True,
                         return_y=True, drop_remainder=False):

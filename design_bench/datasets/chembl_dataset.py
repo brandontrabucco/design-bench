@@ -1340,6 +1340,7 @@ CHEMBL_FILES = ["chembl/chembl-GI50-CHEMBL1963990-x-2.npy",
                 "chembl/chembl-Potency-CHEMBL1794345-x-9.npy",
                 "chembl/chembl-Potency-CHEMBL1794483-x-22.npy"]
 
+
 class ChEMBLDataset(DiscreteDataset):
     """A molecule design dataset that defines a common set of functions
     and attributes for a model-based optimization dataset, where the

@@ -1,8 +1,8 @@
 from design_bench.core.datasets.dataset_builder import DatasetBuilder
-import abc
+import numpy as np
 
 
-class ContinuousDataset(DatasetBuilder, abc.ABC):
+class ContinuousDataset(DatasetBuilder):
     """An abstract base class that defines a common set of functions
     and attributes for a model-based optimization dataset, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
@@ -125,4 +125,57 @@ class ContinuousDataset(DatasetBuilder, abc.ABC):
 
     """
 
-    pass
+    def batch_transform(self, x_batch, y_batch,
+                        return_x=True, return_y=True):
+        """Apply a transformation to batches of samples from a model-based
+        optimization data set, including sub sampling and normalization
+        and potentially other used defined transformations
+
+        Arguments:
+
+        x_batch: np.ndarray
+            a numpy array representing a batch of design values sampled
+            from a model-based optimization data set
+        y_batch: np.ndarray
+            a numpy array representing a batch of prediction values sampled
+            from a model-based optimization data set
+        return_x: bool
+            a boolean indicator that specifies whether the generator yields
+            design values at every iteration; note that at least one of
+            return_x and return_y must be set to True
+        return_y: bool
+            a boolean indicator that specifies whether the generator yields
+            prediction values at every iteration; note that at least one
+            of return_x and return_y must be set to True
+
+        Returns:
+
+        x_batch: np.ndarray
+            a numpy array representing a batch of design values sampled
+            from a model-based optimization data set
+        y_batch: np.ndarray
+            a numpy array representing a batch of prediction values sampled
+            from a model-based optimization data set
+
+        """
+
+        # take a subset of the sliced arrays
+        mask = np.logical_and(y_batch <= self.dataset_max_output,
+                              y_batch >= self.dataset_min_output)
+        indices = np.where(mask)[0]
+
+        # sub sample the design and prediction values
+        x_batch = x_batch[indices] if return_x else None
+        y_batch = y_batch[indices] if return_y else None
+
+        # normalize the design values in the batch
+        if self.is_normalized_x and return_x:
+            x_batch = self.normalize_x(x_batch)
+
+        # normalize the prediction values in the batch
+        if self.is_normalized_y and return_y:
+            y_batch = self.normalize_y(y_batch)
+
+        # return processed batches of designs an predictions
+        return (x_batch if return_x else None,
+                y_batch if return_y else None)

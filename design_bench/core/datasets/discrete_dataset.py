@@ -1,5 +1,4 @@
 from design_bench.core.datasets.dataset_builder import DatasetBuilder
-import abc
 import numpy as np
 
 
@@ -17,7 +16,7 @@ def one_hot(a, num_classes):
     return out
 
 
-class DiscreteDataset(DatasetBuilder, abc.ABC):
+class DiscreteDataset(DatasetBuilder):
     """An abstract base class that defines a common set of functions
     and attributes for a model-based optimization dataset, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
