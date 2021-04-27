@@ -6,7 +6,7 @@ HOPPER_CONTROLLER_FILES = ["hopper_controller/hopper_controller-x-0.npy"]
 
 
 class HopperControllerDataset(ContinuousDataset):
-    """A superconductivity dataset that defines a common set of functions
+    """A robot controller dataset that defines a common set of functions
     and attributes for a model-based optimization dataset, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
 

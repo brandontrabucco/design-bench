@@ -120,7 +120,7 @@ class UTRDataset(DiscreteDataset):
 
     denormalize_x(new_x: np.ndarray) -> np.ndarray:
         a helper function that accepts floating point design values 'x'
-        as input and undoes standardization so that they have their
+        as input and undoes standardizmoreation so that they have their
         original empirical mean and variance
 
     normalize_y(new_x: np.ndarray) -> np.ndarray:
