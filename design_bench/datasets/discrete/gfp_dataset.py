@@ -1,9 +1,23 @@
-from design_bench.core.datasets.dataset_builder import DatasetBuilder
-import numpy as np
+from design_bench.datasets.discrete_dataset import DiscreteDataset
+from design_bench.remote_resource import RemoteResource
 
 
-class ContinuousDataset(DatasetBuilder):
-    """An abstract base class that defines a common set of functions
+GFP_FILES = ["gfp/gfp-x-6.npy",
+             "gfp/gfp-x-11.npy",
+             "gfp/gfp-x-1.npy",
+             "gfp/gfp-x-9.npy",
+             "gfp/gfp-x-0.npy",
+             "gfp/gfp-x-4.npy",
+             "gfp/gfp-x-3.npy",
+             "gfp/gfp-x-2.npy",
+             "gfp/gfp-x-7.npy",
+             "gfp/gfp-x-8.npy",
+             "gfp/gfp-x-10.npy",
+             "gfp/gfp-x-5.npy"]
+
+
+class GFPDataset(DiscreteDataset):
+    """A protein synthesis dataset that defines a common set of functions
     and attributes for a model-based optimization dataset, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
 
@@ -123,59 +137,95 @@ class ContinuousDataset(DatasetBuilder):
         prediction values 'y' in the class dataset in-place which are
         expected to have zero empirical mean and unit variance
 
+    --- for discrete tasks only
+
+    to_logits(np.ndarray) > np.ndarray:
+        A helper function that accepts design values represented as a numpy
+        array of integers as input and converts them to floating point
+        logits of a certain probability distribution
+
+    to_integers(np.ndarray) > np.ndarray:
+        A helper function that accepts design values represented as a numpy
+        array of floating point logits as input and converts them to integer
+        representing the max of the distribution
+
+    map_to_logits():
+        a function that processes the dataset corresponding to this
+        model-based optimization problem, and converts integers to a
+        floating point representation as logits
+
+    map_to_integers():
+        a function that processes the dataset corresponding to this
+        model-based optimization problem, and converts a floating point
+        representation as logits to integers
+
     """
 
-    def batch_transform(self, x_batch, y_batch,
-                        return_x=True, return_y=True):
-        """Apply a transformation to batches of samples from a model-based
-        optimization data set, including sub sampling and normalization
-        and potentially other used defined transformations
-
-        Arguments:
-
-        x_batch: np.ndarray
-            a numpy array representing a batch of design values sampled
-            from a model-based optimization data set
-        y_batch: np.ndarray
-            a numpy array representing a batch of prediction values sampled
-            from a model-based optimization data set
-        return_x: bool
-            a boolean indicator that specifies whether the generator yields
-            design values at every iteration; note that at least one of
-            return_x and return_y must be set to True
-        return_y: bool
-            a boolean indicator that specifies whether the generator yields
-            prediction values at every iteration; note that at least one
-            of return_x and return_y must be set to True
+    @staticmethod
+    def register_x_shards():
+        """Registers a remote file for download that contains design values
+        in a format compatible with the dataset builder class;
+        these files are downloaded all at once in the dataset initialization
 
         Returns:
 
-        x_batch: np.ndarray
-            a numpy array representing a batch of design values sampled
-            from a model-based optimization data set
-        y_batch: np.ndarray
-            a numpy array representing a batch of prediction values sampled
-            from a model-based optimization data set
+        resources: list of RemoteResource
+            a list of RemoteResource objects specific to this dataset, which
+            will be automatically downloaded while the dataset is built
+            and may serve as shards if the dataset is large
 
         """
 
-        # take a subset of the sliced arrays
-        mask = np.logical_and(y_batch <= self.dataset_max_output,
-                              y_batch >= self.dataset_min_output)
-        indices = np.where(mask)[0]
+        return [RemoteResource(
+            file, is_absolute=False,
+            download_target=f"https://design-bench."
+                            f"s3-us-west-1.amazonaws.com/{file}",
+            download_method="direct") for file in GFP_FILES]
 
-        # sub sample the design and prediction values
-        x_batch = x_batch[indices] if return_x else None
-        y_batch = y_batch[indices] if return_y else None
+    @staticmethod
+    def register_y_shards():
+        """Registers a remote file for download that contains prediction
+        values in a format compatible with the dataset builder class;
+        these files are downloaded all at once in the dataset initialization
 
-        # normalize the design values in the batch
-        if self.is_normalized_x and return_x:
-            x_batch = self.normalize_x(x_batch)
+        Returns:
 
-        # normalize the prediction values in the batch
-        if self.is_normalized_y and return_y:
-            y_batch = self.normalize_y(y_batch)
+        resources: list of RemoteResource
+            a list of RemoteResource objects specific to this dataset, which
+            will be automatically downloaded while the dataset is built
+            and may serve as shards if the dataset is large
 
-        # return processed batches of designs an predictions
-        return (x_batch if return_x else None,
-                y_batch if return_y else None)
+        """
+
+        return [RemoteResource(
+            file.replace("-x-", "-y-"), is_absolute=False,
+            download_target=f"https://design-bench."
+                            f"s3-us-west-1.amazonaws.com/"
+                            f"{file.replace('-x-', '-y-')}",
+            download_method="direct") for file in GFP_FILES]
+
+    def __init__(self, soft_interpolation=0.6, **kwargs):
+        """Initialize a model-based optimization dataset and prepare
+        that dataset by loading that dataset from disk and modifying
+        its distribution
+
+        Arguments:
+
+        soft_interpolation: float
+            floating point hyper parameter used when converting design values
+            from integers to a floating point representation as logits, which
+            interpolates between a uniform and dirac distribution
+            1.0 = dirac, 0.0 -> uniform
+        **kwargs: dict
+            additional keyword arguments which are used to parameterize the
+            data set generation process, including which shard files are used
+            if multiple sets of data set shard files can be loaded
+
+        """
+
+        # initialize the dataset using the method in the base class
+        super(GFPDataset, self).__init__(
+            self.register_x_shards(),
+            self.register_y_shards(),
+            is_logits=False, num_classes=20,
+            soft_interpolation=soft_interpolation, **kwargs)

@@ -1,5 +1,5 @@
-from design_bench.core.datasets.discrete_dataset import DiscreteDataset
-from design_bench.core.remote_resource import RemoteResource
+from design_bench.datasets.discrete_dataset import DiscreteDataset
+from design_bench.remote_resource import RemoteResource
 
 
 TF_BIND_8_FILES = ["tf_bind_8/tf_bind_8-KLF1_R328H_R2-x-0.npy",

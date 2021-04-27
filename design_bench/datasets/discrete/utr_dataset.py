@@ -1,16 +1,39 @@
-from design_bench.core.datasets.continuous_dataset import ContinuousDataset
-from design_bench.core.remote_resource import RemoteResource
+from design_bench.datasets.discrete_dataset import DiscreteDataset
+from design_bench.remote_resource import RemoteResource
 
 
-SUPERCONDUCTOR_FILES = ["superconductor/superconductor-x-2.npy",
-                        "superconductor/superconductor-x-0.npy",
-                        "superconductor/superconductor-x-1.npy",
-                        "superconductor/superconductor-x-3.npy",
-                        "superconductor/superconductor-x-4.npy"]
+UTR_FILES = ["utr/utr-x-11.npy",
+             "utr/utr-x-12.npy",
+             "utr/utr-x-3.npy",
+             "utr/utr-x-16.npy",
+             "utr/utr-x-4.npy",
+             "utr/utr-x-5.npy",
+             "utr/utr-x-2.npy",
+             "utr/utr-x-8.npy",
+             "utr/utr-x-15.npy",
+             "utr/utr-x-17.npy",
+             "utr/utr-x-6.npy",
+             "utr/utr-x-21.npy",
+             "utr/utr-x-25.npy",
+             "utr/utr-x-13.npy",
+             "utr/utr-x-14.npy",
+             "utr/utr-x-22.npy",
+             "utr/utr-x-7.npy",
+             "utr/utr-x-20.npy",
+             "utr/utr-x-0.npy",
+             "utr/utr-x-27.npy",
+             "utr/utr-x-26.npy",
+             "utr/utr-x-18.npy",
+             "utr/utr-x-23.npy",
+             "utr/utr-x-10.npy",
+             "utr/utr-x-9.npy",
+             "utr/utr-x-19.npy",
+             "utr/utr-x-24.npy",
+             "utr/utr-x-1.npy"]
 
 
-class SuperconductorDataset(ContinuousDataset):
-    """A superconductivity dataset that defines a common set of functions
+class UTRDataset(DiscreteDataset):
+    """A polypeptide synthesis dataset that defines a common set of functions
     and attributes for a model-based optimization dataset, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
 
@@ -97,7 +120,7 @@ class SuperconductorDataset(ContinuousDataset):
 
     denormalize_x(new_x: np.ndarray) -> np.ndarray:
         a helper function that accepts floating point design values 'x'
-        as input and undoes standardization so that they have their
+        as input and undoes standardizmoreation so that they have their
         original empirical mean and variance
 
     normalize_y(new_x: np.ndarray) -> np.ndarray:
@@ -130,6 +153,28 @@ class SuperconductorDataset(ContinuousDataset):
         prediction values 'y' in the class dataset in-place which are
         expected to have zero empirical mean and unit variance
 
+    --- for discrete tasks only
+
+    to_logits(np.ndarray) > np.ndarray:
+        A helper function that accepts design values represented as a numpy
+        array of integers as input and converts them to floating point
+        logits of a certain probability distribution
+
+    to_integers(np.ndarray) > np.ndarray:
+        A helper function that accepts design values represented as a numpy
+        array of floating point logits as input and converts them to integer
+        representing the max of the distribution
+
+    map_to_logits():
+        a function that processes the dataset corresponding to this
+        model-based optimization problem, and converts integers to a
+        floating point representation as logits
+
+    map_to_integers():
+        a function that processes the dataset corresponding to this
+        model-based optimization problem, and converts a floating point
+        representation as logits to integers
+
     """
 
     @staticmethod
@@ -151,7 +196,7 @@ class SuperconductorDataset(ContinuousDataset):
             file, is_absolute=False,
             download_target=f"https://design-bench."
                             f"s3-us-west-1.amazonaws.com/{file}",
-            download_method="direct") for file in SUPERCONDUCTOR_FILES]
+            download_method="direct") for file in UTR_FILES]
 
     @staticmethod
     def register_y_shards():
@@ -173,15 +218,20 @@ class SuperconductorDataset(ContinuousDataset):
             download_target=f"https://design-bench."
                             f"s3-us-west-1.amazonaws.com/"
                             f"{file.replace('-x-', '-y-')}",
-            download_method="direct") for file in SUPERCONDUCTOR_FILES]
+            download_method="direct") for file in UTR_FILES]
 
-    def __init__(self, **kwargs):
+    def __init__(self, soft_interpolation=0.6, **kwargs):
         """Initialize a model-based optimization dataset and prepare
         that dataset by loading that dataset from disk and modifying
         its distribution
 
         Arguments:
 
+        soft_interpolation: float
+            a floating point hyper parameter used when converting design values
+            from integers to a floating point representation as logits, which
+            interpolates between a uniform and dirac distribution
+            1.0 = dirac, 0.0 -> uniform
         **kwargs: dict
             additional keyword arguments which are used to parameterize the
             data set generation process, including which shard files are used
@@ -190,6 +240,8 @@ class SuperconductorDataset(ContinuousDataset):
         """
 
         # initialize the dataset using the method in the base class
-        super(SuperconductorDataset, self).__init__(
+        super(UTRDataset, self).__init__(
             self.register_x_shards(),
-            self.register_y_shards(), **kwargs)
+            self.register_y_shards(),
+            is_logits=False, num_classes=4,
+            soft_interpolation=soft_interpolation, **kwargs)

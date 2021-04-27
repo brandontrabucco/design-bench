@@ -1,5 +1,5 @@
-from design_bench.core.datasets.discrete_dataset import DiscreteDataset
-from design_bench.core.remote_resource import RemoteResource
+from design_bench.datasets.discrete_dataset import DiscreteDataset
+from design_bench.remote_resource import RemoteResource
 
 
 CHEMBL_FILES = ["chembl/chembl-GI50-CHEMBL1963990-x-2.npy",

@@ -1,23 +1,16 @@
-from design_bench.core.datasets.discrete_dataset import DiscreteDataset
-from design_bench.core.remote_resource import RemoteResource
+from design_bench.datasets.continuous_dataset import ContinuousDataset
+from design_bench.remote_resource import RemoteResource
 
 
-GFP_FILES = ["gfp/gfp-x-6.npy",
-             "gfp/gfp-x-11.npy",
-             "gfp/gfp-x-1.npy",
-             "gfp/gfp-x-9.npy",
-             "gfp/gfp-x-0.npy",
-             "gfp/gfp-x-4.npy",
-             "gfp/gfp-x-3.npy",
-             "gfp/gfp-x-2.npy",
-             "gfp/gfp-x-7.npy",
-             "gfp/gfp-x-8.npy",
-             "gfp/gfp-x-10.npy",
-             "gfp/gfp-x-5.npy"]
+SUPERCONDUCTOR_FILES = ["superconductor/superconductor-x-2.npy",
+                        "superconductor/superconductor-x-0.npy",
+                        "superconductor/superconductor-x-1.npy",
+                        "superconductor/superconductor-x-3.npy",
+                        "superconductor/superconductor-x-4.npy"]
 
 
-class GFPDataset(DiscreteDataset):
-    """A protein synthesis dataset that defines a common set of functions
+class SuperconductorDataset(ContinuousDataset):
+    """A superconductivity dataset that defines a common set of functions
     and attributes for a model-based optimization dataset, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
 
@@ -137,28 +130,6 @@ class GFPDataset(DiscreteDataset):
         prediction values 'y' in the class dataset in-place which are
         expected to have zero empirical mean and unit variance
 
-    --- for discrete tasks only
-
-    to_logits(np.ndarray) > np.ndarray:
-        A helper function that accepts design values represented as a numpy
-        array of integers as input and converts them to floating point
-        logits of a certain probability distribution
-
-    to_integers(np.ndarray) > np.ndarray:
-        A helper function that accepts design values represented as a numpy
-        array of floating point logits as input and converts them to integer
-        representing the max of the distribution
-
-    map_to_logits():
-        a function that processes the dataset corresponding to this
-        model-based optimization problem, and converts integers to a
-        floating point representation as logits
-
-    map_to_integers():
-        a function that processes the dataset corresponding to this
-        model-based optimization problem, and converts a floating point
-        representation as logits to integers
-
     """
 
     @staticmethod
@@ -180,7 +151,7 @@ class GFPDataset(DiscreteDataset):
             file, is_absolute=False,
             download_target=f"https://design-bench."
                             f"s3-us-west-1.amazonaws.com/{file}",
-            download_method="direct") for file in GFP_FILES]
+            download_method="direct") for file in SUPERCONDUCTOR_FILES]
 
     @staticmethod
     def register_y_shards():
@@ -202,20 +173,15 @@ class GFPDataset(DiscreteDataset):
             download_target=f"https://design-bench."
                             f"s3-us-west-1.amazonaws.com/"
                             f"{file.replace('-x-', '-y-')}",
-            download_method="direct") for file in GFP_FILES]
+            download_method="direct") for file in SUPERCONDUCTOR_FILES]
 
-    def __init__(self, soft_interpolation=0.6, **kwargs):
+    def __init__(self, **kwargs):
         """Initialize a model-based optimization dataset and prepare
         that dataset by loading that dataset from disk and modifying
         its distribution
 
         Arguments:
 
-        soft_interpolation: float
-            floating point hyper parameter used when converting design values
-            from integers to a floating point representation as logits, which
-            interpolates between a uniform and dirac distribution
-            1.0 = dirac, 0.0 -> uniform
         **kwargs: dict
             additional keyword arguments which are used to parameterize the
             data set generation process, including which shard files are used
@@ -224,8 +190,6 @@ class GFPDataset(DiscreteDataset):
         """
 
         # initialize the dataset using the method in the base class
-        super(GFPDataset, self).__init__(
+        super(SuperconductorDataset, self).__init__(
             self.register_x_shards(),
-            self.register_y_shards(),
-            is_logits=False, num_classes=20,
-            soft_interpolation=soft_interpolation, **kwargs)
+            self.register_y_shards(), **kwargs)

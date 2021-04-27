@@ -1,4 +1,4 @@
-from design_bench.core.datasets.dataset_builder import DatasetBuilder
+from design_bench.datasets.dataset_builder import DatasetBuilder
 import numpy as np
 
 

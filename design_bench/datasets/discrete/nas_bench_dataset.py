@@ -1,5 +1,5 @@
-from design_bench.core.datasets.discrete_dataset import DiscreteDataset
-from design_bench.core.remote_resource import RemoteResource
+from design_bench.datasets.discrete_dataset import DiscreteDataset
+from design_bench.remote_resource import RemoteResource
 
 
 NAS_BENCH_FILES = ["nas_bench/nas_bench-x-40.npy",

@@ -1,4 +1,4 @@
-from design_bench.core.remote_resource import RemoteResource
+from design_bench.remote_resource import RemoteResource
 import numpy as np
 import abc
 

@@ -1,12 +1,9 @@
-from design_bench.core.datasets.continuous_dataset import ContinuousDataset
-from design_bench.core.remote_resource import RemoteResource
+from design_bench.datasets.dataset_builder import DatasetBuilder
+import numpy as np
 
 
-HOPPER_CONTROLLER_FILES = ["hopper_controller/hopper_controller-x-0.npy"]
-
-
-class HopperControllerDataset(ContinuousDataset):
-    """A robot controller dataset that defines a common set of functions
+class ContinuousDataset(DatasetBuilder):
+    """An abstract base class that defines a common set of functions
     and attributes for a model-based optimization dataset, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
 
@@ -128,64 +125,57 @@ class HopperControllerDataset(ContinuousDataset):
 
     """
 
-    @staticmethod
-    def register_x_shards():
-        """Registers a remote file for download that contains design values
-        in a format compatible with the dataset builder class;
-        these files are downloaded all at once in the dataset initialization
-
-        Returns:
-
-        resources: list of RemoteResource
-            a list of RemoteResource objects specific to this dataset, which
-            will be automatically downloaded while the dataset is built
-            and may serve as shards if the dataset is large
-
-        """
-
-        return [RemoteResource(
-            file, is_absolute=False,
-            download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/{file}",
-            download_method="direct") for file in HOPPER_CONTROLLER_FILES]
-
-    @staticmethod
-    def register_y_shards():
-        """Registers a remote file for download that contains prediction
-        values in a format compatible with the dataset builder class;
-        these files are downloaded all at once in the dataset initialization
-
-        Returns:
-
-        resources: list of RemoteResource
-            a list of RemoteResource objects specific to this dataset, which
-            will be automatically downloaded while the dataset is built
-            and may serve as shards if the dataset is large
-
-        """
-
-        return [RemoteResource(
-            file.replace("-x-", "-y-"), is_absolute=False,
-            download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/"
-                            f"{file.replace('-x-', '-y-')}",
-            download_method="direct") for file in HOPPER_CONTROLLER_FILES]
-
-    def __init__(self, **kwargs):
-        """Initialize a model-based optimization dataset and prepare
-        that dataset by loading that dataset from disk and modifying
-        its distribution
+    def batch_transform(self, x_batch, y_batch,
+                        return_x=True, return_y=True):
+        """Apply a transformation to batches of samples from a model-based
+        optimization data set, including sub sampling and normalization
+        and potentially other used defined transformations
 
         Arguments:
 
-        **kwargs: dict
-            additional keyword arguments which are used to parameterize the
-            data set generation process, including which shard files are used
-            if multiple sets of data set shard files can be loaded
+        x_batch: np.ndarray
+            a numpy array representing a batch of design values sampled
+            from a model-based optimization data set
+        y_batch: np.ndarray
+            a numpy array representing a batch of prediction values sampled
+            from a model-based optimization data set
+        return_x: bool
+            a boolean indicator that specifies whether the generator yields
+            design values at every iteration; note that at least one of
+            return_x and return_y must be set to True
+        return_y: bool
+            a boolean indicator that specifies whether the generator yields
+            prediction values at every iteration; note that at least one
+            of return_x and return_y must be set to True
+
+        Returns:
+
+        x_batch: np.ndarray
+            a numpy array representing a batch of design values sampled
+            from a model-based optimization data set
+        y_batch: np.ndarray
+            a numpy array representing a batch of prediction values sampled
+            from a model-based optimization data set
 
         """
 
-        # initialize the dataset using the method in the base class
-        super(HopperControllerDataset, self).__init__(
-            self.register_x_shards(),
-            self.register_y_shards(), **kwargs)
+        # take a subset of the sliced arrays
+        mask = np.logical_and(y_batch <= self.dataset_max_output,
+                              y_batch >= self.dataset_min_output)
+        indices = np.where(mask)[0]
+
+        # sub sample the design and prediction values
+        x_batch = x_batch[indices] if return_x else None
+        y_batch = y_batch[indices] if return_y else None
+
+        # normalize the design values in the batch
+        if self.is_normalized_x and return_x:
+            x_batch = self.normalize_x(x_batch)
+
+        # normalize the prediction values in the batch
+        if self.is_normalized_y and return_y:
+            y_batch = self.normalize_y(y_batch)
+
+        # return processed batches of designs an predictions
+        return (x_batch if return_x else None,
+                y_batch if return_y else None)
