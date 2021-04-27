@@ -126,6 +126,7 @@ class DatasetBuilder(abc.ABC):
 
     """
 
+    @abc.abstractmethod
     def batch_transform(self, x_batch, y_batch,
                         return_x=True, return_y=True):
         """Apply a transformation to batches of samples from a model-based
