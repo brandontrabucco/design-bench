@@ -204,20 +204,6 @@ class TfBind10Dataset(DiscreteDataset):
         the percentile between 0 and 100 of prediction values 'y' below
         which are hidden from access by members outside the class
 
-    x_shards: Union[np.ndarray,
-                    RemoteResource,
-                    List[np.ndarray],
-                    List[RemoteResource]]
-        a list of RemoteResource that should be downloaded before the
-        dataset can be loaded and used for model-based optimization
-
-    y_shards: Union[np.ndarray,
-                    RemoteResource,
-                    List[np.ndarray],
-                    List[RemoteResource]]
-        a list of RemoteResource that should be downloaded before the
-        dataset can be loaded and used for model-based optimization
-
     Public Methods:
 
     subsample(max_percentile: float,
