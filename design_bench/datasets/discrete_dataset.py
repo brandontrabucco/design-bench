@@ -200,7 +200,8 @@ class DiscreteDataset(DatasetBuilder):
             dataset.y_mean = self.y_mean
             dataset.y_standard_dev = self.y_standard_dev
 
-        # return the re-built dataset
+        # intentionally freeze the data set statistics this is to prevent
+        # bugs once a data set is split and normalization is being used
         dataset.freeze_statistics = True
         return dataset
 
