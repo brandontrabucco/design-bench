@@ -838,6 +838,92 @@ class DatasetBuilder(abc.ABC):
         self.subsample(max_percentile=self.dataset_max_percentile,
                        min_percentile=self.dataset_min_percentile)
 
+    def clone(self, shard_size=5000, to_disk=False,
+              disk_target="dataset", is_absolute=False):
+        """Generate a cloned copy of a model-based optimization dataset
+        using the provided name and shard generation settings; useful
+        when relabelling a dataset buffer from the disk
+
+        Arguments:
+
+        shard_size: int
+            an integer representing the number of samples from a model-based
+            optimization data set to save per shard
+        to_disk: boolean
+            a boolean that indicates whether to store the split data set
+            in memory as numpy arrays or to the disk
+        disk_target: str
+            a string that determines the name and sub folder of the saved
+            data set if to_disk is set to be true
+        is_absolute: boolean
+            a boolean that indicates whether the disk_target path is taken
+            relative to the benchmark data folder
+
+        Returns:
+
+        dataset: DatasetBuilder
+            an instance of a data set builder subclass containing a copy
+            of all data originally associated with this dataset
+
+        """
+
+        # disable transformations and check the size of the data set
+        self.disable_transform = True
+        original_y = self.y[:, 0]
+
+        # create lists to store shards and numpy arrays
+        partial_shard_x, partial_shard_y = [], []
+        x_shards, y_shards = [], []
+
+        # iterate once through the entire data set
+        for sample_id, (x, y) in enumerate(self.iterate_samples()):
+
+            # add the sampled x and y to the dataset
+            partial_shard_x.append(x)
+            partial_shard_y.append(y)
+
+            # if the validation shard is large enough then write it
+            if (sample_id + 1 == original_y.size and len(
+                    partial_shard_x) > 0) or len(
+                    partial_shard_x) >= shard_size:
+
+                # stack the sampled x and y values into a shard
+                shard_x = np.stack(partial_shard_x, axis=0)
+                shard_y = np.stack(partial_shard_y, axis=0)
+
+                if to_disk:
+
+                    # write the design values shard first to a new file
+                    x_resource = DiskResource(
+                        f"{disk_target}-x-{len(x_shards)}.npy",
+                        is_absolute=is_absolute,
+                        download_method=None, download_target=None)
+                    np.save(x_resource.disk_target, shard_x)
+                    shard_x = x_resource
+
+                    # write the prediction values shard second to a new file
+                    y_resource = DiskResource(
+                        f"{disk_target}-y-{len(y_shards)}.npy",
+                        is_absolute=is_absolute,
+                        download_method=None, download_target=None)
+                    np.save(y_resource.disk_target, shard_y)
+                    shard_y = y_resource
+
+                # empty the partial shards and record the saved shard
+                x_shards.append(shard_x)
+                y_shards.append(shard_y)
+                partial_shard_x.clear()
+                partial_shard_y.clear()
+
+            # at the last sample return two split data sets
+            if sample_id + 1 == original_y.size:
+
+                # remember to re-enable original transformations
+                self.disable_transform = False
+
+                # return a new version of the dataset
+                return self.rebuild_dataset(x_shards, y_shards)
+
     def split(self, fraction, shard_size=5000,
               to_disk=False, disk_target="dataset", is_absolute=False):
         """Split a model-based optimization data set into a training set and
@@ -998,11 +1084,17 @@ class DatasetBuilder(abc.ABC):
                         len(training_y_shards) == 0):
                     raise ValueError("split produces empty validation set")
 
-                # return two new datasets
-                return (self.rebuild_dataset(training_x_shards,
-                                             training_y_shards),
-                        self.rebuild_dataset(validation_x_shards,
-                                             validation_y_shards))
+                # build two new datasets
+                dtraining = self.rebuild_dataset(
+                    training_x_shards, training_y_shards)
+                dvalidation = self.rebuild_dataset(
+                    validation_x_shards, validation_y_shards)
+
+                # intentionally freeze the dataset statistics in order
+                # to prevent bugs once a data set is split
+                dtraining.freeze_statistics = True
+                dvalidation.freeze_statistics = True
+                return dtraining, dvalidation
 
     def map_normalize_x(self):
         """a function that standardizes the design values 'x' to have zero

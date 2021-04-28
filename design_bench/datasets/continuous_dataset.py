@@ -149,20 +149,16 @@ class ContinuousDataset(DatasetBuilder):
         dataset.dataset_size = dataset.y.shape[0]
 
         # carry over the normalize statistics of the parent
-        if self.is_normalized_x:
-            dataset.is_normalized_x = True
-            dataset.x_mean = self.x_mean
-            dataset.x_standard_dev = self.x_standard_dev
+        dataset.is_normalized_x = self.is_normalized_x
+        dataset.x_mean = self.x_mean
+        dataset.x_standard_dev = self.x_standard_dev
 
         # carry over the normalize statistics of the parent
-        if self.is_normalized_y:
-            dataset.is_normalized_y = True
-            dataset.y_mean = self.y_mean
-            dataset.y_standard_dev = self.y_standard_dev
+        dataset.is_normalized_y = self.is_normalized_y
+        dataset.y_mean = self.y_mean
+        dataset.y_standard_dev = self.y_standard_dev
 
-        # intentionally freeze the data set statistics this is to prevent
-        # bugs once a data set is split and normalization is being used
-        dataset.freeze_statistics = True
+        # return the new dataset
         return dataset
 
     def batch_transform(self, x_batch, y_batch,
