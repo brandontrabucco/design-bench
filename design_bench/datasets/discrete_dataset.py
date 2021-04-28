@@ -147,6 +147,63 @@ class DiscreteDataset(DatasetBuilder):
 
     """
 
+    def rebuild_dataset(self, x_shards, y_shards, **kwargs):
+        """Initialize a model-based optimization dataset and prepare
+        that dataset by loading that dataset from disk and modifying
+        its distribution of designs and predictions
+
+        Arguments:
+
+        x_shards: Union[         np.ndarray,           RemoteResource,
+                        Iterable[np.ndarray], Iterable[RemoteResource]]
+            a single shard or a list of shards representing the design values
+            in a model-based optimization dataset; shards are loaded lazily
+            if RemoteResource otherwise loaded in memory immediately
+        y_shards: Union[         np.ndarray,           RemoteResource,
+                        Iterable[np.ndarray], Iterable[RemoteResource]]
+            a single shard or a list of shards representing prediction values
+            in a model-based optimization dataset; shards are loaded lazily
+            if RemoteResource otherwise loaded in memory immediately
+        **kwargs: dict
+            additional keyword arguments used by sub classes that determine
+            functionality or apply transformations to a model-based
+            optimization dataset such as an internal batch size
+
+        """
+
+        # new dataset that shares statistics with this one
+        dataset = DiscreteDataset(
+            x_shards, y_shards,
+            is_logits=kwargs.get("is_logits", self.is_logits),
+            num_classes=kwargs.get("num_classes", self.num_classes),
+            soft_interpolation=kwargs.get(
+                "soft_interpolation", self.soft_interpolation),
+            internal_batch_size=kwargs.get(
+                "internal_batch_size", self.internal_batch_size))
+
+        # carry over the sub sampling statistics of the parent
+        dataset.dataset_min_percentile = self.dataset_min_percentile
+        dataset.dataset_max_percentile = self.dataset_max_percentile
+        dataset.dataset_min_output = self.dataset_min_output
+        dataset.dataset_max_output = self.dataset_max_output
+        dataset.dataset_size = dataset.y.shape[0]
+
+        # carry over the normalize statistics of the parent
+        if self.is_normalized_x:
+            dataset.is_normalized_x = True
+            dataset.x_mean = self.x_mean
+            dataset.x_standard_dev = self.x_standard_dev
+
+        # carry over the normalize statistics of the parent
+        if self.is_normalized_y:
+            dataset.is_normalized_y = True
+            dataset.y_mean = self.y_mean
+            dataset.y_standard_dev = self.y_standard_dev
+
+        # return the re-built dataset
+        dataset.freeze_statistics = True
+        return dataset
+
     def __init__(self, *args, is_logits=False,
                  num_classes=2, soft_interpolation=0.6, **kwargs):
         """Initialize a model-based optimization dataset and prepare
@@ -411,6 +468,10 @@ class DiscreteDataset(DatasetBuilder):
 
         """
 
+        # check that statistics are not frozen for this dataset
+        if self.freeze_statistics:
+            raise ValueError("cannot update dataset when it is frozen")
+
         # check design values and prediction values are not normalized
         if not self.is_logits:
 
@@ -430,6 +491,10 @@ class DiscreteDataset(DatasetBuilder):
         representation as logits to integers
 
         """
+
+        # check that statistics are not frozen for this dataset
+        if self.freeze_statistics:
+            raise ValueError("cannot update dataset when it is frozen")
 
         # check design values and prediction values are not normalized
         if self.is_logits:

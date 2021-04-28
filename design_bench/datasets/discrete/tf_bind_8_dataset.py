@@ -1,5 +1,5 @@
 from design_bench.datasets.discrete_dataset import DiscreteDataset
-from design_bench.remote_resource import RemoteResource
+from design_bench.disk_resource import DiskResource
 
 
 TF_BIND_8_FILES = ["tf_bind_8/tf_bind_8-KLF1_R328H_R2-x-0.npy",
@@ -357,7 +357,7 @@ class TfBind8Dataset(DiscreteDataset):
 
         """
 
-        return [RemoteResource(
+        return [DiskResource(
             file, is_absolute=False,
             download_target=f"https://design-bench."
                             f"s3-us-west-1.amazonaws.com/{file}",
@@ -386,7 +386,7 @@ class TfBind8Dataset(DiscreteDataset):
 
         """
 
-        return [RemoteResource(
+        return [DiskResource(
             file.replace("-x-", "-y-"), is_absolute=False,
             download_target=f"https://design-bench."
                             f"s3-us-west-1.amazonaws.com/"

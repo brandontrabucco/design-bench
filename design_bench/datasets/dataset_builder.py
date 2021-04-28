@@ -1,4 +1,4 @@
-from design_bench.remote_resource import RemoteResource
+from design_bench.disk_resource import DiskResource
 from collections.abc import Iterable
 import numpy as np
 import abc
@@ -114,6 +114,33 @@ class DatasetBuilder(abc.ABC):
     """
 
     @abc.abstractmethod
+    def rebuild_dataset(self, x_shards, y_shards, **kwargs):
+        """Initialize a model-based optimization dataset and prepare
+        that dataset by loading that dataset from disk and modifying
+        its distribution of designs and predictions
+
+        Arguments:
+
+        x_shards: Union[         np.ndarray,           RemoteResource,
+                        Iterable[np.ndarray], Iterable[RemoteResource]]
+            a single shard or a list of shards representing the design values
+            in a model-based optimization dataset; shards are loaded lazily
+            if RemoteResource otherwise loaded in memory immediately
+        y_shards: Union[         np.ndarray,           RemoteResource,
+                        Iterable[np.ndarray], Iterable[RemoteResource]]
+            a single shard or a list of shards representing prediction values
+            in a model-based optimization dataset; shards are loaded lazily
+            if RemoteResource otherwise loaded in memory immediately
+        **kwargs: dict
+            additional keyword arguments used by sub classes that determine
+            functionality or apply transformations to a model-based
+            optimization dataset such as an internal batch size
+
+        """
+
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def batch_transform(self, x_batch, y_batch,
                         return_x=True, return_y=True):
         """Apply a transformation to batches of samples from a model-based
@@ -184,10 +211,10 @@ class DatasetBuilder(abc.ABC):
         self.num_shards = 0
         for x_shard, y_shard in zip(self.x_shards, self.y_shards):
             self.num_shards += 1
-            if isinstance(x_shard, RemoteResource) \
+            if isinstance(x_shard, DiskResource) \
                     and not x_shard.is_downloaded:
                 x_shard.download()
-            if isinstance(y_shard, RemoteResource) \
+            if isinstance(y_shard, DiskResource) \
                     and not y_shard.is_downloaded:
                 y_shard.download()
 
@@ -201,7 +228,10 @@ class DatasetBuilder(abc.ABC):
         self.internal_batch_size = internal_batch_size
         self.is_normalized_x = False
         self.is_normalized_y = False
+
+        # special flags that control when the dataset is mutable
         self.disable_transform = False
+        self.freeze_statistics = False
 
         # initialize statistics for data set normalization
         self.x_mean = None
@@ -210,10 +240,10 @@ class DatasetBuilder(abc.ABC):
         self.y_standard_dev = None
 
         # assign variables that describe the design values 'x'
-        for test_x in self.iterate_samples(return_y=False):
-            self.input_shape = test_x.shape
-            self.input_size = int(np.prod(test_x.shape))
-            self.input_dtype = test_x.dtype
+        for x in self.iterate_samples(return_y=False):
+            self.input_shape = x.shape
+            self.input_size = int(np.prod(x.shape))
+            self.input_dtype = x.dtype
             break  # only sample a single design from the data set
 
         # assign variables that describe the prediction values 'y'
@@ -223,10 +253,10 @@ class DatasetBuilder(abc.ABC):
 
         # check the output format and count the number of samples
         self.dataset_size = 0
-        for test_y in self.iterate_samples(return_x=False):
+        for i, y in enumerate(self.iterate_samples(return_x=False)):
             self.dataset_size += 1  # assume the data set is large
-        if len(test_y.shape) != 1 or test_y.shape[0] != 1:
-            raise ValueError(f"predictions must have shape [N, 1]")
+            if i == 0 and len(y.shape) != 1 or y.shape[0] != 1:
+                raise ValueError(f"predictions must have shape [N, 1]")
 
     def get_num_shards(self):
         """A helper function that returns the number of shards in a
@@ -271,7 +301,7 @@ class DatasetBuilder(abc.ABC):
             return self.x_shards[shard_id]
 
         # if that shard entry is stored on the disk
-        elif isinstance(self.x_shards[shard_id], RemoteResource):
+        elif isinstance(self.x_shards[shard_id], DiskResource):
             return np.load(self.x_shards[shard_id].disk_target)
 
     def get_shard_y(self, shard_id):
@@ -302,7 +332,7 @@ class DatasetBuilder(abc.ABC):
             return self.y_shards[shard_id]
 
         # if that shard entry is stored on the disk
-        elif isinstance(self.y_shards[shard_id], RemoteResource):
+        elif isinstance(self.y_shards[shard_id], DiskResource):
             return np.load(self.y_shards[shard_id].disk_target)
 
     def set_shard_x(self, shard_id, shard_data):
@@ -331,7 +361,7 @@ class DatasetBuilder(abc.ABC):
             self.x_shards[shard_id] = shard_data
 
         # if that shard entry is stored on the disk
-        elif isinstance(self.x_shards[shard_id], RemoteResource):
+        elif isinstance(self.x_shards[shard_id], DiskResource):
             np.save(self.x_shards[shard_id].disk_target, shard_data)
 
     def set_shard_y(self, shard_id, shard_data):
@@ -360,7 +390,7 @@ class DatasetBuilder(abc.ABC):
             self.y_shards[shard_id] = shard_data
 
         # if that shard entry is stored on the disk
-        elif isinstance(self.y_shards[shard_id], RemoteResource):
+        elif isinstance(self.y_shards[shard_id], DiskResource):
             np.save(self.y_shards[shard_id].disk_target, shard_data)
 
     def iterate_batches(self, batch_size, return_x=True,
@@ -493,11 +523,14 @@ class DatasetBuilder(abc.ABC):
 
         # generator that only returns single samples
         for batch in self.iterate_batches(
-                1, return_x=return_x, return_y=return_y):
+                self.internal_batch_size,
+                return_x=return_x, return_y=return_y):
             if return_x and return_y:
-                yield batch[0][0], batch[1][0]
-            if return_x or return_y:
-                yield batch[0]
+                for i in range(batch[0].shape[0]):
+                    yield batch[0][i], batch[1][i]
+            elif return_x or return_y:
+                for i in range(batch.shape[0]):
+                    yield batch[i]
 
     def __iter__(self):
         """Returns an object that supports iterations, which yields tuples of
@@ -523,6 +556,10 @@ class DatasetBuilder(abc.ABC):
         either iteratively or all at once using numpy
 
         """
+
+        # check that statistics are not frozen for this dataset
+        if self.freeze_statistics:
+            raise ValueError("cannot update dataset when it is frozen")
 
         # make sure the statistics are calculated from original samples
         original_is_normalized_x = self.is_normalized_x
@@ -577,6 +614,10 @@ class DatasetBuilder(abc.ABC):
         either iteratively or all at once using numpy
 
         """
+
+        # check that statistics are not frozen for this dataset
+        if self.freeze_statistics:
+            raise ValueError("cannot update dataset when it is frozen")
 
         # make sure the statistics are calculated from original samples
         original_is_normalized_y = self.is_normalized_y
@@ -640,6 +681,10 @@ class DatasetBuilder(abc.ABC):
             which are hidden from access by members outside the class
 
         """
+
+        # check that statistics are not frozen for this dataset
+        if self.freeze_statistics:
+            raise ValueError("cannot update dataset when it is frozen")
 
         # return an error is the arguments are invalid
         if min_percentile > max_percentile:
@@ -725,6 +770,10 @@ class DatasetBuilder(abc.ABC):
 
         """
 
+        # check that statistics are not frozen for this dataset
+        if self.freeze_statistics:
+            raise ValueError("cannot update dataset when it is frozen")
+
         # prevent the data set for being sub-sampled or normalized
         self.disable_transform = True
         examples = self.y.shape[0]
@@ -789,11 +838,181 @@ class DatasetBuilder(abc.ABC):
         self.subsample(max_percentile=self.dataset_max_percentile,
                        min_percentile=self.dataset_min_percentile)
 
+    def split(self, fraction, shard_size=5000,
+              to_disk=False, disk_target="dataset", is_absolute=False):
+        """Split a model-based optimization data set into a training set and
+        a validation set allocating 'fraction' of the data set to the
+        validation set and the rest to the training set
+
+        Arguments:
+
+        fraction: float
+            a floating point number specifying the fraction of the original
+            dataset to split into a validation set
+        shard_size: int
+            an integer representing the number of samples from a model-based
+            optimization data set to save per shard
+        to_disk: boolean
+            a boolean that indicates whether to store the split data set
+            in memory as numpy arrays or to the disk
+        disk_target: str
+            a string that determines the name and sub folder of the saved
+            data set if to_disk is set to be true
+        is_absolute: boolean
+            a boolean that indicates whether the disk_target path is taken
+            relative to the benchmark data folder
+
+        Returns:
+
+        training_dataset: DatasetBuilder
+            an instance of a data set builder subclass containing all data
+            points associated with the training set
+        validation_dataset: DatasetBuilder
+            an instance of a data set builder subclass containing all data
+            points associated with the validation set
+
+        """
+
+        # disable transformations and check the size of the data set
+        self.disable_transform = True
+        original_y = self.y[:, 0]
+
+        # select examples from the active set according to sub sampling
+        active_ids = np.where(np.logical_and(
+            self.dataset_min_output <= original_y,
+            self.dataset_max_output >= original_y))[0]
+        active_ids = active_ids[np.random.choice(
+            active_ids.size, size=int(fraction * float(
+                active_ids.size)), replace=False).tolist()]
+
+        # select examples from the hidden set according to sub sampling
+        hidden_ids = np.where(np.logical_and(
+            self.dataset_min_output > original_y,
+            self.dataset_max_output < original_y))[0]
+        hidden_ids = hidden_ids[np.random.choice(
+            hidden_ids.size, size=int(fraction * float(
+                hidden_ids.size)), replace=False).tolist()]
+
+        # generate a set of ids for the validation set
+        validation_ids = set(np.append(active_ids,
+                                       hidden_ids).tolist())
+
+        # create lists to store shards and numpy arrays
+        training_partial_shard_x, training_partial_shard_y = [], []
+        training_x_shards, training_y_shards = [], []
+        validation_partial_shard_x, validation_partial_shard_y = [], []
+        validation_x_shards, validation_y_shards = [], []
+
+        # iterate once through the entire data set
+        for sample_id, (x, y) in enumerate(self.iterate_samples()):
+
+            # add the sampled x and y to the training or validation set
+            (validation_partial_shard_x if sample_id in
+             validation_ids else training_partial_shard_x).append(x)
+            (validation_partial_shard_y if sample_id in
+             validation_ids else training_partial_shard_y).append(y)
+
+            # if the validation shard is large enough then write it
+            if (sample_id + 1 == original_y.size and len(
+                    validation_partial_shard_x) > 0) or len(
+                    validation_partial_shard_x) >= shard_size:
+
+                # stack the sampled x and y values into a shard
+                shard_x = np.stack(validation_partial_shard_x, axis=0)
+                shard_y = np.stack(validation_partial_shard_y, axis=0)
+
+                if to_disk:
+
+                    # write the design values shard first to a new file
+                    x_resource = DiskResource(
+                        f"{disk_target}-val-x-"
+                        f"{len(validation_x_shards)}.npy",
+                        is_absolute=is_absolute,
+                        download_method=None, download_target=None)
+                    np.save(x_resource.disk_target, shard_x)
+                    shard_x = x_resource
+
+                    # write the prediction values shard second to a new file
+                    y_resource = DiskResource(
+                        f"{disk_target}-val-y-"
+                        f"{len(validation_y_shards)}.npy",
+                        is_absolute=is_absolute,
+                        download_method=None, download_target=None)
+                    np.save(y_resource.disk_target, shard_y)
+                    shard_y = y_resource
+
+                # empty the partial shards and record the saved shard
+                validation_x_shards.append(shard_x)
+                validation_y_shards.append(shard_y)
+                validation_partial_shard_x.clear()
+                validation_partial_shard_y.clear()
+
+            # if the training shard is large enough then write it
+            if (sample_id + 1 == original_y.size and len(
+                    training_partial_shard_x) > 0) or len(
+                    training_partial_shard_x) >= shard_size:
+
+                # stack the sampled x and y values into a shard
+                shard_x = np.stack(training_partial_shard_x, axis=0)
+                shard_y = np.stack(training_partial_shard_y, axis=0)
+
+                if to_disk:
+
+                    # write the design values shard first to a new file
+                    x_resource = DiskResource(
+                        f"{disk_target}-train-x-"
+                        f"{len(training_x_shards)}.npy",
+                        is_absolute=is_absolute,
+                        download_method=None, download_target=None)
+                    np.save(x_resource.disk_target, shard_x)
+                    shard_x = x_resource
+
+                    # write the prediction values shard second to a new file
+                    y_resource = DiskResource(
+                        f"{disk_target}-train-y-"
+                        f"{len(training_y_shards)}.npy",
+                        is_absolute=is_absolute,
+                        download_method=None, download_target=None)
+                    np.save(y_resource.disk_target, shard_y)
+                    shard_y = y_resource
+
+                # empty the partial shards and record the saved shard
+                training_x_shards.append(shard_x)
+                training_y_shards.append(shard_y)
+                training_partial_shard_x.clear()
+                training_partial_shard_y.clear()
+
+            # at the last sample return two split data sets
+            if sample_id + 1 == original_y.size:
+
+                # remember to re-enable original transformations
+                self.disable_transform = False
+
+                # check if the validation set is empty
+                if (len(validation_x_shards) == 0 or
+                        len(validation_y_shards) == 0):
+                    raise ValueError("split produces empty training set")
+
+                # check if the training set is empty
+                if (len(training_x_shards) == 0 or
+                        len(training_y_shards) == 0):
+                    raise ValueError("split produces empty validation set")
+
+                # return two new datasets
+                return (self.rebuild_dataset(training_x_shards,
+                                             training_y_shards),
+                        self.rebuild_dataset(validation_x_shards,
+                                             validation_y_shards))
+
     def map_normalize_x(self):
         """a function that standardizes the design values 'x' to have zero
         empirical mean and unit empirical variance in the dataset
 
         """
+
+        # check that statistics are not frozen for this dataset
+        if self.freeze_statistics:
+            raise ValueError("cannot update dataset when it is frozen")
 
         # check design values and prediction values are not normalized
         if not self.is_normalized_x:
@@ -807,6 +1026,10 @@ class DatasetBuilder(abc.ABC):
         zero empirical mean and unit empirical variance in the dataset
 
         """
+
+        # check that statistics are not frozen for this dataset
+        if self.freeze_statistics:
+            raise ValueError("cannot update dataset when it is frozen")
 
         # check design values and prediction values are not normalized
         if not self.is_normalized_y:
@@ -875,6 +1098,10 @@ class DatasetBuilder(abc.ABC):
 
         """
 
+        # check that statistics are not frozen for this dataset
+        if self.freeze_statistics:
+            raise ValueError("cannot update dataset when it is frozen")
+
         # check design values and prediction values are normalized
         if self.is_normalized_x:
             self.is_normalized_x = False
@@ -884,6 +1111,10 @@ class DatasetBuilder(abc.ABC):
         have zero empirical mean and unit empirical variance in the dataset
 
         """
+
+        # check that statistics are not frozen for this dataset
+        if self.freeze_statistics:
+            raise ValueError("cannot update dataset when it is frozen")
 
         # check design values and prediction values are normalized
         if self.is_normalized_y:

@@ -84,7 +84,7 @@ def direct_download(download_target, disk_target):
             download_target, allow_redirects=True).content)
 
 
-class RemoteResource(object):
+class DiskResource(object):
     """A resource manager that downloads files from remote destinations
     and loads these files from the disk, used to manage remote datasets
     for offline model-based optimization problems
@@ -164,7 +164,7 @@ class RemoteResource(object):
         """
 
         self.disk_target = disk_target if is_absolute \
-            else RemoteResource.get_data_path(disk_target)
+            else DiskResource.get_data_path(disk_target)
         self.download_target = download_target
         self.download_method = download_method
         os.makedirs(os.path.dirname(self.disk_target), exist_ok=True)
