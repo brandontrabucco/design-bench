@@ -110,9 +110,12 @@ def generate_graphs(nasbench):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser("Process Raw NASBench")
-    parser.add_argument("--tfrecord", type=str, default="./data/nasbench_full.tfrecord")
-    parser.add_argument("--shard-folder", type=str, default="./nas_bench")
-    parser.add_argument("--samples-per-shard", type=int, default=5000)
+    parser.add_argument("--tfrecord",
+                        type=str, default="./data/nasbench_full.tfrecord")
+    parser.add_argument("--shard-folder",
+                        type=str, default="./nas_bench")
+    parser.add_argument("--samples-per-shard",
+                        type=int, default=50000)
     args = parser.parse_args()
     os.makedirs(args.shard_folder, exist_ok=True)
 
@@ -127,16 +130,29 @@ if __name__ == "__main__":
         y_list.append(y)
         if len(y_list) == args.samples_per_shard:
 
-            np.save(os.path.join(
-                args.shard_folder,
-                f"nas_bench-x-{shard_id}.npy"),
-                np.stack(x_list, axis=0))
+            x_shard = np.stack(x_list, axis=0).astype(np.int32)
+            x_shard_path = os.path.join(
+                args.shard_folder, f"nas_bench-x-{shard_id}.npy")
+            np.save(x_shard_path, x_shard)
 
-            np.save(os.path.join(
-                args.shard_folder,
-                f"nas_bench-y-{shard_id}.npy"),
-                np.stack(y_list, axis=0))
+            y_shard = np.stack(y_list, axis=0).astype(np.float32)
+            y_shard_path = os.path.join(
+                args.shard_folder, f"nas_bench-y-{shard_id}.npy")
+            np.save(y_shard_path, y_shard)
 
             x_list = []
             y_list = []
             shard_id += 1
+
+    # serialize another shard if there are any remaining
+    if len(x_list) > 0:
+
+        x_shard = np.stack(x_list, axis=0).astype(np.int32)
+        x_shard_path = os.path.join(
+            args.shard_folder, f"nas_bench-x-{shard_id}.npy")
+        np.save(x_shard_path, x_shard)
+
+        y_shard = np.stack(y_list, axis=0).astype(np.float32)
+        y_shard_path = os.path.join(
+            args.shard_folder, f"nas_bench-y-{shard_id}.npy")
+        np.save(y_shard_path, y_shard)

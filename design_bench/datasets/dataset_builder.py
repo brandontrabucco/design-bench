@@ -1,4 +1,5 @@
 from design_bench.remote_resource import RemoteResource
+from collections.abc import Iterable
 import numpy as np
 import abc
 
@@ -55,20 +56,6 @@ class DatasetBuilder(abc.ABC):
     dataset_min_percentile: float
         the percentile between 0 and 100 of prediction values 'y' below
         which are hidden from access by members outside the class
-
-    x_shards: Union[np.ndarray,
-                    RemoteResource,
-                    List[np.ndarray],
-                    List[RemoteResource]]
-        a list of RemoteResource that should be downloaded before the
-        dataset can be loaded and used for model-based optimization
-
-    y_shards: Union[np.ndarray,
-                    RemoteResource,
-                    List[np.ndarray],
-                    List[RemoteResource]]
-        a list of RemoteResource that should be downloaded before the
-        dataset can be loaded and used for model-based optimization
 
     Public Methods:
 
@@ -163,6 +150,219 @@ class DatasetBuilder(abc.ABC):
 
         raise NotImplementedError
 
+    def __init__(self, x_shards, y_shards, internal_batch_size=32):
+        """Initialize a model-based optimization dataset and prepare
+        that dataset by loading that dataset from disk and modifying
+        its distribution of designs and predictions
+
+        Arguments:
+
+        x_shards: Union[         np.ndarray,           RemoteResource,
+                        Iterable[np.ndarray], Iterable[RemoteResource]]
+            a single shard or a list of shards representing the design values
+            in a model-based optimization dataset; shards are loaded lazily
+            if RemoteResource otherwise loaded in memory immediately
+        y_shards: Union[         np.ndarray,           RemoteResource,
+                        Iterable[np.ndarray], Iterable[RemoteResource]]
+            a single shard or a list of shards representing prediction values
+            in a model-based optimization dataset; shards are loaded lazily
+            if RemoteResource otherwise loaded in memory immediately
+        internal_batch_size: int
+            the number of samples per batch to use when computing
+            normalization statistics of the data set and while relabeling
+            the prediction values of the data set
+
+        """
+
+        # save the provided dataset shards to be loaded into batches
+        self.x_shards = (x_shards,) if \
+            not isinstance(x_shards, Iterable) else x_shards
+        self.y_shards = (y_shards,) if \
+            not isinstance(y_shards, Iterable) else y_shards
+
+        # download the remote resources if they are given
+        self.num_shards = 0
+        for x_shard, y_shard in zip(self.x_shards, self.y_shards):
+            self.num_shards += 1
+            if isinstance(x_shard, RemoteResource) \
+                    and not x_shard.is_downloaded:
+                x_shard.download()
+            if isinstance(y_shard, RemoteResource) \
+                    and not y_shard.is_downloaded:
+                y_shard.download()
+
+        # update variables that describe the data set
+        self.dataset_min_percentile = 0.0
+        self.dataset_max_percentile = 100.0
+        self.dataset_min_output = np.NINF
+        self.dataset_max_output = np.PINF
+
+        # initialize the normalization state to False
+        self.internal_batch_size = internal_batch_size
+        self.is_normalized_x = False
+        self.is_normalized_y = False
+        self.disable_transform = False
+
+        # initialize statistics for data set normalization
+        self.x_mean = None
+        self.y_mean = None
+        self.x_standard_dev = None
+        self.y_standard_dev = None
+
+        # assign variables that describe the design values 'x'
+        for test_x in self.iterate_samples(return_y=False):
+            self.input_shape = test_x.shape
+            self.input_size = int(np.prod(test_x.shape))
+            self.input_dtype = test_x.dtype
+            break  # only sample a single design from the data set
+
+        # assign variables that describe the prediction values 'y'
+        self.output_shape = [1]
+        self.output_size = 1
+        self.output_dtype = np.float32
+
+        # check the output format and count the number of samples
+        self.dataset_size = 0
+        for test_y in self.iterate_samples(return_x=False):
+            self.dataset_size += 1  # assume the data set is large
+        if len(test_y.shape) != 1 or test_y.shape[0] != 1:
+            raise ValueError(f"predictions must have shape [N, 1]")
+
+    def get_num_shards(self):
+        """A helper function that returns the number of shards in a
+        model-based optimization data set, which is useful when the data set
+        is too large to be loaded inot memory all at once
+
+        Returns:
+
+        num_shards: int
+            an integer representing the number of shards in a model-based
+            optimization data set that can be loaded
+
+        """
+
+        return self.num_shards
+
+    def get_shard_x(self, shard_id):
+        """A helper function used for retrieving the data associated with a
+        particular shard specified by shard_id containing design values
+        in a model-based optimization data set
+
+        Arguments:
+
+        shard_id: int
+            an integer representing the particular identifier of the shard
+            to be loaded from a model-based optimization data set
+
+        Returns:
+
+        shard_data: np.ndarray
+            a numpy array that represents the data encoded in the shard
+            specified by the integer identifier shard_id
+
+        """
+
+        # check the shard id is in bounds
+        if 0 < shard_id >= self.get_num_shards():
+            raise ValueError(f"shard id={shard_id} out of bounds")
+
+        # if that shard entry is a numpy array
+        if isinstance(self.x_shards[shard_id], np.ndarray):
+            return self.x_shards[shard_id]
+
+        # if that shard entry is stored on the disk
+        elif isinstance(self.x_shards[shard_id], RemoteResource):
+            return np.load(self.x_shards[shard_id].disk_target)
+
+    def get_shard_y(self, shard_id):
+        """A helper function used for retrieving the data associated with a
+        particular shard specified by shard_id containing prediction values
+        in a model-based optimization data set
+
+        Arguments:
+
+        shard_id: int
+            an integer representing the particular identifier of the shard
+            to be loaded from a model-based optimization data set
+
+        Returns:
+
+        shard_data: np.ndarray
+            a numpy array that represents the data encoded in the shard
+            specified by the integer identifier shard_id
+
+        """
+
+        # check the shard id is in bounds
+        if 0 < shard_id >= self.get_num_shards():
+            raise ValueError(f"shard id={shard_id} out of bounds")
+
+        # if that shard entry is a numpy array
+        if isinstance(self.y_shards[shard_id], np.ndarray):
+            return self.y_shards[shard_id]
+
+        # if that shard entry is stored on the disk
+        elif isinstance(self.y_shards[shard_id], RemoteResource):
+            return np.load(self.y_shards[shard_id].disk_target)
+
+    def set_shard_x(self, shard_id, shard_data):
+        """A helper function used for assigning the data associated with a
+        particular shard specified by shard_id containing design values
+        in a model-based optimization data set
+
+        Arguments:
+
+        shard_id: int
+            an integer representing the particular identifier of the shard
+            to be loaded from a model-based optimization data set
+
+        shard_data: np.ndarray
+            a numpy array that represents the data to be encoded in the
+            shard specified by the integer identifier shard_id
+
+        """
+
+        # check the shard id is in bounds
+        if 0 < shard_id >= self.get_num_shards():
+            raise ValueError(f"shard id={shard_id} out of bounds")
+
+        # if that shard entry is a numpy array
+        if isinstance(self.x_shards[shard_id], np.ndarray):
+            self.x_shards[shard_id] = shard_data
+
+        # if that shard entry is stored on the disk
+        elif isinstance(self.x_shards[shard_id], RemoteResource):
+            np.save(self.x_shards[shard_id].disk_target, shard_data)
+
+    def set_shard_y(self, shard_id, shard_data):
+        """A helper function used for assigning the data associated with a
+        particular shard specified by shard_id containing prediction values
+        in a model-based optimization data set
+
+        Arguments:
+
+        shard_id: int
+            an integer representing the particular identifier of the shard
+            to be loaded from a model-based optimization data set
+
+        shard_data: np.ndarray
+            a numpy array that represents the data to be encoded in the
+            shard specified by the integer identifier shard_id
+
+        """
+
+        # check the shard id is in bounds
+        if 0 < shard_id >= self.get_num_shards():
+            raise ValueError(f"shard id={shard_id} out of bounds")
+
+        # if that shard entry is a numpy array
+        if isinstance(self.y_shards[shard_id], np.ndarray):
+            self.y_shards[shard_id] = shard_data
+
+        # if that shard entry is stored on the disk
+        elif isinstance(self.y_shards[shard_id], RemoteResource):
+            np.save(self.y_shards[shard_id].disk_target, shard_data)
+
     def iterate_batches(self, batch_size, return_x=True,
                         return_y=True, drop_remainder=False):
         """Returns an object that supports iterations, which yields tuples of
@@ -206,23 +406,9 @@ class DatasetBuilder(abc.ABC):
         y_batch = [] if return_y else None
 
         # iterate through every registered shard
-        num_shards = len(self.x_shards)
-        for shard_id, (x_shard, y_shard) in \
-                enumerate(zip(self.x_shards, self.y_shards)):
-
-            # load a shard of design values potentially from disk
-            x_shard_data = None
-            if isinstance(x_shard, RemoteResource) and return_x:
-                x_shard_data = np.load(x_shard.disk_target)
-            elif isinstance(x_shard, np.ndarray) and return_x:
-                x_shard_data = x_shard
-
-            # load a shard of prediction values potentially from disk
-            y_shard_data = None
-            if isinstance(y_shard, RemoteResource):
-                y_shard_data = np.load(y_shard.disk_target)
-            elif isinstance(y_shard, np.ndarray):
-                y_shard_data = y_shard
+        for shard_id in range(self.get_num_shards()):
+            x_shard_data = self.get_shard_x(shard_id) if return_x else None
+            y_shard_data = self.get_shard_y(shard_id)
 
             # loop once per batch contained in the shard
             shard_position = 0
@@ -257,7 +443,7 @@ class DatasetBuilder(abc.ABC):
                 # yield the current batch when enough samples are loaded
                 if y_batch_size >= batch_size \
                         or (shard_position >= y_shard_data.shape[0]
-                            and shard_id + 1 == num_shards
+                            and shard_id + 1 == self.get_num_shards()
                             and not drop_remainder):
 
                     try:
@@ -305,7 +491,7 @@ class DatasetBuilder(abc.ABC):
 
         """
 
-        # create a generator that only returns single samples
+        # generator that only returns single samples
         for batch in self.iterate_batches(
                 1, return_x=return_x, return_y=return_y):
             if return_x and return_y:
@@ -326,7 +512,7 @@ class DatasetBuilder(abc.ABC):
 
         """
 
-        # create a generator that returns batches of designs and predictions
+        # generator that returns batches of designs and predictions
         for x_batch, y_batch in \
                 self.iterate_batches(self.internal_batch_size):
             yield x_batch, y_batch
@@ -525,89 +711,6 @@ class DatasetBuilder(abc.ABC):
         return np.concatenate([y for y in self.iterate_batches(
             self.internal_batch_size, return_x=False)], axis=0)
 
-    def __init__(self, x_shards, y_shards, internal_batch_size=32):
-        """Initialize a model-based optimization dataset and prepare
-        that dataset by loading that dataset from disk and modifying
-        its distribution
-
-        Arguments:
-
-        x_shards: Union[np.ndarray,
-                        RemoteResource,
-                        List[np.ndarray],
-                        List[RemoteResource]]
-            a single shard or a list of shards representing the design values
-            in a model-based optimization dataset; shards are loaded lazily
-            if RemoteResource otherwise loaded in memory immediately
-        y_shards: Union[np.ndarray,
-                        RemoteResource,
-                        List[np.ndarray],
-                        List[RemoteResource]]
-            a single shard or a list of shards representing prediction values
-            in a model-based optimization dataset; shards are loaded lazily
-            if RemoteResource otherwise loaded in memory immediately
-        internal_batch_size: int
-            the number of samples per batch to use when computing
-            normalization statistics of the data set and while relabeling
-            the prediction values of the data set
-
-        """
-
-        # update variables that describe the data set
-        self.dataset_min_percentile = 0.0
-        self.dataset_max_percentile = 100.0
-        self.dataset_min_output = np.NINF
-        self.dataset_max_output = np.PINF
-
-        # initialize the normalization state to False
-        self.internal_batch_size = internal_batch_size
-        self.is_normalized_x = False
-        self.is_normalized_y = False
-        self.disable_transform = False
-
-        # initialize statistics for data set normalization
-        self.x_mean = None
-        self.y_mean = None
-        self.x_standard_dev = None
-        self.y_standard_dev = None
-
-        # save the provided dataset shards to be loaded into batches
-        self.x_shards = [x_shards] if \
-            not isinstance(x_shards, list) else x_shards
-        self.y_shards = [y_shards] if \
-            not isinstance(y_shards, list) else y_shards
-
-        # assert same number of x resources and y resources are provided
-        if len(self.x_shards) != len(self.y_shards):
-            raise ValueError("different num x and y shards not supported")
-
-        # download the remote resources
-        for f in self.x_shards + self.y_shards:
-            if isinstance(f, RemoteResource) and not f.is_downloaded:
-                f.download()  # downloaded any file not present on disk
-
-        # sample initial x and y values from the data set
-        self.dataset_size = 0
-        x0 = y0 = None
-        for x0 in self.iterate_samples(return_y=False):
-            break
-        for y0 in self.iterate_samples(return_x=False):
-            self.dataset_size += 1
-
-        # check that the format of the predictions is correct
-        if len(y0.shape) != 1 or y0.shape[0] != 1:
-            raise ValueError(f"predictions should have shape [N, 1]:")
-
-        # assign variables that describe the design values 'x'
-        self.input_shape = x0.shape
-        self.input_size = int(np.prod(x0.shape))
-        self.input_dtype = x0.dtype
-
-        # assign variables that describe the prediction values 'y'
-        self.output_shape = [1]
-        self.output_size = 1
-        self.output_dtype = y0.dtype
-
     def relabel(self, relabel_function):
         """a function that accepts a function that maps from a dataset of
         design values 'x' and prediction values y to a new set of
@@ -633,9 +736,8 @@ class DatasetBuilder(abc.ABC):
 
         # calculate the appropriate size of the first shard
         shard_id = 0
-        shard = self.y_shards[shard_id]
-        shard_size = np.load(shard.disk_target).shape[0] \
-            if isinstance(shard, RemoteResource) else shard.shape[0]
+        shard = self.get_shard_y(shard_id)
+        shard_size = shard.shape[0]
 
         # relabel the prediction values of the internal data set
         for x_batch, y_batch in \
@@ -668,26 +770,9 @@ class DatasetBuilder(abc.ABC):
                 if y_shard_size >= shard_size \
                         or examples_processed >= examples:
 
-                    # check if this shard is a remote resource
-                    if isinstance(shard, RemoteResource):
-
-                        # serialize a resource file with the specified name
-                        # and register the shard as a y resource
-                        resource_file = RemoteResource(
-                            shard.disk_target, is_absolute=True,
-                            download_method=None, download_target=None)
-
-                        # write the shard using numpy
-                        self.y_shards[shard_id] = resource_file
-                        np.save(resource_file.disk_target,
-                                np.concatenate(y_shard, axis=0))
-
-                    # check if this shard is a numpy ndarray
-                    elif isinstance(shard, np.ndarray):
-
-                        # write the shard using numpy
-                        self.y_shards[shard_id] = \
-                            np.concatenate(y_shard, axis=0)
+                    # serialize the value of the new shard data
+                    self.set_shard_y(shard_id,
+                                     np.concatenate(y_shard, axis=0))
 
                     # reset the buffer for incomplete batches
                     y_shard = []
@@ -696,10 +781,8 @@ class DatasetBuilder(abc.ABC):
                     # calculate the appropriate size for the next shard
                     if not examples_processed >= examples:
                         shard_id += 1
-                        shard = self.y_shards[shard_id]
-                        shard_size = np.load(shard.disk_target).shape[0] \
-                            if isinstance(shard, RemoteResource) \
-                            else shard.shape[0]
+                        shard = self.get_shard_y(shard_id)
+                        shard_size = shard.shape[0]
 
         # re-sample the data set and recalculate statistics
         self.disable_transform = False
