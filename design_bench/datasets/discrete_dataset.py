@@ -345,7 +345,7 @@ class DiscreteDataset(DatasetBuilder):
         """
 
         # check that the dataset is in a form that supports normalization
-        if not self.is_logits:
+        if not np.issubdtype(x.dtype, np.floating):
             raise ValueError("cannot normalize discrete design values")
 
         # call the normalization method of the super class
@@ -385,7 +385,7 @@ class DiscreteDataset(DatasetBuilder):
         """
 
         # check that the dataset is in a form that supports denormalization
-        if not self.is_logits:
+        if not np.issubdtype(x.dtype, np.floating):
             raise ValueError("cannot denormalize discrete design values")
 
         # call the normalization method of the super class
