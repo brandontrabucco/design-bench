@@ -169,24 +169,25 @@ class DiscreteDataset(DatasetBuilder):
             functionality or apply transformations to a model-based
             optimization dataset such as an internal batch size
 
+        Returns:
+
+        dataset: DatasetBuilder
+            an instance of a data set builder subclass containing a copy
+            of all statistics associated with this dataset
+
         """
 
         # new dataset that shares statistics with this one
         dataset = DiscreteDataset(
             x_shards, y_shards,
-            is_logits=kwargs.get("is_logits", self.is_logits),
-            num_classes=kwargs.get("num_classes", self.num_classes),
             soft_interpolation=kwargs.get(
                 "soft_interpolation", self.soft_interpolation),
+            num_classes=kwargs.get(
+                "num_classes", self.num_classes),
+            is_logits=kwargs.get(
+                "is_logits", self.is_logits),
             internal_batch_size=kwargs.get(
                 "internal_batch_size", self.internal_batch_size))
-
-        # carry over the sub sampling statistics of the parent
-        dataset.dataset_min_percentile = self.dataset_min_percentile
-        dataset.dataset_max_percentile = self.dataset_max_percentile
-        dataset.dataset_min_output = self.dataset_min_output
-        dataset.dataset_max_output = self.dataset_max_output
-        dataset.dataset_size = dataset.y.shape[0]
 
         # carry over the normalize statistics of the parent
         dataset.is_normalized_x = self.is_normalized_x
@@ -197,6 +198,13 @@ class DiscreteDataset(DatasetBuilder):
         dataset.is_normalized_y = self.is_normalized_y
         dataset.y_mean = self.y_mean
         dataset.y_standard_dev = self.y_standard_dev
+
+        # carry over the sub sampling statistics of the parent
+        dataset.dataset_min_percentile = self.dataset_min_percentile
+        dataset.dataset_max_percentile = self.dataset_max_percentile
+        dataset.dataset_min_output = self.dataset_min_output
+        dataset.dataset_max_output = self.dataset_max_output
+        dataset.dataset_size = dataset.y.shape[0]
 
         # return the new dataset
         return dataset
@@ -276,15 +284,6 @@ class DiscreteDataset(DatasetBuilder):
 
         """
 
-        # take a subset of the sliced arrays
-        mask = np.logical_and(y_batch <= self.dataset_max_output,
-                              y_batch >= self.dataset_min_output)
-        indices = np.where(mask)[0]
-
-        # sub sample the design and prediction values
-        x_batch = x_batch[indices] if return_x else None
-        y_batch = y_batch[indices] if return_y else None
-
         # convert the design values from integers to logits
         if self.is_logits and return_x \
                 and np.issubdtype(x_batch.dtype, np.integer):
@@ -295,17 +294,9 @@ class DiscreteDataset(DatasetBuilder):
                 and np.issubdtype(x_batch.dtype, np.floating):
             x_batch = self.to_integers(x_batch)
 
-        # normalize the design values in the batch
-        if self.is_normalized_x and return_x:
-            x_batch = self.normalize_x(x_batch)
-
-        # normalize the prediction values in the batch
-        if self.is_normalized_y and return_y:
-            y_batch = self.normalize_y(y_batch)
-
         # return processed batches of designs an predictions
-        return (x_batch if return_x else None,
-                y_batch if return_y else None)
+        return super(DiscreteDataset, self).batch_transform(
+            x_batch, y_batch, return_x=return_x, return_y=return_y)
 
     def map_normalize_x(self):
         """a function that standardizes the design values 'x' to have zero

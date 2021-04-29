@@ -163,8 +163,8 @@ class DiskResource(object):
 
         """
 
-        self.disk_target = disk_target if is_absolute \
-            else DiskResource.get_data_path(disk_target)
+        self.disk_target = os.path.abspath(disk_target) \
+            if is_absolute else DiskResource.get_data_path(disk_target)
         self.download_target = download_target
         self.download_method = download_method
         os.makedirs(os.path.dirname(self.disk_target), exist_ok=True)

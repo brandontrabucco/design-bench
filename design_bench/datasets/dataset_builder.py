@@ -136,42 +136,11 @@ class DatasetBuilder(abc.ABC):
             functionality or apply transformations to a model-based
             optimization dataset such as an internal batch size
 
-        """
-
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def batch_transform(self, x_batch, y_batch,
-                        return_x=True, return_y=True):
-        """Apply a transformation to batches of samples from a model-based
-        optimization data set, including sub sampling and normalization
-        and potentially other used defined transformations
-
-        Arguments:
-
-        x_batch: np.ndarray
-            a numpy array representing a batch of design values sampled
-            from a model-based optimization data set
-        y_batch: np.ndarray
-            a numpy array representing a batch of prediction values sampled
-            from a model-based optimization data set
-        return_x: bool
-            a boolean indicator that specifies whether the generator yields
-            design values at every iteration; note that at least one of
-            return_x and return_y must be set to True
-        return_y: bool
-            a boolean indicator that specifies whether the generator yields
-            prediction values at every iteration; note that at least one
-            of return_x and return_y must be set to True
-
         Returns:
 
-        x_batch: np.ndarray
-            a numpy array representing a batch of design values sampled
-            from a model-based optimization data set
-        y_batch: np.ndarray
-            a numpy array representing a batch of prediction values sampled
-            from a model-based optimization data set
+        dataset: DatasetBuilder
+            an instance of a data set builder subclass containing a copy
+            of all statistics associated with this dataset
 
         """
 
@@ -393,6 +362,78 @@ class DatasetBuilder(abc.ABC):
         elif isinstance(self.y_shards[shard_id], DiskResource):
             np.save(self.y_shards[shard_id].disk_target, shard_data)
 
+    def get_reject_criterion(self, x_batch, y_batch):
+        """Given a batch of prediction values from a model-based optimization
+        dataset generates a rejection sampling criterion used for
+        performing subsampling on the dataset
+
+        Arguments:
+
+        x_batch: np.ndarray
+            a numpy array representing a batch of design values sampled
+            from a model-based optimization data set
+        y_batch: np.ndarray
+            a numpy array representing a batch of prediction values sampled
+            from a model-based optimization data set
+
+        Returns:
+
+        reject_criterion: np.ndarray
+            a numpy array containing boolean values that specify whether a
+            particular sample has been rejected (false) or is contained
+            in the subsampled dataset (true)
+
+        """
+
+        return np.logical_and(y_batch <= self.dataset_max_output,
+                              y_batch >= self.dataset_min_output)
+
+    def batch_transform(self, x_batch, y_batch,
+                        return_x=True, return_y=True):
+        """Apply a transformation to batches of samples from a model-based
+        optimization data set, including sub sampling and normalization
+        and potentially other used defined transformations
+
+        Arguments:
+
+        x_batch: np.ndarray
+            a numpy array representing a batch of design values sampled
+            from a model-based optimization data set
+        y_batch: np.ndarray
+            a numpy array representing a batch of prediction values sampled
+            from a model-based optimization data set
+        return_x: bool
+            a boolean indicator that specifies whether the generator yields
+            design values at every iteration; note that at least one of
+            return_x and return_y must be set to True
+        return_y: bool
+            a boolean indicator that specifies whether the generator yields
+            prediction values at every iteration; note that at least one
+            of return_x and return_y must be set to True
+
+        Returns:
+
+        x_batch: np.ndarray
+            a numpy array representing a batch of design values sampled
+            from a model-based optimization data set
+        y_batch: np.ndarray
+            a numpy array representing a batch of prediction values sampled
+            from a model-based optimization data set
+
+        """
+
+        # normalize the design values in the batch
+        if self.is_normalized_x and return_x:
+            x_batch = self.normalize_x(x_batch)
+
+        # normalize the prediction values in the batch
+        if self.is_normalized_y and return_y:
+            y_batch = self.normalize_y(y_batch)
+
+        # return processed batches of designs an predictions
+        return (x_batch if return_x else None,
+                y_batch if return_y else None)
+
     def iterate_batches(self, batch_size, return_x=True,
                         return_y=True, drop_remainder=False):
         """Returns an object that supports iterations, which yields tuples of
@@ -456,6 +497,16 @@ class DatasetBuilder(abc.ABC):
                 # take a subset of the sliced arrays using a pre-defined
                 # transformation that sub-samples and normalizes
                 if not self.disable_transform:
+
+                    # compute which samples are exposed in the dataset
+                    indices = np.where(
+                        self.get_reject_criterion(x_sliced, y_sliced))[0]
+
+                    # sub sample the design and prediction values
+                    x_sliced = x_sliced[indices] if return_x else None
+                    y_sliced = y_sliced[indices] if return_y else None
+
+                    # apply a transformation to the dataset
                     x_sliced, y_sliced = self.batch_transform(
                         x_sliced, y_sliced,
                         return_x=return_x, return_y=return_y)
@@ -525,9 +576,13 @@ class DatasetBuilder(abc.ABC):
         for batch in self.iterate_batches(
                 self.internal_batch_size,
                 return_x=return_x, return_y=return_y):
+
+            # yield a tuple if both x and y are returned
             if return_x and return_y:
                 for i in range(batch[0].shape[0]):
                     yield batch[0][i], batch[1][i]
+
+            # yield a tuple if only x and y or returned
             elif return_x or return_y:
                 for i in range(batch.shape[0]):
                     yield batch[i]
@@ -838,14 +893,17 @@ class DatasetBuilder(abc.ABC):
         self.subsample(max_percentile=self.dataset_max_percentile,
                        min_percentile=self.dataset_min_percentile)
 
-    def clone(self, shard_size=5000, to_disk=False,
-              disk_target="dataset", is_absolute=False):
+    def clone(self, subset=None, shard_size=5000,
+              to_disk=False, disk_target="dataset", is_absolute=True):
         """Generate a cloned copy of a model-based optimization dataset
         using the provided name and shard generation settings; useful
         when relabelling a dataset buffer from the disk
 
         Arguments:
 
+        subset: set
+            a python set of integers representing the ids of the samples
+            to be included in the generated shards
         shard_size: int
             an integer representing the number of samples from a model-based
             optimization data set to save per shard
@@ -879,8 +937,9 @@ class DatasetBuilder(abc.ABC):
         for sample_id, (x, y) in enumerate(self.iterate_samples()):
 
             # add the sampled x and y to the dataset
-            partial_shard_x.append(x)
-            partial_shard_y.append(y)
+            if subset is None or sample_id in subset:
+                partial_shard_x.append(x)
+                partial_shard_y.append(y)
 
             # if the validation shard is large enough then write it
             if (sample_id + 1 == original_y.size and len(
@@ -921,11 +980,15 @@ class DatasetBuilder(abc.ABC):
                 # remember to re-enable original transformations
                 self.disable_transform = False
 
+                # check if the subset is empty
+                if len(x_shards) == 0 or len(y_shards) == 0:
+                    raise ValueError("subset produces an empty dataset")
+
                 # return a new version of the dataset
                 return self.rebuild_dataset(x_shards, y_shards)
 
-    def split(self, fraction, shard_size=5000,
-              to_disk=False, disk_target="dataset", is_absolute=False):
+    def split(self, fraction, subset=None, shard_size=5000,
+              to_disk=False, disk_target="dataset", is_absolute=True):
         """Split a model-based optimization data set into a training set and
         a validation set allocating 'fraction' of the data set to the
         validation set and the rest to the training set
@@ -935,6 +998,9 @@ class DatasetBuilder(abc.ABC):
         fraction: float
             a floating point number specifying the fraction of the original
             dataset to split into a validation set
+        subset: set
+            a python set of integers representing the ids of the samples
+            to be included in the generated shards
         shard_size: int
             an integer representing the number of samples from a model-based
             optimization data set to save per shard
@@ -959,142 +1025,55 @@ class DatasetBuilder(abc.ABC):
 
         """
 
-        # disable transformations and check the size of the data set
+        # generate the rejection sampling criterion
         self.disable_transform = True
-        original_y = self.y[:, 0]
+        reject_criterion = [self.get_reject_criterion(x_batch, y_batch)
+                            for x_batch, y_batch in
+                            self.iterate_batches(self.internal_batch_size)]
+        reject_criterion = np.concatenate(reject_criterion, axis=0)
+        self.disable_transform = False
+
+        # set the default subset to the entire dataset
+        if subset is None:
+            subset = set(list(range(reject_criterion.size)))
 
         # select examples from the active set according to sub sampling
-        active_ids = np.where(np.logical_and(
-            self.dataset_min_output <= original_y,
-            self.dataset_max_output >= original_y))[0]
+        active_ids = np.where(reject_criterion)[0]
         active_ids = active_ids[np.random.choice(
             active_ids.size, size=int(fraction * float(
                 active_ids.size)), replace=False).tolist()]
 
         # select examples from the hidden set according to sub sampling
-        hidden_ids = np.where(np.logical_and(
-            self.dataset_min_output > original_y,
-            self.dataset_max_output < original_y))[0]
+        hidden_ids = np.where(np.logical_not(reject_criterion))[0]
         hidden_ids = hidden_ids[np.random.choice(
             hidden_ids.size, size=int(fraction * float(
                 hidden_ids.size)), replace=False).tolist()]
 
         # generate a set of ids for the validation set
-        validation_ids = set(np.append(active_ids,
-                                       hidden_ids).tolist())
+        # noinspection PyTypeChecker
+        validation_ids = set(np.append(
+            active_ids, hidden_ids).tolist()).intersection(subset)
+        training_ids = subset.difference(validation_ids)
 
-        # create lists to store shards and numpy arrays
-        training_partial_shard_x, training_partial_shard_y = [], []
-        training_x_shards, training_y_shards = [], []
-        validation_partial_shard_x, validation_partial_shard_y = [], []
-        validation_x_shards, validation_y_shards = [], []
+        # build a new training  and validation dataset using the split
+        # fraction given as an argument
+        dtraining = self.clone(subset=training_ids,
+                               shard_size=shard_size,
+                               to_disk=to_disk,
+                               disk_target=f"{disk_target}-train",
+                               is_absolute=is_absolute)
+        dtraining.freeze_statistics = True
 
-        # iterate once through the entire data set
-        for sample_id, (x, y) in enumerate(self.iterate_samples()):
+        # intentionally freeze the dataset statistics in order to
+        # prevent bugs once a data set is split
+        dvalidation = self.clone(subset=validation_ids,
+                                 shard_size=shard_size,
+                                 to_disk=to_disk,
+                                 disk_target=f"{disk_target}-val",
+                                 is_absolute=is_absolute)
+        dvalidation.freeze_statistics = True
 
-            # add the sampled x and y to the training or validation set
-            (validation_partial_shard_x if sample_id in
-             validation_ids else training_partial_shard_x).append(x)
-            (validation_partial_shard_y if sample_id in
-             validation_ids else training_partial_shard_y).append(y)
-
-            # if the validation shard is large enough then write it
-            if (sample_id + 1 == original_y.size and len(
-                    validation_partial_shard_x) > 0) or len(
-                    validation_partial_shard_x) >= shard_size:
-
-                # stack the sampled x and y values into a shard
-                shard_x = np.stack(validation_partial_shard_x, axis=0)
-                shard_y = np.stack(validation_partial_shard_y, axis=0)
-
-                if to_disk:
-
-                    # write the design values shard first to a new file
-                    x_resource = DiskResource(
-                        f"{disk_target}-val-x-"
-                        f"{len(validation_x_shards)}.npy",
-                        is_absolute=is_absolute,
-                        download_method=None, download_target=None)
-                    np.save(x_resource.disk_target, shard_x)
-                    shard_x = x_resource
-
-                    # write the prediction values shard second to a new file
-                    y_resource = DiskResource(
-                        f"{disk_target}-val-y-"
-                        f"{len(validation_y_shards)}.npy",
-                        is_absolute=is_absolute,
-                        download_method=None, download_target=None)
-                    np.save(y_resource.disk_target, shard_y)
-                    shard_y = y_resource
-
-                # empty the partial shards and record the saved shard
-                validation_x_shards.append(shard_x)
-                validation_y_shards.append(shard_y)
-                validation_partial_shard_x.clear()
-                validation_partial_shard_y.clear()
-
-            # if the training shard is large enough then write it
-            if (sample_id + 1 == original_y.size and len(
-                    training_partial_shard_x) > 0) or len(
-                    training_partial_shard_x) >= shard_size:
-
-                # stack the sampled x and y values into a shard
-                shard_x = np.stack(training_partial_shard_x, axis=0)
-                shard_y = np.stack(training_partial_shard_y, axis=0)
-
-                if to_disk:
-
-                    # write the design values shard first to a new file
-                    x_resource = DiskResource(
-                        f"{disk_target}-train-x-"
-                        f"{len(training_x_shards)}.npy",
-                        is_absolute=is_absolute,
-                        download_method=None, download_target=None)
-                    np.save(x_resource.disk_target, shard_x)
-                    shard_x = x_resource
-
-                    # write the prediction values shard second to a new file
-                    y_resource = DiskResource(
-                        f"{disk_target}-train-y-"
-                        f"{len(training_y_shards)}.npy",
-                        is_absolute=is_absolute,
-                        download_method=None, download_target=None)
-                    np.save(y_resource.disk_target, shard_y)
-                    shard_y = y_resource
-
-                # empty the partial shards and record the saved shard
-                training_x_shards.append(shard_x)
-                training_y_shards.append(shard_y)
-                training_partial_shard_x.clear()
-                training_partial_shard_y.clear()
-
-            # at the last sample return two split data sets
-            if sample_id + 1 == original_y.size:
-
-                # remember to re-enable original transformations
-                self.disable_transform = False
-
-                # check if the validation set is empty
-                if (len(validation_x_shards) == 0 or
-                        len(validation_y_shards) == 0):
-                    raise ValueError("split produces empty training set")
-
-                # check if the training set is empty
-                if (len(training_x_shards) == 0 or
-                        len(training_y_shards) == 0):
-                    raise ValueError("split produces empty validation set")
-
-                # build two new datasets
-                dtraining = self.rebuild_dataset(
-                    training_x_shards, training_y_shards)
-                dvalidation = self.rebuild_dataset(
-                    validation_x_shards, validation_y_shards)
-
-                # intentionally freeze the dataset statistics in order
-                # to prevent bugs once a data set is split
-                dtraining.freeze_statistics = True
-                dvalidation.freeze_statistics = True
-                return dtraining, dvalidation
+        return dtraining, dvalidation
 
     def map_normalize_x(self):
         """a function that standardizes the design values 'x' to have zero
