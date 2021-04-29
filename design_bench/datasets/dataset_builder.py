@@ -385,8 +385,8 @@ class DatasetBuilder(abc.ABC):
 
         """
 
-        return np.logical_and(y_batch <= self.dataset_max_output,
-                              y_batch >= self.dataset_min_output)
+        return np.logical_and(y_batch[:, 0] <= self.dataset_max_output,
+                              y_batch[:, 0] >= self.dataset_min_output)
 
     def batch_transform(self, x_batch, y_batch,
                         return_x=True, return_y=True):
@@ -924,6 +924,10 @@ class DatasetBuilder(abc.ABC):
             of all data originally associated with this dataset
 
         """
+
+        # check if the subset is empty
+        if subset is not None and len(subset) == 0:
+            raise ValueError("cannot pass an empty subset")
 
         # disable transformations and check the size of the data set
         self.disable_transform = True
