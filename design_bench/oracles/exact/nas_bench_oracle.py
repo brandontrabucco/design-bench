@@ -130,8 +130,6 @@ class NASBenchOracle(ExactOracle):
         self.sequence_to_score = dict()
         dataset.disable_transform = True
         for x, y in dataset.iterate_samples():
-            if np.issubdtype(x, np.floating):
-                x = dataset.to_integers(x[np.newaxis])[0]
             self.sequence_to_score[tuple(x.tolist())] = y
         dataset.disable_transform = False
 
