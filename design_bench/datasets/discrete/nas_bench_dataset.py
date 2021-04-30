@@ -218,7 +218,7 @@ class NASBenchDataset(DiscreteDataset):
 
     name = "NASBench"
     x_name = "Model Architecture"
-    y_name = "Test Accuracy"
+    y_name = "CIFAR-10 Test Accuracy"
 
     @staticmethod
     def register_x_shards():
