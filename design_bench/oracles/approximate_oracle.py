@@ -1,4 +1,5 @@
 from design_bench.oracles.oracle_builder import OracleBuilder
+from design_bench.datasets.dataset_builder import DatasetBuilder
 import abc
 
 
@@ -35,13 +36,13 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         values 'y' coming out of the ground truth score function f(x)
         in order to make the optimization problem difficult
 
-    is_normalized_y: bool
+    expect_normalized_y: bool
         a boolean indicator that specifies whether the inputs to the oracle
         score function are expected to be normalized
-    is_normalized_x: bool
+    expect_normalized_x: bool
         a boolean indicator that specifies whether the outputs of the oracle
         score function are expected to be normalized
-    is_logits: bool
+    expect_logits: bool
         a boolean that specifies whether the oracle score function is
         expecting logits when the dataset is discrete
 
@@ -64,6 +65,91 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
     """
 
+    @abc.abstractmethod
+    def is_downloaded(self, dataset, **kwargs):
+        """a function that accepts a set of design values 'x' and prediction
+        values 'y' and fits an approximate oracle to serve as the ground
+        truth function f(x) in a model-based optimization problem
+
+        Arguments:
+
+        dataset: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class which has
+            a set of design values 'x' and prediction values 'y', and defines
+            batching and sampling methods for those attributes
+
+        """
+
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def download(self, dataset, **kwargs):
+        """a function that accepts a set of design values 'x' and prediction
+        values 'y' and fits an approximate oracle to serve as the ground
+        truth function f(x) in a model-based optimization problem
+
+        Arguments:
+
+        dataset: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class which has
+            a set of design values 'x' and prediction values 'y', and defines
+            batching and sampling methods for those attributes
+
+        """
+
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def can_download(self, dataset, **kwargs):
+        """a function that accepts a set of design values 'x' and prediction
+        values 'y' and fits an approximate oracle to serve as the ground
+        truth function f(x) in a model-based optimization problem
+
+        Arguments:
+
+        dataset: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class which has
+            a set of design values 'x' and prediction values 'y', and defines
+            batching and sampling methods for those attributes
+
+        """
+
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def load_model(self, dataset, **kwargs):
+        """a function that accepts a set of design values 'x' and prediction
+        values 'y' and fits an approximate oracle to serve as the ground
+        truth function f(x) in a model-based optimization problem
+
+        Arguments:
+
+        dataset: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class which has
+            a set of design values 'x' and prediction values 'y', and defines
+            batching and sampling methods for those attributes
+
+        """
+
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def save_model(self, model, dataset, **kwargs):
+        """a function that accepts a set of design values 'x' and prediction
+        values 'y' and fits an approximate oracle to serve as the ground
+        truth function f(x) in a model-based optimization problem
+
+        Arguments:
+
+        dataset: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class which has
+            a set of design values 'x' and prediction values 'y', and defines
+            batching and sampling methods for those attributes
+
+        """
+
+        raise NotImplementedError
+
     @staticmethod
     @abc.abstractmethod
     def fit(dataset, **kwargs):
@@ -84,8 +170,8 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
     def __init__(self, dataset: DatasetBuilder,
                  internal_batch_size=32, internal_measurements=1,
-                 noise_std=0.0, is_normalized_y=False,
-                 is_normalized_x=False, is_logits=None, **kwargs):
+                 noise_std=0.0, expect_normalized_y=False,
+                 expect_normalized_x=False, expect_logits=None, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -108,26 +194,39 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             the standard deviation of gaussian noise added to the prediction
             values 'y' coming out of the ground truth score function f(x)
             in order to make the optimization problem difficult
-        is_normalized_y: bool
+        expect_normalized_y: bool
             a boolean indicator that specifies whether the inputs to the
             oracle score function are expected to be normalized
-        is_normalized_x: bool
+        expect_normalized_x: bool
             a boolean indicator that specifies whether the outputs of the
             oracle score function are expected to be normalized
-        is_logits: bool
+        expect_logits: bool
             a boolean that specifies whether the oracle score function
             is expecting logits when the dataset is discrete
 
         """
 
-        self.model = self.fit(dataset, **kwargs)
+        if not self.is_downloaded(dataset):
+
+            if self.can_download(dataset):
+                self.download(dataset)
+                self.model = self.load_model(dataset)
+
+            else:
+                self.model = self.fit(dataset, **kwargs)
+                self.save_model(self.model, dataset)
+
+        self.model = self.load_model(dataset)
 
         # initialize the oracle using the super class
         super(ApproximateOracle, self).__init__(
-            dataset, is_batched=True, internal_batch_size=internal_batch_size,
+            dataset, is_batched=True,
+            internal_batch_size=internal_batch_size,
             internal_measurements=internal_measurements,
-            noise_std=noise_std, is_normalized_y=is_normalized_y,
-            is_normalized_x=is_normalized_x, is_logits=is_logits)
+            noise_std=noise_std,
+            expect_normalized_y=expect_normalized_y,
+            expect_normalized_x=expect_normalized_x,
+            expect_logits=expect_logits)
 
     def protected_score(self, x):
         """Score function to be implemented by oracle subclasses, where x is

@@ -35,13 +35,13 @@ class ExactOracle(OracleBuilder, abc.ABC):
         values 'y' coming out of the ground truth score function f(x)
         in order to make the optimization problem difficult
 
-    is_normalized_y: bool
+    expect_normalized_y: bool
         a boolean indicator that specifies whether the inputs to the oracle
         score function are expected to be normalized
-    is_normalized_x: bool
+    expect_normalized_x: bool
         a boolean indicator that specifies whether the outputs of the oracle
         score function are expected to be normalized
-    is_logits: bool
+    expect_logits: bool
         a boolean that specifies whether the oracle score function is
         expecting logits when the dataset is discrete
 
