@@ -220,7 +220,7 @@ class DiskResource(object):
         # check that a download method for this file exists
         if (self.download_target is None
                 or self.download_method is None):
-            raise ValueError("resource not available for download yet")
+            return False
 
         success = False
 
