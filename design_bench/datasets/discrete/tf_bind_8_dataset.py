@@ -204,7 +204,7 @@ TF_BIND_8_FILES = ["tf_bind_8/tf_bind_8-KLF1_R328H_R2-x-0.npy",
                    "tf_bind_8/tf_bind_8-PROP1_R99Q_R1-x-0.npy"]
 
 
-class TfBind8Dataset(DiscreteDataset):
+class TFBind8Dataset(DiscreteDataset):
     """A polypeptide synthesis dataset that defines a common set of functions
     and attributes for a model-based optimization dataset, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
@@ -461,7 +461,7 @@ class TfBind8Dataset(DiscreteDataset):
         """
 
         # initialize the dataset using the method in the base class
-        super(TfBind8Dataset, self).__init__(
+        super(TFBind8Dataset, self).__init__(
             self.register_x_shards(transcription_factor=transcription_factor),
             self.register_y_shards(transcription_factor=transcription_factor),
             is_logits=False, num_classes=4,

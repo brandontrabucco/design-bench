@@ -151,7 +151,7 @@ TF_BIND_10_FILES = ["tf_bind_10/tf_bind_10-cbf1-x-11.npy",
                     "tf_bind_10/tf_bind_10-pho4-x-10.npy"]
 
 
-class TfBind10Dataset(DiscreteDataset):
+class TFBind10Dataset(DiscreteDataset):
     """A polypeptide synthesis dataset that defines a common set of functions
     and attributes for a model-based optimization dataset, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
@@ -408,7 +408,7 @@ class TfBind10Dataset(DiscreteDataset):
         """
 
         # initialize the dataset using the method in the base class
-        super(TfBind10Dataset, self).__init__(
+        super(TFBind10Dataset, self).__init__(
             self.register_x_shards(transcription_factor=transcription_factor),
             self.register_y_shards(transcription_factor=transcription_factor),
             is_logits=False, num_classes=4,

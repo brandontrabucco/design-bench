@@ -1,6 +1,8 @@
 from design_bench.oracles.oracle_builder import OracleBuilder
 from design_bench.datasets.dataset_builder import DatasetBuilder
+from design_bench.disk_resource import DiskResource
 import abc
+import zipfile
 
 
 class ApproximateOracle(OracleBuilder, abc.ABC):
@@ -65,86 +67,45 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
     """
 
+    @staticmethod
     @abc.abstractmethod
-    def is_downloaded(self, dataset, **kwargs):
-        """a function that accepts a set of design values 'x' and prediction
-        values 'y' and fits an approximate oracle to serve as the ground
-        truth function f(x) in a model-based optimization problem
+    def save_model_to_zip(model, zip_archive):
+        """a function that serializes a machine learning model and stores
+        that model in a compressed zip file using the python ZipFile interface
+        for sharing and future loading by an ApproximateOracle
 
         Arguments:
 
-        dataset: DatasetBuilder
-            an instance of a subclass of the DatasetBuilder class which has
-            a set of design values 'x' and prediction values 'y', and defines
-            batching and sampling methods for those attributes
+        model: Any
+            any format of of machine learning model that will be stored
+            in the self.model attribute for later use
+
+        zip_archive: ZipFile
+            an instance of the python ZipFile interface that has loaded
+            the file path specified by self.resource.disk_target
 
         """
 
         raise NotImplementedError
 
+    @staticmethod
     @abc.abstractmethod
-    def download(self, dataset, **kwargs):
-        """a function that accepts a set of design values 'x' and prediction
-        values 'y' and fits an approximate oracle to serve as the ground
-        truth function f(x) in a model-based optimization problem
+    def load_model_from_zip(zip_archive):
+        """a function that loads components of a serialized model from a zip
+        given zip file using the python ZipFile interface and returns an
+        instance of the model
 
         Arguments:
 
-        dataset: DatasetBuilder
-            an instance of a subclass of the DatasetBuilder class which has
-            a set of design values 'x' and prediction values 'y', and defines
-            batching and sampling methods for those attributes
+        zip_archive: ZipFile
+            an instance of the python ZipFile interface that has loaded
+            the file path specified by self.resource.disk_target
 
-        """
+        Returns:
 
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def can_download(self, dataset, **kwargs):
-        """a function that accepts a set of design values 'x' and prediction
-        values 'y' and fits an approximate oracle to serve as the ground
-        truth function f(x) in a model-based optimization problem
-
-        Arguments:
-
-        dataset: DatasetBuilder
-            an instance of a subclass of the DatasetBuilder class which has
-            a set of design values 'x' and prediction values 'y', and defines
-            batching and sampling methods for those attributes
-
-        """
-
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def load_model(self, dataset, **kwargs):
-        """a function that accepts a set of design values 'x' and prediction
-        values 'y' and fits an approximate oracle to serve as the ground
-        truth function f(x) in a model-based optimization problem
-
-        Arguments:
-
-        dataset: DatasetBuilder
-            an instance of a subclass of the DatasetBuilder class which has
-            a set of design values 'x' and prediction values 'y', and defines
-            batching and sampling methods for those attributes
-
-        """
-
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def save_model(self, model, dataset, **kwargs):
-        """a function that accepts a set of design values 'x' and prediction
-        values 'y' and fits an approximate oracle to serve as the ground
-        truth function f(x) in a model-based optimization problem
-
-        Arguments:
-
-        dataset: DatasetBuilder
-            an instance of a subclass of the DatasetBuilder class which has
-            a set of design values 'x' and prediction values 'y', and defines
-            batching and sampling methods for those attributes
+        model: Any
+            any format of of machine learning model that will be stored
+            in the self.model attribute for later use
 
         """
 
@@ -168,7 +129,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         raise NotImplementedError
 
-    def __init__(self, dataset: DatasetBuilder,
+    def __init__(self, dataset: DatasetBuilder, file=None,
                  internal_batch_size=32, internal_measurements=1,
                  noise_std=0.0, expect_normalized_y=False,
                  expect_normalized_x=False, expect_logits=None, **kwargs):
@@ -182,6 +143,9 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
+        file: str
+            a path to a zip file that would contain a serialized model, and is
+            useful when there are multiple versions of the same model
         internal_batch_size: int
             an integer representing the number of design values to process
             internally at the same time, if None defaults to the entire
@@ -206,17 +170,14 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         """
 
-        if not self.is_downloaded(dataset):
+        # download the model parameters from s3
+        self.resource = self.get_disk_resource(dataset, file=file)
+        if not self.resource.is_downloaded \
+                and not self.resource.download(unzip=False):
+            self.save_model(self.fit(dataset, **kwargs))
 
-            if self.can_download(dataset):
-                self.download(dataset)
-                self.model = self.load_model(dataset)
-
-            else:
-                self.model = self.fit(dataset, **kwargs)
-                self.save_model(self.model, dataset)
-
-        self.model = self.load_model(dataset)
+        # load the model from disk once its downloaded
+        self.model = self.load_model()
 
         # initialize the oracle using the super class
         super(ApproximateOracle, self).__init__(
@@ -228,25 +189,66 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             expect_normalized_x=expect_normalized_x,
             expect_logits=expect_logits)
 
-    def protected_score(self, x):
-        """Score function to be implemented by oracle subclasses, where x is
-        either a batch of designs if self.is_batched is True or is a
-        single design when self._is_batched is False
+    @classmethod
+    def get_disk_resource(cls, dataset, file=None):
+        """a function that returns a zip file containing all the files and
+        meta data required to re-build an oracle model such as a neural
+        network or random forest regression model
 
         Arguments:
 
-        x_batch: np.ndarray
-            a batch or single design 'x' that will be given as input to the
-            oracle model in order to obtain a prediction value 'y' for
-            each 'x' which is then returned
+        dataset: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class which has
+            a set of design values 'x' and prediction values 'y', and defines
+            batching and sampling methods for those attributes
+        file: str
+            a path to a zip file that would contain a serialized model, and is
+            useful when there are multiple versions of the same model
 
         Returns:
 
-        y_batch: np.ndarray
-            a batch or single prediction 'y' made by the oracle model,
-            corresponding to the ground truth score for each design
-            value 'x' in a model-based optimization problem
+        model_resource: DiskResource
+            a DiskResource instance containing the expected download link of the
+            model and the target location on disk where the model is
+            expected to be located or downloaded to
 
         """
 
-        return self.model.predict(x)
+        file = file if file is not None else \
+            f"{type(dataset).__name__}/{cls.__name__}.zip"
+        return DiskResource(
+            file, is_absolute=False, download_method="direct",
+            download_target=f"https://design-bench."
+                            f"s3-us-west-1.amazonaws.com/{file}")
+
+    def save_model(self, model):
+        """a function that serializes a machine learning model and stores
+        that model in a compressed zip file using the python ZipFile interface
+        for sharing and future loading by an ApproximateOracle
+
+        Arguments:
+
+        model: Any
+            any format of of machine learning model that will be stored
+            in the self.model attribute for later use
+
+        """
+
+        with zipfile.ZipFile(self.resource.disk_target, mode="w") as file:
+            self.save_model_to_zip(model, file)
+
+    def load_model(self):
+        """a function that loads components of a serialized model from a zip
+        given zip file using the python ZipFile interface and returns an
+        instance of the model
+
+        Returns:
+
+        model: Any
+            any format of of machine learning model that will be stored
+            in the self.model attribute for later use
+
+        """
+
+        with zipfile.ZipFile(self.resource.disk_target, mode="r") as file:
+            return self.load_model_from_zip(file)

@@ -46,12 +46,21 @@ def google_drive_download(download_target, disk_target):
         the destination for the file on this device, do not call this
         function is the file is already downloaded, as it will be overwritten
 
+    Returns:
+
+    success: bool
+        a boolean that indicates whether the download was successful is True
+        or an error was encountered when False (such as a 404 error)
+
     """
 
     # connect to google drive and request the file
     session = requests.Session()
     response = session.get("https://docs.google.com/uc?export=download",
                            params={'id': download_target}, stream=True)
+    valid_response = response.status_code < 400
+    if not valid_response:
+        return valid_response
 
     # confirm that the download should start
     token = get_confirm_token(response)
@@ -59,9 +68,13 @@ def google_drive_download(download_target, disk_target):
         response = session.get("https://docs.google.com/uc?export=download",
                                params={'id': download_target,
                                        'confirm': token}, stream=True)
+        valid_response = response.status_code < 400
+        if not valid_response:
+            return valid_response
 
     # save the content of the file to a local destination
     save_response(response, disk_target)
+    return True
 
 
 def direct_download(download_target, disk_target):
@@ -77,11 +90,20 @@ def direct_download(download_target, disk_target):
         the destination for the file on this device, do not call this
         function is the file is already downloaded, as it will be overwritten
 
+    Returns:
+
+    success: bool
+        a boolean that indicates whether the download was successful is True
+        or an error was encountered when False (such as a 404 error)
+
     """
 
     with open(disk_target, "wb") as file:
-        file.write(requests.get(
-            download_target, allow_redirects=True).content)
+        response = requests.get(download_target, allow_redirects=True)
+        valid_response = response.status_code < 400
+        if valid_response:
+            file.write(response.content)
+        return valid_response
 
 
 class DiskResource(object):
@@ -187,6 +209,12 @@ class DiskResource(object):
             a boolean indicator that specifies whether the downloaded file
             should be unzipped if the file extension is .zip
 
+        Returns:
+
+        success: bool
+            a boolean that indicates whether the download was successful is True
+            or an error was encountered when False (such as a 404 error)
+
         """
 
         # check that a download method for this file exists
@@ -194,15 +222,21 @@ class DiskResource(object):
                 or self.download_method is None):
             raise ValueError("resource not available for download yet")
 
+        success = False
+
         # download using a direct method
         if self.download_method == "direct":
-            direct_download(self.download_target, self.disk_target)
+            success = direct_download(
+                self.download_target, self.disk_target)
 
         # download using the google drive api
         elif self.download_method == "google_drive":
-            google_drive_download(self.download_target, self.disk_target)
+            success = google_drive_download(
+                self.download_target, self.disk_target)
 
         # unzip the file if it is zipped
-        if unzip and self.disk_target.endswith('.zip'):
+        if success and unzip and self.disk_target.endswith('.zip'):
             with zipfile.ZipFile(self.disk_target, 'r') as zip_ref:
                 zip_ref.extractall(os.path.dirname(self.disk_target))
+
+        return success

@@ -1,7 +1,6 @@
 from design_bench.oracles.exact_oracle import ExactOracle
 from design_bench.datasets.discrete_dataset import DiscreteDataset
-from design_bench.datasets.discrete.tf_bind_8_dataset import TfBind8Dataset
-import numpy as np
+from design_bench.datasets.discrete.tf_bind_8_dataset import TFBind8Dataset
 
 
 class TFBind8Oracle(ExactOracle):
@@ -81,7 +80,7 @@ class TFBind8Oracle(ExactOracle):
 
         """
 
-        return isinstance(dataset, TfBind8Dataset)
+        return isinstance(dataset, TFBind8Dataset)
 
     def protected_score(self, x):
         """Score function to be implemented by oracle subclasses, where x is
