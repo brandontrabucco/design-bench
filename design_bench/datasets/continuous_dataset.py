@@ -10,6 +10,19 @@ class ContinuousDataset(DatasetBuilder):
 
     Public Attributes:
 
+    name: str
+        An attribute that specifies the name of a model-based optimization
+        dataset, which might be used when labelling plots in a diagram of
+        performance in a research paper using design-bench
+    x_name: str
+        An attribute that specifies the name of designs in a model-based
+        optimization dataset, which might be used when labelling plots
+        in a visualization of performance in a research paper
+    y_name: str
+        An attribute that specifies the name of predictions in a model-based
+        optimization dataset, which might be used when labelling plots
+        in a visualization of performance in a research paper
+
     x: np.ndarray
         the design values 'x' for a model-based optimization problem
         represented as a numpy array of arbitrary type
@@ -154,18 +167,15 @@ class ContinuousDataset(DatasetBuilder):
 
     """
 
+    name = "ContinuousDataset"
+    x_name = "Design"
+    y_name = "Prediction"
+
     @property
     def subclass_kwargs(self):
         """Generate a dictionary containing class initialization keyword
         arguments that are specific to sub classes; for example, may contain
         the number of classes in a discrete dataset
-
-        Returns:
-
-        kwargs: dict
-            a dictionary containing keyword arguments that will be passes to
-            the initialization method of a subclass of DatasetBuilder;
-            such as the number of classes in a discrete dataset
 
         """
 
@@ -176,13 +186,6 @@ class ContinuousDataset(DatasetBuilder):
         """Specifies the primary subclass of an instance of DatasetBuilder
         that can be instantiated on its own using self.rebuild_dataset
         and typically either DiscreteDataset or ContinuousDataset
-
-        Returns:
-
-        subclass: class
-            a python class representing a subclass of DatasetBuilder that
-            is not abstract and can be instantiated on its own using
-            keyword arguments from self.subclass_kwargs
 
         """
 

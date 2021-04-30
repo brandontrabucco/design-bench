@@ -1350,6 +1350,19 @@ class ChEMBLDataset(DiscreteDataset):
 
     Public Attributes:
 
+    name: str
+        An attribute that specifies the name of a model-based optimization
+        dataset, which might be used when labelling plots in a diagram of
+        performance in a research paper using design-bench
+    x_name: str
+        An attribute that specifies the name of designs in a model-based
+        optimization dataset, which might be used when labelling plots
+        in a visualization of performance in a research paper
+    y_name: str
+        An attribute that specifies the name of predictions in a model-based
+        optimization dataset, which might be used when labelling plots
+        in a visualization of performance in a research paper
+
     x: np.ndarray
         the design values 'x' for a model-based optimization problem
         represented as a numpy array of arbitrary type
@@ -1514,6 +1527,9 @@ class ChEMBLDataset(DiscreteDataset):
 
     """
 
+    name = "ChEMBL"
+    x_name = "SMILES"
+
     @staticmethod
     def register_x_shards(assay_chembl_id="CHEMBL3507681",
                           standard_type="Inhibition"):
@@ -1611,6 +1627,9 @@ class ChEMBLDataset(DiscreteDataset):
             if multiple sets of data set shard files can be loaded
 
         """
+
+        # set the value to be maximized
+        self.y_name = standard_type
 
         # initialize the dataset using the method in the base class
         super(ChEMBLDataset, self).__init__(

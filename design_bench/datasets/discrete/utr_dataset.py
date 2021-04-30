@@ -41,6 +41,19 @@ class UTRDataset(DiscreteDataset):
 
     Public Attributes:
 
+    name: str
+        An attribute that specifies the name of a model-based optimization
+        dataset, which might be used when labelling plots in a diagram of
+        performance in a research paper using design-bench
+    x_name: str
+        An attribute that specifies the name of designs in a model-based
+        optimization dataset, which might be used when labelling plots
+        in a visualization of performance in a research paper
+    y_name: str
+        An attribute that specifies the name of predictions in a model-based
+        optimization dataset, which might be used when labelling plots
+        in a visualization of performance in a research paper
+
     x: np.ndarray
         the design values 'x' for a model-based optimization problem
         represented as a numpy array of arbitrary type
@@ -204,6 +217,10 @@ class UTRDataset(DiscreteDataset):
         representation as logits to integers
 
     """
+
+    name = "UTR"
+    x_name = "DNA Sequence"
+    y_name = "Ribosome Loading"
 
     @staticmethod
     def register_x_shards():
