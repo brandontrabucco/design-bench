@@ -67,7 +67,7 @@ class RandomForestOracle(ApproximateOracle):
 
     """
 
-    def __init__(self, dataset: DiscreteDataset, noise_std=0.0):
+    def __init__(self, dataset: DiscreteDataset, noise_std=0.0, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -92,7 +92,7 @@ class RandomForestOracle(ApproximateOracle):
             expect_normalized_y=True,
             expect_normalized_x=True,
             expect_logits=True if isinstance(
-                dataset, DiscreteDataset) else None)
+                dataset, DiscreteDataset) else None, **kwargs)
 
     def check_input_format(self, dataset):
         """a function that accepts a model-based optimization dataset as input
@@ -134,7 +134,7 @@ class RandomForestOracle(ApproximateOracle):
 
         """
 
-        with zip_archive.open('random_forest.pkl', "wb") as file:
+        with zip_archive.open('random_forest.pkl', "w") as file:
             return pkl.dump(model, file)  # save the model using pickle
 
     @staticmethod
@@ -147,7 +147,7 @@ class RandomForestOracle(ApproximateOracle):
 
         zip_archive: ZipFile
             an instance of the python ZipFile interface that has loaded
-            the file path specified by self.resource.disk_target
+            the file path specified by self.resource.disk_targetteh
 
         Returns:
 
@@ -157,8 +157,8 @@ class RandomForestOracle(ApproximateOracle):
 
         """
 
-        with zip_archive.open('random_forest.pkl', "rb") as file:
-            return pkl.load(file)  # load teh random forest using pickle
+        with zip_archive.open('random_forest.pkl', "r") as file:
+            return pkl.load(file)  # load the random forest using pickle
 
     @staticmethod
     def fit(dataset, **kwargs):
@@ -192,12 +192,12 @@ class RandomForestOracle(ApproximateOracle):
 
         # convert integers to floating point logits
         # we do this because sklearn cannot support discrete features
-        if np.issubdtype(x, np.integer):
+        if np.issubdtype(x.dtype, np.integer):
             x = dataset.to_logits(x)
 
         # make sure both x and y are normalized in advance
         x = dataset.normalize_x(x)
-        y = dataset.normalize_x(y)
+        y = dataset.normalize_y(y)
 
         # fit the random forest model to the dataset
         model.fit(x.reshape((x.shape[0], np.prod(x.shape[1:]))),

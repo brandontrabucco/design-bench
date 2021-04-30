@@ -129,7 +129,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         raise NotImplementedError
 
-    def __init__(self, dataset: DatasetBuilder, file=None,
+    def __init__(self, dataset: DatasetBuilder, file=None, is_batched=True,
                  internal_batch_size=32, internal_measurements=1,
                  noise_std=0.0, expect_normalized_y=False,
                  expect_normalized_x=False, expect_logits=None, **kwargs):
@@ -146,6 +146,10 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         file: str
             a path to a zip file that would contain a serialized model, and is
             useful when there are multiple versions of the same model
+        is_batched: bool
+            a boolean variable that indicates whether the evaluation function
+            implemented for a particular oracle is batched, which effects
+            the scaling coefficient of its computational cost
         internal_batch_size: int
             an integer representing the number of design values to process
             internally at the same time, if None defaults to the entire
@@ -181,7 +185,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         # initialize the oracle using the super class
         super(ApproximateOracle, self).__init__(
-            dataset, is_batched=True,
+            dataset, is_batched=is_batched,
             internal_batch_size=internal_batch_size,
             internal_measurements=internal_measurements,
             noise_std=noise_std,
