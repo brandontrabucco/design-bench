@@ -125,10 +125,10 @@ class TFBind8Oracle(ExactOracle):
 
         # dictionary containing every point in the search space
         self.sequence_to_score = dict()
-        dataset.disable_transform = True
+        dataset._disable_transform = True
         for x, y in dataset.iterate_samples():
             self.sequence_to_score[tuple(x.tolist())] = y
-        dataset.disable_transform = False
+        dataset._disable_transform = False
 
         # initialize the oracle using the super class
         super(TFBind8Oracle, self).__init__(

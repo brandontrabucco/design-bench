@@ -74,6 +74,9 @@ class DatasetBuilder(abc.ABC):
     disable_transform: bool
         a boolean indicator that when set to true prevents transformations
         from being applied when sampling from the dataset
+    disable_subsample: bool
+        a boolean indicator that when set to true prevents subsampling
+        from being applied when sampling from the dataset
     freeze_statistics: bool
         a boolean indicator that when set to true prevents methods from
         changing the normalization and sub sampling statistics
@@ -225,6 +228,33 @@ class DatasetBuilder(abc.ABC):
 
         raise NotImplementedError
 
+    @property
+    def disable_transform(self):
+        """a boolean indicator that when set to true prevents transformations
+        from being applied when sampling from the dataset
+
+        """
+
+        return self._disable_transform
+
+    @property
+    def disable_subsample(self):
+        """a boolean indicator that when set to true prevents subsampling
+        from being applied when sampling from the dataset
+
+        """
+
+        return self._disable_transform
+
+    @property
+    def freeze_statistics(self):
+        """a boolean indicator that when set to true prevents methods from
+        changing the normalization and sub sampling statistics
+
+        """
+
+        return self._disable_transform
+
     def __init__(self, x_shards, y_shards, internal_batch_size=32):
         """Initialize a model-based optimization dataset and prepare
         that dataset by loading that dataset from disk and modifying
@@ -278,9 +308,9 @@ class DatasetBuilder(abc.ABC):
         self.is_normalized_y = False
 
         # special flag that control when the dataset is mutable
-        self.freeze_statistics = False
-        self.disable_transform = False
-        self.disable_subsample = False
+        self._freeze_statistics = False
+        self._disable_transform = False
+        self._disable_subsample = False
 
         # initialize statistics for data set normalization
         self.x_mean = None
@@ -289,8 +319,8 @@ class DatasetBuilder(abc.ABC):
         self.y_standard_dev = None
 
         # assign variables that describe the design values 'x'
-        self.disable_transform = True
-        self.disable_subsample = True
+        self._disable_transform = True
+        self._disable_subsample = True
         for x in self.iterate_samples(return_y=False):
             self.input_shape = x.shape
             self.input_size = int(np.prod(x.shape))
@@ -310,8 +340,8 @@ class DatasetBuilder(abc.ABC):
                 raise ValueError(f"predictions must have shape [N, 1]")
 
         # initialize a default set of visible designs
-        self.disable_transform = False
-        self.disable_subsample = False
+        self._disable_transform = False
+        self._disable_subsample = False
         self.dataset_visible_mask = np.full(
             [self.dataset_size], True, dtype=np.bool)
 
@@ -562,7 +592,7 @@ class DatasetBuilder(abc.ABC):
 
                 # take a subset of the sliced arrays using a pre-defined
                 # transformation that sub-samples
-                if not self.disable_subsample:
+                if not self._disable_subsample:
 
                     # compute which samples are exposed in the dataset
                     indices = np.where(self.dataset_visible_mask[
@@ -574,7 +604,7 @@ class DatasetBuilder(abc.ABC):
 
                 # take a subset of the sliced arrays using a pre-defined
                 # transformation that normalizes
-                if not self.disable_transform:
+                if not self._disable_transform:
 
                     # apply a transformation to the dataset
                     x_sliced, y_sliced = self.batch_transform(
@@ -683,7 +713,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self.freeze_statistics:
+        if self._freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # make sure the statistics are calculated from original samples
@@ -741,7 +771,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self.freeze_statistics:
+        if self._freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # make sure the statistics are calculated from original samples
@@ -813,7 +843,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self.freeze_statistics:
+        if self._freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # return an error is the arguments are invalid
@@ -825,12 +855,12 @@ class DatasetBuilder(abc.ABC):
             raise ValueError("invalid arguments provided")
 
         # convert the original prediction generator to a numpy tensor
-        self.disable_subsample = True
-        self.disable_transform = True
+        self._disable_subsample = True
+        self._disable_transform = True
         y = np.concatenate(list(self.iterate_batches(
             self.internal_batch_size, return_x=False)), axis=0)
-        self.disable_subsample = False
-        self.disable_transform = False
+        self._disable_subsample = False
+        self._disable_transform = False
 
         # calculate the min threshold for predictions in the dataset
         min_output = np.percentile(y[:, 0], min_percentile) \
@@ -913,11 +943,11 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self.freeze_statistics:
+        if self._freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # prevent the data set for being sub-sampled or normalized
-        self.disable_subsample = True
+        self._disable_subsample = True
         examples = self.y.shape[0]
         examples_processed = 0
 
@@ -980,7 +1010,7 @@ class DatasetBuilder(abc.ABC):
                         shard_size = shard.shape[0]
 
         # re-sample the data set and recalculate statistics
-        self.disable_subsample = False
+        self._disable_subsample = False
         self.subsample(max_size=self.dataset_size,
                        max_percentile=self.dataset_max_percentile,
                        min_percentile=self.dataset_min_percentile)
@@ -989,9 +1019,7 @@ class DatasetBuilder(abc.ABC):
         """Initialize a model-based optimization dataset and prepare
         that dataset by loading that dataset from disk and modifying
         its distribution of designs and predictions
-
         Arguments:
-
         x_shards: Union[         np.ndarray,           RemoteResource,
                         Iterable[np.ndarray], Iterable[RemoteResource]]
             a single shard or a list of shards representing the design values
@@ -1005,13 +1033,10 @@ class DatasetBuilder(abc.ABC):
         visible_mask: np.ndarray
             a numpy array of shape [dataset_size] containing boolean entries
             specifying which samples are visible in the provided Iterable
-
         Returns:
-
         dataset: DatasetBuilder
             an instance of a data set builder subclass containing a copy
             of all statistics associated with this dataset
-
         """
 
         # new dataset that shares statistics with this one
@@ -1050,9 +1075,7 @@ class DatasetBuilder(abc.ABC):
         """Generate a cloned copy of a model-based optimization dataset
         using the provided name and shard generation settings; useful
         when relabelling a dataset buffer from the disk
-
         Arguments:
-
         subset: set
             a python set of integers representing the ids of the samples
             to be included in the generated shards
@@ -1068,13 +1091,10 @@ class DatasetBuilder(abc.ABC):
         is_absolute: boolean
             a boolean that indicates whether the disk_target path is taken
             relative to the benchmark data folder
-
         Returns:
-
         dataset: DatasetBuilder
             an instance of a data set builder subclass containing a copy
             of all data originally associated with this dataset
-
         """
 
         # check if the subset is empty
@@ -1082,8 +1102,8 @@ class DatasetBuilder(abc.ABC):
             raise ValueError("cannot pass an empty subset")
 
         # disable transformations and check the size of the data set
-        self.disable_subsample = True
-        self.disable_transform = True
+        self._disable_subsample = True
+        self._disable_transform = True
         visible_mask = []
 
         # create lists to store shards and numpy arrays
@@ -1140,8 +1160,8 @@ class DatasetBuilder(abc.ABC):
             if sample_id + 1 == self.dataset_visible_mask.size:
 
                 # remember to re-enable original transformations
-                self.disable_subsample = False
-                self.disable_transform = False
+                self._disable_subsample = False
+                self._disable_transform = False
 
                 # check if the subset is empty
                 if len(x_shards) == 0 or len(y_shards) == 0:
@@ -1189,26 +1209,16 @@ class DatasetBuilder(abc.ABC):
 
         """
 
-        # set the default subset to the entire dataset
-        if subset is None:
-            subset = set(list(range(self.dataset_visible_mask.size)))
-
         # select examples from the active set according to sub sampling
         active_ids = np.where(self.dataset_visible_mask)[0]
-        active_ids = active_ids[np.random.choice(
-            active_ids.size, size=int(fraction * float(
-                active_ids.size)), replace=False).tolist()]
-
-        # select examples from the hidden set according to sub sampling
-        hidden_ids = np.where(np.logical_not(self.dataset_visible_mask))[0]
-        hidden_ids = hidden_ids[np.random.choice(
-            hidden_ids.size, size=int(fraction * float(
-                hidden_ids.size)), replace=False).tolist()]
+        subset = set(active_ids.tolist()) if subset is None else subset
+        active_ids = np.array(list(subset))[
+            np.random.choice(active_ids.size, size=int(
+                fraction * float(active_ids.size)), replace=False).tolist()]
 
         # generate a set of ids for the validation set
         # noinspection PyTypeChecker
-        validation_ids = set(np.append(
-            active_ids, hidden_ids).tolist()).intersection(subset)
+        validation_ids = set(active_ids.tolist()).intersection(subset)
         training_ids = subset.difference(validation_ids)
 
         # build a new training  and validation dataset using the split
@@ -1218,7 +1228,7 @@ class DatasetBuilder(abc.ABC):
                                to_disk=to_disk,
                                disk_target=f"{disk_target}-train",
                                is_absolute=is_absolute)
-        dtraining.freeze_statistics = True
+        dtraining._freeze_statistics = True
 
         # intentionally freeze the dataset statistics in order to
         # prevent bugs once a data set is split
@@ -1227,7 +1237,7 @@ class DatasetBuilder(abc.ABC):
                                  to_disk=to_disk,
                                  disk_target=f"{disk_target}-val",
                                  is_absolute=is_absolute)
-        dvalidation.freeze_statistics = True
+        dvalidation._freeze_statistics = True
 
         return dtraining, dvalidation
 
@@ -1238,7 +1248,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self.freeze_statistics:
+        if self._freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # check design values and prediction values are not normalized
@@ -1255,7 +1265,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self.freeze_statistics:
+        if self._freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # check design values and prediction values are not normalized
@@ -1326,7 +1336,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self.freeze_statistics:
+        if self._freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # check design values and prediction values are normalized
@@ -1340,7 +1350,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self.freeze_statistics:
+        if self._freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # check design values and prediction values are normalized

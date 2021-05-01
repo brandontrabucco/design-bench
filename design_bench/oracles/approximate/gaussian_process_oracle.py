@@ -228,7 +228,7 @@ class GaussianProcessOracle(ApproximateOracle):
 
         # sample the entire dataset without transformations
         # note this requires the dataset to be loaded in memory all at once
-        dataset.disable_transform = True
+        dataset._disable_transform = True
         x = dataset.x
         y = dataset.y
 
@@ -255,7 +255,7 @@ class GaussianProcessOracle(ApproximateOracle):
                   y.reshape((y.shape[0],)))
 
         # cleanup the dataset and return the trained model
-        dataset.disable_transform = False
+        dataset._disable_transform = False
         return model
 
     def protected_score(self, x):

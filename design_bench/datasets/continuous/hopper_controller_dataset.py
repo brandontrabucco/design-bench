@@ -72,10 +72,10 @@ class HopperControllerDataset(ContinuousDataset):
     internal_batch_size: int
         the integer number of samples per batch that is used internally
         when processing the dataset and generating samples
-    disable_transform: bool
+    _disable_transform: bool
         a boolean indicator that when set to true prevents transformations
         from being applied when sampling from the dataset
-    freeze_statistics: bool
+    _freeze_statistics: bool
         a boolean indicator that when set to true prevents methods from
         changing the normalization and sub sampling statistics
 
