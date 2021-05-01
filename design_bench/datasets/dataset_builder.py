@@ -279,6 +279,8 @@ class DatasetBuilder(abc.ABC):
 
         # special flag that control when the dataset is mutable
         self.freeze_statistics = False
+        self.disable_transform = False
+        self.disable_subsample = False
 
         # initialize statistics for data set normalization
         self.x_mean = None
@@ -288,6 +290,7 @@ class DatasetBuilder(abc.ABC):
 
         # assign variables that describe the design values 'x'
         self.disable_transform = True
+        self.disable_subsample = True
         for x in self.iterate_samples(return_y=False):
             self.input_shape = x.shape
             self.input_size = int(np.prod(x.shape))
@@ -308,6 +311,7 @@ class DatasetBuilder(abc.ABC):
 
         # initialize a default set of visible designs
         self.disable_transform = False
+        self.disable_subsample = False
         self.dataset_visible_mask = np.full(
             [self.dataset_size], True, dtype=np.bool)
 
@@ -557,8 +561,8 @@ class DatasetBuilder(abc.ABC):
                 samples_read = y_sliced.shape[0]
 
                 # take a subset of the sliced arrays using a pre-defined
-                # transformation that sub-samples and normalizes
-                if not self.disable_transform:
+                # transformation that sub-samples
+                if not self.disable_subsample:
 
                     # compute which samples are exposed in the dataset
                     indices = np.where(self.dataset_visible_mask[
@@ -567,6 +571,10 @@ class DatasetBuilder(abc.ABC):
                     # sub sample the design and prediction values
                     x_sliced = x_sliced[indices] if return_x else None
                     y_sliced = y_sliced[indices] if return_y else None
+
+                # take a subset of the sliced arrays using a pre-defined
+                # transformation that normalizes
+                if not self.disable_transform:
 
                     # apply a transformation to the dataset
                     x_sliced, y_sliced = self.batch_transform(
@@ -817,9 +825,11 @@ class DatasetBuilder(abc.ABC):
             raise ValueError("invalid arguments provided")
 
         # convert the original prediction generator to a numpy tensor
+        self.disable_subsample = True
         self.disable_transform = True
         y = np.concatenate(list(self.iterate_batches(
             self.internal_batch_size, return_x=False)), axis=0)
+        self.disable_subsample = False
         self.disable_transform = False
 
         # calculate the min threshold for predictions in the dataset
@@ -907,7 +917,7 @@ class DatasetBuilder(abc.ABC):
             raise ValueError("cannot update dataset when it is frozen")
 
         # prevent the data set for being sub-sampled or normalized
-        self.disable_transform = True
+        self.disable_subsample = True
         examples = self.y.shape[0]
         examples_processed = 0
 
@@ -927,6 +937,10 @@ class DatasetBuilder(abc.ABC):
             # calculate the new prediction values to be stored as shards
             y_batch = relabel_function(x_batch, y_batch)
             read_position = 0
+
+            # remove potential normalization on the predictions
+            if self.is_normalized_y:
+                y_batch = self.denormalize_y(y_batch)
 
             # loop once per batch contained in the shard
             while read_position < y_batch.shape[0]:
@@ -966,8 +980,9 @@ class DatasetBuilder(abc.ABC):
                         shard_size = shard.shape[0]
 
         # re-sample the data set and recalculate statistics
-        self.disable_transform = False
-        self.subsample(max_percentile=self.dataset_max_percentile,
+        self.disable_subsample = False
+        self.subsample(max_size=self.dataset_size,
+                       max_percentile=self.dataset_max_percentile,
                        min_percentile=self.dataset_min_percentile)
 
     def rebuild_dataset(self, x_shards, y_shards, visible_mask):
@@ -1067,6 +1082,7 @@ class DatasetBuilder(abc.ABC):
             raise ValueError("cannot pass an empty subset")
 
         # disable transformations and check the size of the data set
+        self.disable_subsample = True
         self.disable_transform = True
         visible_mask = []
 
@@ -1124,6 +1140,7 @@ class DatasetBuilder(abc.ABC):
             if sample_id + 1 == self.dataset_visible_mask.size:
 
                 # remember to re-enable original transformations
+                self.disable_subsample = False
                 self.disable_transform = False
 
                 # check if the subset is empty
