@@ -277,8 +277,7 @@ class DatasetBuilder(abc.ABC):
         self.is_normalized_x = False
         self.is_normalized_y = False
 
-        # special flags that control when the dataset is mutable
-        self.disable_transform = False
+        # special flag that control when the dataset is mutable
         self.freeze_statistics = False
 
         # initialize statistics for data set normalization
@@ -288,6 +287,7 @@ class DatasetBuilder(abc.ABC):
         self.y_standard_dev = None
 
         # assign variables that describe the design values 'x'
+        self.disable_transform = True
         for x in self.iterate_samples(return_y=False):
             self.input_shape = x.shape
             self.input_size = int(np.prod(x.shape))
@@ -305,6 +305,11 @@ class DatasetBuilder(abc.ABC):
             self.dataset_size += 1  # assume the data set is large
             if i == 0 and len(y.shape) != 1 or y.shape[0] != 1:
                 raise ValueError(f"predictions must have shape [N, 1]")
+
+        # initialize a default set of visible designs
+        self.disable_transform = False
+        self.dataset_visible_mask = np.full(
+            [self.dataset_size], True, dtype=np.bool)
 
     def get_num_shards(self):
         """A helper function that returns the number of shards in a
@@ -441,32 +446,6 @@ class DatasetBuilder(abc.ABC):
         elif isinstance(self.y_shards[shard_id], DiskResource):
             np.save(self.y_shards[shard_id].disk_target, shard_data)
 
-    def get_reject_criterion(self, x_batch, y_batch):
-        """Given a batch of prediction values from a model-based optimization
-        dataset generates a rejection sampling criterion used for
-        performing subsampling on the dataset
-
-        Arguments:
-
-        x_batch: np.ndarray
-            a numpy array representing a batch of design values sampled
-            from a model-based optimization data set
-        y_batch: np.ndarray
-            a numpy array representing a batch of prediction values sampled
-            from a model-based optimization data set
-
-        Returns:
-
-        reject_criterion: np.ndarray
-            a numpy array containing boolean values that specify whether a
-            particular sample has been rejected (false) or is contained
-            in the subsampled dataset (true)
-
-        """
-
-        return np.logical_and(y_batch[:, 0] <= self.dataset_max_output,
-                              y_batch[:, 0] >= self.dataset_min_output)
-
     def batch_transform(self, x_batch, y_batch,
                         return_x=True, return_y=True):
         """Apply a transformation to batches of samples from a model-based
@@ -556,6 +535,7 @@ class DatasetBuilder(abc.ABC):
         y_batch = [] if return_y else None
 
         # iterate through every registered shard
+        sample_id = 0
         for shard_id in range(self.get_num_shards()):
             x_shard_data = self.get_shard_x(shard_id) if return_x else None
             y_shard_data = self.get_shard_y(shard_id)
@@ -573,13 +553,16 @@ class DatasetBuilder(abc.ABC):
                 y_sliced = y_shard_data[shard_position:(
                     shard_position + target_size)]
 
+                # store the batch_size of samples read
+                samples_read = y_sliced.shape[0]
+
                 # take a subset of the sliced arrays using a pre-defined
                 # transformation that sub-samples and normalizes
                 if not self.disable_transform:
 
                     # compute which samples are exposed in the dataset
-                    indices = np.where(
-                        self.get_reject_criterion(x_sliced, y_sliced))[0]
+                    indices = np.where(self.dataset_visible_mask[
+                        sample_id:sample_id + y_sliced.shape[0]])[0]
 
                     # sub sample the design and prediction values
                     x_sliced = x_sliced[indices] if return_x else None
@@ -592,11 +575,11 @@ class DatasetBuilder(abc.ABC):
 
                 # update the read position in the shard tensor
                 shard_position += target_size
-                samples_read = (y_sliced if
-                                return_y else x_sliced).shape[0]
+                sample_id += samples_read
 
                 # update the current batch to be yielded
-                y_batch_size += samples_read
+                y_batch_size += (y_sliced if
+                                 return_y else x_sliced).shape[0]
                 x_batch.append(x_sliced) if return_x else None
                 y_batch.append(y_sliced) if return_y else None
 
@@ -800,13 +783,18 @@ class DatasetBuilder(abc.ABC):
         # reset the normalized state to what it originally was
         self.is_normalized_y = original_is_normalized_y
 
-    def subsample(self, max_percentile=100.0, min_percentile=0.0):
+    def subsample(self, max_size=None,
+                  max_percentile=100.0, min_percentile=0.0):
         """a function that exposes a subsampled version of a much larger
         model-based optimization dataset containing design values 'x'
         whose prediction values 'y' are skewed
 
         Arguments:
 
+        max_size: int
+            the maximum number of samples to include in the visible dataset;
+            if more than this number of samples would be present, samples
+            are randomly removed from the visible dataset
         max_percentile: float
             the percentile between 0 and 100 of prediction values 'y' above
             which are hidden from access by members outside the class
@@ -819,6 +807,10 @@ class DatasetBuilder(abc.ABC):
         # check that statistics are not frozen for this dataset
         if self.freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
+
+        # return an error is the arguments are invalid
+        if max_size is not None and max_size <= 0:
+            raise ValueError("dataset cannot be made empty")
 
         # return an error is the arguments are invalid
         if min_percentile > max_percentile:
@@ -842,11 +834,17 @@ class DatasetBuilder(abc.ABC):
         self.dataset_max_percentile = max_percentile
         self.dataset_max_output = max_output
 
-        # create a mask for which predictions
-        # in the dataset satisfy the range [min_threshold, max_threshold]
-        # and update the size of the dataset based on the thresholds
-        self.dataset_size = np.where(np.logical_and(
-            y <= max_output, y >= min_output))[0].size
+        # calculate indices of samples that are visible
+        indices = np.arange(y.shape[0])[np.where(
+            np.logical_and(y <= max_output, y >= min_output))[0]]
+        indices = indices[np.random.choice(
+            indices.size, min(indices.size, max_size), replace=False)]
+        self.dataset_size = indices.size
+
+        # binary mask that determines which samples are visible
+        visible_mask = np.full([y.shape[0]], False, dtype=np.bool)
+        visible_mask[indices] = True
+        self.dataset_visible_mask = visible_mask
 
         # update normalization statistics for design values
         if self.is_normalized_x:
@@ -972,7 +970,7 @@ class DatasetBuilder(abc.ABC):
         self.subsample(max_percentile=self.dataset_max_percentile,
                        min_percentile=self.dataset_min_percentile)
 
-    def rebuild_dataset(self, x_shards, y_shards):
+    def rebuild_dataset(self, x_shards, y_shards, visible_mask):
         """Initialize a model-based optimization dataset and prepare
         that dataset by loading that dataset from disk and modifying
         its distribution of designs and predictions
@@ -989,6 +987,9 @@ class DatasetBuilder(abc.ABC):
             a single shard or a list of shards representing prediction values
             in a model-based optimization dataset; shards are loaded lazily
             if RemoteResource otherwise loaded in memory immediately
+        visible_mask: np.ndarray
+            a numpy array of shape [dataset_size] containing boolean entries
+            specifying which samples are visible in the provided Iterable
 
         Returns:
 
@@ -1023,6 +1024,9 @@ class DatasetBuilder(abc.ABC):
         dataset.dataset_max_percentile = self.dataset_max_percentile
         dataset.dataset_min_output = self.dataset_min_output
         dataset.dataset_max_output = self.dataset_max_output
+
+        # calculate indices of samples that are visible
+        dataset.dataset_visible_mask = visible_mask
         dataset.dataset_size = dataset.y.shape[0]
         return dataset
 
@@ -1064,7 +1068,7 @@ class DatasetBuilder(abc.ABC):
 
         # disable transformations and check the size of the data set
         self.disable_transform = True
-        original_y = self.y[:, 0]
+        visible_mask = []
 
         # create lists to store shards and numpy arrays
         partial_shard_x, partial_shard_y = [], []
@@ -1078,10 +1082,13 @@ class DatasetBuilder(abc.ABC):
                 partial_shard_x.append(x)
                 partial_shard_y.append(y)
 
+                # record whether this sample was already visible
+                visible_mask.append(self.dataset_visible_mask[sample_id])
+
             # if the validation shard is large enough then write it
-            if (sample_id + 1 == original_y.size and len(
-                    partial_shard_x) > 0) or len(
-                    partial_shard_x) >= shard_size:
+            if (sample_id + 1 == self.dataset_visible_mask.size and
+                    len(partial_shard_x) > 0) or \
+                    len(partial_shard_x) >= shard_size:
 
                 # stack the sampled x and y values into a shard
                 shard_x = np.stack(partial_shard_x, axis=0)
@@ -1105,14 +1112,16 @@ class DatasetBuilder(abc.ABC):
                     np.save(y_resource.disk_target, shard_y)
                     shard_y = y_resource
 
-                # empty the partial shards and record the saved shard
+                # save the complete shard to a list
                 x_shards.append(shard_x)
                 y_shards.append(shard_y)
+
+                # clear the buffer of samples for each shard
                 partial_shard_x.clear()
                 partial_shard_y.clear()
 
             # at the last sample return two split data sets
-            if sample_id + 1 == original_y.size:
+            if sample_id + 1 == self.dataset_visible_mask.size:
 
                 # remember to re-enable original transformations
                 self.disable_transform = False
@@ -1122,7 +1131,8 @@ class DatasetBuilder(abc.ABC):
                     raise ValueError("subset produces an empty dataset")
 
                 # return a new version of the dataset
-                return self.rebuild_dataset(x_shards, y_shards)
+                return self.rebuild_dataset(x_shards, y_shards,
+                                            np.stack(visible_mask, axis=0))
 
     def split(self, fraction, subset=None, shard_size=5000,
               to_disk=False, disk_target="dataset", is_absolute=True):
@@ -1162,26 +1172,18 @@ class DatasetBuilder(abc.ABC):
 
         """
 
-        # generate the rejection sampling criterion
-        self.disable_transform = True
-        reject_criterion = [self.get_reject_criterion(x_batch, y_batch)
-                            for x_batch, y_batch in
-                            self.iterate_batches(self.internal_batch_size)]
-        reject_criterion = np.concatenate(reject_criterion, axis=0)
-        self.disable_transform = False
-
         # set the default subset to the entire dataset
         if subset is None:
-            subset = set(list(range(reject_criterion.size)))
+            subset = set(list(range(self.dataset_visible_mask.size)))
 
         # select examples from the active set according to sub sampling
-        active_ids = np.where(reject_criterion)[0]
+        active_ids = np.where(self.dataset_visible_mask)[0]
         active_ids = active_ids[np.random.choice(
             active_ids.size, size=int(fraction * float(
                 active_ids.size)), replace=False).tolist()]
 
         # select examples from the hidden set according to sub sampling
-        hidden_ids = np.where(np.logical_not(reject_criterion))[0]
+        hidden_ids = np.where(np.logical_not(self.dataset_visible_mask))[0]
         hidden_ids = hidden_ids[np.random.choice(
             hidden_ids.size, size=int(fraction * float(
                 hidden_ids.size)), replace=False).tolist()]
