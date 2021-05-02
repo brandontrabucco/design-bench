@@ -246,12 +246,6 @@ class OracleBuilder(abc.ABC):
                 self.expect_logits and not self.dataset.is_logits:
             x_batch = self.dataset.to_logits(x_batch)
 
-        # handle when the oracle expects integers but the dataset
-        # is currently encoded as logits
-        if isinstance(self.dataset, DiscreteDataset) and \
-                not self.expect_logits and self.dataset.is_logits:
-            x_batch = self.dataset.to_integers(x_batch)
-
         # handle when the oracle expects normalized designs but
         # the dataset is currently not normalized
         if self.expect_normalized_x and \
@@ -263,6 +257,12 @@ class OracleBuilder(abc.ABC):
         if not self.expect_normalized_x and \
                 self.dataset.is_normalized_x:
             x_batch = self.dataset.denormalize_x(x_batch)
+
+        # handle when the oracle expects integers but the dataset
+        # is currently encoded as logits
+        if isinstance(self.dataset, DiscreteDataset) and \
+                not self.expect_logits and self.dataset.is_logits:
+            x_batch = self.dataset.to_integers(x_batch)
 
         return x_batch
 
@@ -322,12 +322,6 @@ class OracleBuilder(abc.ABC):
 
         """
 
-        # handle when the dataset is currently logits but the oracle
-        # is currently expecting integers
-        if isinstance(self.dataset, DiscreteDataset) and \
-                self.expect_logits and not self.dataset.is_logits:
-            x_batch = self.dataset.to_integers(x_batch)
-
         # handle when the dataset is currently integers but the oracle
         # is currently expecting logits
         if isinstance(self.dataset, DiscreteDataset) and \
@@ -345,6 +339,12 @@ class OracleBuilder(abc.ABC):
         if not self.expect_normalized_x and \
                 self.dataset.is_normalized_x:
             x_batch = self.dataset.normalize_x(x_batch)
+
+        # handle when the dataset is currently logits but the oracle
+        # is currently expecting integers
+        if isinstance(self.dataset, DiscreteDataset) and \
+                self.expect_logits and not self.dataset.is_logits:
+            x_batch = self.dataset.to_integers(x_batch)
 
         return x_batch
 
