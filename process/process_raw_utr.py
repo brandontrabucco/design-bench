@@ -1,5 +1,5 @@
-from design_bench import DATA_DIR
-from design_bench import maybe_download
+from design_bench.disk_resource import DATA_DIR
+from design_bench.disk_resource import google_drive_download
 from sklearn.preprocessing import OrdinalEncoder
 import pandas as pd
 import numpy as np
@@ -20,8 +20,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # download the gfp dataset if not already
-    maybe_download('1pRypiGVYl-kmJZaMhVbuA1PEvqauWBBM',
-                   os.path.join(DATA_DIR, 'utr.zip'))
+    google_drive_download('1pRypiGVYl-kmJZaMhVbuA1PEvqauWBBM',
+                          os.path.join(DATA_DIR, 'utr.zip'))
     utr_dir = os.path.join(DATA_DIR, 'utr')
 
     # load the static dataset and sort by total reads

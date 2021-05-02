@@ -1,5 +1,5 @@
-from design_bench import DATA_DIR
-from design_bench import maybe_download
+from design_bench.disk_resource import DATA_DIR
+from design_bench.disk_resource import google_drive_download
 from deepchem.feat.smiles_tokenizer import SmilesTokenizer
 import pandas as pd
 import numpy as np
@@ -61,8 +61,8 @@ if __name__ == "__main__":
     for standard_type, assay_chembl_id in group:
 
         # download the molecule dataset if not already
-        maybe_download('1u5wQVwVSK7PG6dxGL2p_6pXf8gvsfUAk',
-                       os.path.join(DATA_DIR, 'smiles_vocab.txt'))
+        google_drive_download('1u5wQVwVSK7PG6dxGL2p_6pXf8gvsfUAk',
+                              os.path.join(DATA_DIR, 'smiles_vocab.txt'))
 
         # load the static dataset
         df = data

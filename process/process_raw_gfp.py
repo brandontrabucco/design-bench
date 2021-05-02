@@ -1,11 +1,15 @@
-from design_bench import DATA_DIR
-from design_bench import maybe_download
-from sklearn.preprocessing import OrdinalEncoder
+from design_bench.disk_resource import DATA_DIR
+from design_bench.disk_resource import google_drive_download
 import pandas as pd
 import numpy as np
 import argparse
 import os
 import math
+
+
+AA = ['a', 'r', 'n', 'd', 'c', 'q', 'e', 'g', 'h',
+      'i', 'l', 'k', 'm', 'f', 'p', 's', 't', 'w', 'y', 'v']
+AA_IDX = {AA[i]: i for i in range(len(AA))}
 
 
 if __name__ == "__main__":
@@ -16,8 +20,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # download the gfp dataset if not already
-    maybe_download('1_jcPkQ-M1FRhkEONoE57WEbp_Rivkho2',
-                   os.path.join(DATA_DIR, 'gfp_data.csv'))
+    google_drive_download('1_jcPkQ-M1FRhkEONoE57WEbp_Rivkho2',
+                          os.path.join(DATA_DIR, 'gfp_data.csv'))
 
     # load the static dataset
     df = pd.read_csv(os.path.join(DATA_DIR, 'gfp_data.csv'))
@@ -30,12 +34,9 @@ if __name__ == "__main__":
     x = np.array([list(x) for x in
                   df['aaSequence'].to_list()])
 
-    # build an integer encoder for the allowed amino acids
-    encoder = OrdinalEncoder(dtype=np.int32)
-    encoder.fit(x.reshape((-1, 1)))
-
     # encode a dataset of amino acid sequences into categorical features
-    x = encoder.transform(x.reshape((-1, 1))).reshape(x.shape)
+    x = np.array([[AA_IDX[token.lower()]
+                   for token in row] for row in x], dtype=np.int32)
 
     # format the fluorescence values to a tensor
     y = df['medianBrightness'] \
@@ -46,7 +47,6 @@ if __name__ == "__main__":
         y.shape[0] / args.samples_per_shard))
 
     # loop once per batch contained in the shard
-
     os.makedirs(args.shard_folder, exist_ok=True)
     for shard_id in range(batch_per_shard):
 

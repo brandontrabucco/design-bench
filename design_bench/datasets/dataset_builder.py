@@ -71,12 +71,6 @@ class DatasetBuilder(abc.ABC):
     internal_batch_size: int
         the integer number of samples per batch that is used internally
         when processing the dataset and generating samples
-    disable_transform: bool
-        a boolean indicator that when set to true prevents transformations
-        from being applied when sampling from the dataset
-    disable_subsample: bool
-        a boolean indicator that when set to true prevents subsampling
-        from being applied when sampling from the dataset
     freeze_statistics: bool
         a boolean indicator that when set to true prevents methods from
         changing the normalization and sub sampling statistics
@@ -228,33 +222,6 @@ class DatasetBuilder(abc.ABC):
 
         raise NotImplementedError
 
-    @property
-    def disable_transform(self):
-        """a boolean indicator that when set to true prevents transformations
-        from being applied when sampling from the dataset
-
-        """
-
-        return self._disable_transform
-
-    @property
-    def disable_subsample(self):
-        """a boolean indicator that when set to true prevents subsampling
-        from being applied when sampling from the dataset
-
-        """
-
-        return self._disable_transform
-
-    @property
-    def freeze_statistics(self):
-        """a boolean indicator that when set to true prevents methods from
-        changing the normalization and sub sampling statistics
-
-        """
-
-        return self._disable_transform
-
     def __init__(self, x_shards, y_shards, internal_batch_size=32):
         """Initialize a model-based optimization dataset and prepare
         that dataset by loading that dataset from disk and modifying
@@ -308,7 +275,7 @@ class DatasetBuilder(abc.ABC):
         self.is_normalized_y = False
 
         # special flag that control when the dataset is mutable
-        self._freeze_statistics = False
+        self.freeze_statistics = False
         self._disable_transform = False
         self._disable_subsample = False
 
@@ -713,7 +680,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self._freeze_statistics:
+        if self.freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # make sure the statistics are calculated from original samples
@@ -771,7 +738,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self._freeze_statistics:
+        if self.freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # make sure the statistics are calculated from original samples
@@ -843,7 +810,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self._freeze_statistics:
+        if self.freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # return an error is the arguments are invalid
@@ -943,7 +910,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self._freeze_statistics:
+        if self.freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # prevent the data set for being sub-sampled or normalized
@@ -1228,7 +1195,7 @@ class DatasetBuilder(abc.ABC):
                                to_disk=to_disk,
                                disk_target=f"{disk_target}-train",
                                is_absolute=is_absolute)
-        dtraining._freeze_statistics = True
+        dtraining.freeze_statistics = True
 
         # intentionally freeze the dataset statistics in order to
         # prevent bugs once a data set is split
@@ -1237,7 +1204,7 @@ class DatasetBuilder(abc.ABC):
                                  to_disk=to_disk,
                                  disk_target=f"{disk_target}-val",
                                  is_absolute=is_absolute)
-        dvalidation._freeze_statistics = True
+        dvalidation.freeze_statistics = True
 
         return dtraining, dvalidation
 
@@ -1248,7 +1215,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self._freeze_statistics:
+        if self.freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # check design values and prediction values are not normalized
@@ -1265,7 +1232,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self._freeze_statistics:
+        if self.freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # check design values and prediction values are not normalized
@@ -1336,7 +1303,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self._freeze_statistics:
+        if self.freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # check design values and prediction values are normalized
@@ -1350,7 +1317,7 @@ class DatasetBuilder(abc.ABC):
         """
 
         # check that statistics are not frozen for this dataset
-        if self._freeze_statistics:
+        if self.freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
 
         # check design values and prediction values are normalized

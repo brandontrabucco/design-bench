@@ -94,7 +94,8 @@ class RandomForestOracle(ApproximateOracle):
             expect_logits=True if isinstance(
                 dataset, DiscreteDataset) else None, **kwargs)
 
-    def check_input_format(self, dataset):
+    @staticmethod
+    def check_input_format(dataset):
         """a function that accepts a model-based optimization dataset as input
         and determines whether the provided dataset is compatible with this
         oracle score function (is this oracle a correct one)
@@ -116,8 +117,7 @@ class RandomForestOracle(ApproximateOracle):
 
         return True  # any data set is always supported with this model
 
-    @staticmethod
-    def save_model_to_zip(model, zip_archive):
+    def save_model_to_zip(self, model, zip_archive):
         """a function that serializes a machine learning model and stores
         that model in a compressed zip file using the python ZipFile interface
         for sharing and future loading by an ApproximateOracle
@@ -137,8 +137,7 @@ class RandomForestOracle(ApproximateOracle):
         with zip_archive.open('random_forest.pkl', "w") as file:
             return pkl.dump(model, file)  # save the model using pickle
 
-    @staticmethod
-    def load_model_from_zip(zip_archive):
+    def load_model_from_zip(self, zip_archive):
         """a function that loads components of a serialized model from a zip
         given zip file using the python ZipFile interface and returns an
         instance of the model
@@ -160,8 +159,8 @@ class RandomForestOracle(ApproximateOracle):
         with zip_archive.open('random_forest.pkl', "r") as file:
             return pkl.load(file)  # load the random forest using pickle
 
-    @staticmethod
-    def fit(dataset, **kwargs):
+    def fit(self, dataset, max_samples=5000,
+            min_percentile=0.0, max_percentile=100.0, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -186,25 +185,28 @@ class RandomForestOracle(ApproximateOracle):
 
         # sample the entire dataset without transformations
         # note this requires the dataset to be loaded in memory all at once
-        dataset.disable_transform = True
+        dataset._disable_subsample = True
         x = dataset.x
         y = dataset.y
+        dataset._disable_subsample = False
 
-        # convert integers to floating point logits
-        # we do this because sklearn cannot support discrete features
-        if np.issubdtype(x.dtype, np.integer):
-            x = dataset.to_logits(x)
+        # select training examples using percentile sub sampling
+        # necessary when the training set is too large for the model to fit
+        indices = self.get_indices(y, max_samples=max_samples,
+                                   min_percentile=min_percentile,
+                                   max_percentile=max_percentile)
+        x = x[indices]
+        y = y[indices]
 
-        # make sure both x and y are normalized in advance
-        x = dataset.normalize_x(x)
-        y = dataset.normalize_y(y)
+        # convert samples into the expected format of the oracle
+        x = self.dataset_to_oracle_x(x)
+        y = self.dataset_to_oracle_y(y)
 
         # fit the random forest model to the dataset
         model.fit(x.reshape((x.shape[0], np.prod(x.shape[1:]))),
                   y.reshape((y.shape[0],)))
 
         # cleanup the dataset and return the trained model
-        dataset.disable_transform = False
         return model
 
     def protected_score(self, x):

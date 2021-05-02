@@ -60,7 +60,8 @@ class TFBind8Oracle(ExactOracle):
 
     """
 
-    def check_input_format(self, dataset):
+    @staticmethod
+    def check_input_format(dataset):
         """a function that accepts a model-based optimization dataset as input
         and determines whether the provided dataset is compatible with this
         oracle score function (is this oracle a correct one)

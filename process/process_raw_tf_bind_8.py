@@ -1,5 +1,5 @@
-from design_bench import DATA_DIR
-from design_bench import maybe_download
+from design_bench.disk_resource import DATA_DIR
+from design_bench.disk_resource import google_drive_download
 from sklearn.preprocessing import OrdinalEncoder
 import pandas as pd
 import numpy as np
@@ -17,8 +17,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # download the tf_bind_8 dataset if not already present
-    maybe_download('1xS6N5qSwyFLC-ZPTADYrxZuPHjBkZCrj',
-                   os.path.join(DATA_DIR, 'TF_binding_landscapes.zip'))
+    google_drive_download('1xS6N5qSwyFLC-ZPTADYrxZuPHjBkZCrj',
+                          os.path.join(DATA_DIR, 'TF_binding_landscapes.zip'))
 
     # load the static dataset
     tf_dir = os.path.join(os.path.join(

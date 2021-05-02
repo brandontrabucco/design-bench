@@ -1,5 +1,5 @@
-from design_bench import DATA_DIR
-from design_bench import maybe_download
+from design_bench.disk_resource import DATA_DIR
+from design_bench.disk_resource import google_drive_download
 from sklearn.preprocessing import OrdinalEncoder
 import pandas as pd
 import numpy as np
@@ -19,8 +19,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # download the tf_bind_10 dataset if not already present
-    maybe_download('1qeX6vnuOLdj8tzyQ3ub1AjSk4kVlUUQb',
-                   os.path.join(DATA_DIR, 'tfbind10_counts.txt'))
+    google_drive_download('1qeX6vnuOLdj8tzyQ3ub1AjSk4kVlUUQb',
+                          os.path.join(DATA_DIR, 'tfbind10_counts.txt'))
 
     # load experimentally determined binding stability
     data_file = os.path.join(DATA_DIR, 'tfbind10_counts.txt')

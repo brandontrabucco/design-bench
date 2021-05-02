@@ -67,9 +67,8 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
     """
 
-    @staticmethod
     @abc.abstractmethod
-    def save_model_to_zip(model, zip_archive):
+    def save_model_to_zip(self, model, zip_archive):
         """a function that serializes a machine learning model and stores
         that model in a compressed zip file using the python ZipFile interface
         for sharing and future loading by an ApproximateOracle
@@ -88,9 +87,8 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         raise NotImplementedError
 
-    @staticmethod
     @abc.abstractmethod
-    def load_model_from_zip(zip_archive):
+    def load_model_from_zip(self, zip_archive):
         """a function that loads components of a serialized model from a zip
         given zip file using the python ZipFile interface and returns an
         instance of the model
@@ -111,9 +109,8 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         raise NotImplementedError
 
-    @staticmethod
     @abc.abstractmethod
-    def fit(dataset, **kwargs):
+    def fit(self, dataset, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -199,8 +196,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             expect_normalized_x=expect_normalized_x,
             expect_logits=expect_logits)
 
-    @classmethod
-    def get_disk_resource(cls, dataset, file=None, is_absolute=False):
+    def get_disk_resource(self, dataset, file=None, is_absolute=False):
         """a function that returns a zip file containing all the files and
         meta data required to re-build an oracle model such as a neural
         network or random forest regression model
@@ -227,7 +223,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         """
 
-        default = f"{dataset.name}/{cls.__name__}.zip"
+        default = f"{dataset.name}/{type(self).__name__}.zip"
         return DiskResource(
             file if file is not None else default,
             is_absolute=is_absolute,
@@ -235,8 +231,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             download_target=None if file is not None else
             f"https://design-bench.s3-us-west-1.amazonaws.com/{default}")
 
-    @classmethod
-    def save_model(cls, file, model):
+    def save_model(self, file, model):
         """a function that serializes a machine learning model and stores
         that model in a compressed zip file using the python ZipFile interface
         for sharing and future loading by an ApproximateOracle
@@ -253,10 +248,9 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         """
 
         with zipfile.ZipFile(file, mode="w") as file:
-            cls.save_model_to_zip(model, file)
+            self.save_model_to_zip(model, file)
 
-    @classmethod
-    def load_model(cls, file):
+    def load_model(self, file):
         """a function that loads components of a serialized model from a zip
         given zip file using the python ZipFile interface and returns an
         instance of the model
@@ -276,4 +270,4 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         """
 
         with zipfile.ZipFile(file, mode="r") as file:
-            return cls.load_model_from_zip(file)
+            return self.load_model_from_zip(file)

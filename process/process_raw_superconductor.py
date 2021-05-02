@@ -1,5 +1,5 @@
-from design_bench import DATA_DIR
-from design_bench import maybe_download
+from design_bench.disk_resource import DATA_DIR
+from design_bench.disk_resource import google_drive_download
 import pandas as pd
 import numpy as np
 import argparse
@@ -15,12 +15,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # download the gfp dataset if not already
-    maybe_download('1_jcPkQ-M1FRhkEONoE57WEbp_Rivkho2',
-                   os.path.join(DATA_DIR, 'gfp_data.csv'))
+    google_drive_download('1_jcPkQ-M1FRhkEONoE57WEbp_Rivkho2',
+                          os.path.join(DATA_DIR, 'gfp_data.csv'))
 
     # download the gfp dataset if not already
-    maybe_download('1AguXqbNrSc665sablzVJh4RHLodeXglx',
-                   os.path.join(DATA_DIR, 'superconductor_unique_m.csv'))
+    google_drive_download('1AguXqbNrSc665sablzVJh4RHLodeXglx',
+                          os.path.join(DATA_DIR, 'superconductor_unique_m.csv'))
 
     # load the static dataset
     df = pd.read_csv(os.path.join(

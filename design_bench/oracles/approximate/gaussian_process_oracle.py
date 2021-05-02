@@ -116,7 +116,8 @@ class GaussianProcessOracle(ApproximateOracle):
             expect_logits=False if isinstance(
                 dataset, DiscreteDataset) else None, **kwargs)
 
-    def check_input_format(self, dataset):
+    @staticmethod
+    def check_input_format(dataset):
         """a function that accepts a model-based optimization dataset as input
         and determines whether the provided dataset is compatible with this
         oracle score function (is this oracle a correct one)
@@ -138,8 +139,7 @@ class GaussianProcessOracle(ApproximateOracle):
 
         return True  # any data set is always supported with this model
 
-    @staticmethod
-    def save_model_to_zip(model, zip_archive):
+    def save_model_to_zip(self, model, zip_archive):
         """a function that serializes a machine learning model and stores
         that model in a compressed zip file using the python ZipFile interface
         for sharing and future loading by an ApproximateOracle
@@ -159,8 +159,7 @@ class GaussianProcessOracle(ApproximateOracle):
         with zip_archive.open('gaussian_process.pkl', "w") as file:
             return pkl.dump(model, file)  # save the model using pickle
 
-    @staticmethod
-    def load_model_from_zip(zip_archive):
+    def load_model_from_zip(self, zip_archive):
         """a function that loads components of a serialized model from a zip
         given zip file using the python ZipFile interface and returns an
         instance of the model
@@ -182,8 +181,8 @@ class GaussianProcessOracle(ApproximateOracle):
         with zip_archive.open('gaussian_process.pkl', "r") as file:
             return pkl.load(file)  # load the random forest using pickle
 
-    @staticmethod
-    def fit(dataset, kernel=None, max_samples=1000, **kwargs):
+    def fit(self, dataset, kernel=None, max_samples=5000,
+            min_percentile=0.0, max_percentile=100.0, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -216,7 +215,7 @@ class GaussianProcessOracle(ApproximateOracle):
             if kernel is None:
                 n = dataset.num_classes
                 kernel = 0.9 * np.eye(n) + 0.1 * np.ones((n, n))
-            kernel = DiscreteSequenceKernel(kernel)
+            kernel = DiscreteSequenceKernel(kernel.astype(np.float32))
 
         # otherwise if no kernel is provided use an RBF kernel
         elif kernel is None:
@@ -228,34 +227,28 @@ class GaussianProcessOracle(ApproximateOracle):
 
         # sample the entire dataset without transformations
         # note this requires the dataset to be loaded in memory all at once
-        dataset._disable_transform = True
+        dataset._disable_subsample = True
         x = dataset.x
         y = dataset.y
+        dataset._disable_subsample = False
 
-        # randomly remove samples from the training dataset
-        # this is particularly important when the dataset is very large
-        indices = np.random.choice(y.shape[0], replace=False,
-                                   size=min(y.shape[0], max_samples))
+        # select training examples using percentile sub sampling
+        # necessary when the training set is too large for the model to fit
+        indices = self.get_indices(y, max_samples=max_samples,
+                                   min_percentile=min_percentile,
+                                   max_percentile=max_percentile)
         x = x[indices]
         y = y[indices]
 
-        # convert integers to floating point logits
-        # we do this because sklearn cannot support discrete features
-        if isinstance(dataset, DiscreteDataset) and \
-                np.issubdtype(x.dtype, np.floating):
-            x = dataset.to_integers(x)
-
-        if np.issubdtype(x.dtype, np.floating):
-            x = dataset.normalize_x(x)
-
-        y = dataset.normalize_y(y)
+        # convert samples into the expected format of the oracle
+        x = self.dataset_to_oracle_x(x)
+        y = self.dataset_to_oracle_y(y)
 
         # fit the random forest model to the dataset
         model.fit(x.reshape((x.shape[0], np.prod(x.shape[1:]))),
                   y.reshape((y.shape[0],)))
 
         # cleanup the dataset and return the trained model
-        dataset._disable_transform = False
         return model
 
     def protected_score(self, x):

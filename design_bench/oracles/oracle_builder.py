@@ -62,8 +62,9 @@ class OracleBuilder(abc.ABC):
 
     """
 
+    @staticmethod
     @abc.abstractmethod
-    def check_input_format(self, dataset):
+    def check_input_format(dataset):
         """a function that accepts a model-based optimization dataset as input
         and determines whether the provided dataset is compatible with this
         oracle score function (is this oracle a correct one)
@@ -178,6 +179,199 @@ class OracleBuilder(abc.ABC):
         self.noise_std = noise_std
         self.num_evaluations = self.dataset.dataset_size
 
+    @staticmethod
+    def get_indices(y_dataset, max_samples=5000,
+                    min_percentile=0.0, max_percentile=100.0):
+        """Helper function for generating indices for subsampling training
+        samples from a model-based optimization dataset, particularly when
+        using a learned model where not all samples fit into memory
+
+        Arguments:
+
+        y_dataset: np.ndarray
+            a numpy array of prediction values from a model-based optimization
+            dataset that will be subsampled using the given statistics
+
+        Returns:
+
+        y_dataset: np.ndarray
+            a numpy array of smaller size that the original y_dataset, having
+            been subsampled using the given statistics
+
+        """
+
+        min_value = np.percentile(y_dataset[:, 0], min_percentile)
+        max_value = np.percentile(y_dataset[:, 0], max_percentile)
+        indices = np.where(np.logical_and(
+            y_dataset[:, 0] >= min_value, y_dataset[:, 0] <= max_value))[0]
+        size = indices.size
+        return indices[np.random.choice(
+            size, size=min(size, max_samples), replace=False)]
+
+    def dataset_to_oracle_x(self, x_batch):
+        """Helper function for converting from designs contained in the
+        dataset format into a format the oracle is expecting to process,
+        such as from integers to logits of a categorical distribution
+
+        Arguments:
+
+        x_batch: np.ndarray
+            a batch of design values 'x' that will be given as input to the
+            oracle model in order to obtain a prediction value 'y' for
+            each 'x' which is then returned
+
+        Returns:
+
+        x_batch: np.ndarray
+            a batch of design values 'x' that have been converted from the
+            format of designs contained in the dataset to the format
+            expected by the oracle score function
+
+        """
+
+        # handle when the oracle expects logits but the dataset
+        # is currently encoded as integers
+        if isinstance(self.dataset, DiscreteDataset) and \
+                self.expect_logits and not self.dataset.is_logits:
+            x_batch = self.dataset.to_logits(x_batch)
+
+        # handle when the oracle expects integers but the dataset
+        # is currently encoded as logits
+        if isinstance(self.dataset, DiscreteDataset) and \
+                not self.expect_logits and self.dataset.is_logits:
+            x_batch = self.dataset.to_integers(x_batch)
+
+        # handle when the oracle expects normalized designs but
+        # the dataset is currently not normalized
+        if self.expect_normalized_x and \
+                not self.dataset.is_normalized_x:
+            x_batch = self.dataset.normalize_x(x_batch)
+
+        # handle when the oracle expects denormalized designs but
+        # the dataset is currently normalized
+        if not self.expect_normalized_x and \
+                self.dataset.is_normalized_x:
+            x_batch = self.dataset.denormalize_x(x_batch)
+
+        return x_batch
+
+    def dataset_to_oracle_y(self, y_batch):
+        """Helper function for converting from predictions contained in the
+        dataset format into a format the oracle is expecting to process,
+        such as from normalized to denormalized predictions
+
+        Arguments:
+
+        y_batch: np.ndarray
+            a batch of prediction values 'y' that are from the dataset and
+            will be processed into a format expected by the oracle score
+            function, which is useful when training the oracle
+
+        Returns:
+
+        y_batch: np.ndarray
+            a batch of prediction values 'y' that have been converted from
+            the format of predictions contained in the dataset to the
+            format expected by the oracle score function
+
+        """
+
+        # handle when the oracle expects normalized predictions but
+        # the dataset is currently not normalized
+        if self.expect_normalized_y and \
+                not self.dataset.is_normalized_y:
+            y_batch = self.dataset.normalize_y(y_batch)
+
+        # handle when the oracle expects denormalized predictions but
+        # the dataset is currently normalized
+        if not self.expect_normalized_y and \
+                self.dataset.is_normalized_y:
+            y_batch = self.dataset.denormalize_y(y_batch)
+
+        return y_batch
+
+    def oracle_to_dataset_x(self, x_batch):
+        """Helper function for converting from designs in the format of the
+        oracle into the design format the dataset contains, such as
+        from categorical logits to integers
+
+        Arguments:
+
+        x_batch: np.ndarray
+            a batch of design values 'x' that have been converted from
+            the format of designs contained in the dataset to the
+            format expected by the oracle score function
+
+        Returns:
+
+        x_batch: np.ndarray
+            a batch of design values 'x' that have been converted from
+            the format of the oracle to the format of designs
+            contained in the dataset
+
+        """
+
+        # handle when the dataset is currently logits but the oracle
+        # is currently expecting integers
+        if isinstance(self.dataset, DiscreteDataset) and \
+                self.expect_logits and not self.dataset.is_logits:
+            x_batch = self.dataset.to_integers(x_batch)
+
+        # handle when the dataset is currently integers but the oracle
+        # is currently expecting logits
+        if isinstance(self.dataset, DiscreteDataset) and \
+                not self.expect_logits and self.dataset.is_logits:
+            x_batch = self.dataset.to_logits(x_batch)
+
+        # handle when the dataset is currently normalized but
+        # the oracle does not expect normalized
+        if self.expect_normalized_x and \
+                not self.dataset.is_normalized_x:
+            x_batch = self.dataset.denormalize_x(x_batch)
+
+        # handle when the dataset is currently denormalized but
+        # the oracle expects normalized
+        if not self.expect_normalized_x and \
+                self.dataset.is_normalized_x:
+            x_batch = self.dataset.normalize_x(x_batch)
+
+        return x_batch
+
+    def oracle_to_dataset_y(self, y_batch):
+        """Helper function for converting from predictions in the
+        format of the oracle into a format the dataset contains,
+        such as from normalized to denormalized predictions
+
+        Arguments:
+
+        y_batch: np.ndarray
+            a batch of prediction values 'y' that have been converted from
+            the format of predictions contained in the dataset to the
+            format expected by the oracle score function
+
+        Returns:
+
+        y_batch: np.ndarray
+            a batch of prediction values 'y' that have been converted from
+            the format of the oracle to the format of predictions
+            contained in the dataset
+
+        """
+
+        # handle when the dataset is currently normalized but
+        # the oracle does not expect normalized
+        if self.expect_normalized_y and \
+                not self.dataset.is_normalized_y:
+            y_batch = self.dataset.denormalize_y(y_batch)
+
+        # handle when the dataset is currently denormalized but
+        # the oracle expects normalized
+        if not self.expect_normalized_y and \
+                self.dataset.is_normalized_y:
+            y_batch = self.dataset.normalize_y(y_batch)
+
+        return y_batch
+
     def score(self, x_batch):
         """a function that accepts a batch of design values 'x' as input and
         for each design computes a prediction value 'y' which corresponds
@@ -214,55 +408,25 @@ class OracleBuilder(abc.ABC):
             # slice out a batch_size portion of x_batch
             x_sliced = x_batch[read_position:read_position + batch_size]
 
+            # convert from the dataset format to the oracle format
+            x_sliced = self.dataset_to_oracle_x(x_sliced)
+
             # if the inner score function is not batched squeeze the
             # outermost batch dimension of one
             if not self.is_batched:
                 x_sliced = np.squeeze(x_sliced, 0)
 
-            # handle when the oracle expects logits but the dataset
-            # is currently encoded as integers
-            if isinstance(self.dataset, DiscreteDataset) and \
-                    self.expect_logits and not self.dataset.is_logits:
-                x_sliced = self.dataset.to_logits(x_sliced)
-
-            # handle when the oracle expects integers but the dataset
-            # is currently encoded as logits
-            if isinstance(self.dataset, DiscreteDataset) and \
-                    not self.expect_logits and self.dataset.is_logits:
-                x_sliced = self.dataset.to_integers(x_sliced)
-
-            # handle when the oracle expects normalized designs but
-            # the dataset is currently not normalized
-            if self.expect_normalized_x and \
-                    not self.dataset.is_normalized_x:
-                x_sliced = self.dataset.normalize_x(x_sliced)
-
-            # handle when the oracle expects denormalized designs but
-            # the dataset is currently normalized
-            if not self.expect_normalized_x and \
-                    self.dataset.is_normalized_x:
-                x_sliced = self.dataset.denormalize_x(x_sliced)
-
             # take multiple independent measurements of the score
             y_sliced = np.mean([self.protected_score(x_sliced) for _ in
                                 range(self.internal_measurements)], axis=0)
-
-            # handle when the dataset expects normalized predictions but
-            # the oracle is currently not normalized
-            if self.expect_normalized_y and \
-                    not self.dataset.is_normalized_y:
-                y_sliced = self.dataset.denormalize_y(y_sliced)
-
-            # handle when the dataset expects denormalized designs but
-            # the oracle is currently normalized
-            if not self.expect_normalized_y and \
-                    self.dataset.is_normalized_y:
-                y_sliced = self.dataset.normalize_y(y_sliced)
 
             # if the inner score function is nto batched then add back
             # an outermost batch dimension of one
             if not self.is_batched:
                 y_sliced = y_sliced[np.newaxis]
+
+            # convert from the oracle format to the dataset format
+            y_sliced = self.oracle_to_dataset_y(y_sliced)
 
             # store the new prediction in a list
             y_batch.append(y_sliced)
