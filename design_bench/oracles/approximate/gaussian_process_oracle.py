@@ -242,4 +242,5 @@ class GaussianProcessOracle(ApproximateOracle):
         """
 
         # call the model's predict function to generate predictions
-        return self.model.predict(x)[:, np.newaxis]
+        return self.model.predict(
+            x.reshape((x.shape[0], np.prod(x.shape[1:]))))[:, np.newaxis]

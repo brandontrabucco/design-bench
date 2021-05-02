@@ -314,6 +314,20 @@ class DiscreteDataset(DatasetBuilder):
         return super(DiscreteDataset, self).batch_transform(
             x_batch, y_batch, return_x=return_x, return_y=return_y)
 
+    def update_x_statistics(self):
+        """A helpful function that calculates the mean and standard deviation
+        of the designs and predictions in a model-based optimization dataset
+        either iteratively or all at once using numpy
+
+        """
+
+        # handle corner case when we need statistics but they were
+        # not computed yet and the dataset is currently mapped to integers
+        original_is_logits = self.is_logits
+        self.is_logits = True
+        super(DiscreteDataset, self).update_x_statistics()
+        self.is_logits = original_is_logits
+
     def map_normalize_x(self):
         """a function that standardizes the design values 'x' to have zero
         empirical mean and unit empirical variance in the dataset
