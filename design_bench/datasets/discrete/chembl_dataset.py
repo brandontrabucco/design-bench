@@ -1408,10 +1408,7 @@ class ChEMBLDataset(DiscreteDataset):
     internal_batch_size: int
         the integer number of samples per batch that is used internally
         when processing the dataset and generating samples
-    _disable_transform: bool
-        a boolean indicator that when set to true prevents transformations
-        from being applied when sampling from the dataset
-    _freeze_statistics: bool
+    freeze_statistics: bool
         a boolean indicator that when set to true prevents methods from
         changing the normalization and sub sampling statistics
 
@@ -1449,7 +1446,8 @@ class ChEMBLDataset(DiscreteDataset):
         design values 'x' and prediction values 'y' from a model-based
         optimization data set for training a model
 
-    subsample(max_percentile: float,
+    subsample(max_samples: int,
+              max_percentile: float,
               min_percentile: float):
         a function that exposes a subsampled version of a much larger
         model-based optimization dataset containing design values 'x'
@@ -1527,8 +1525,8 @@ class ChEMBLDataset(DiscreteDataset):
 
     """
 
-    name = "ChEMBL"
-    x_name = "SMILES"
+    name = "chembl"
+    x_name = "smiles"
 
     @staticmethod
     def register_x_shards(assay_chembl_id="CHEMBL3507681",
@@ -1629,7 +1627,7 @@ class ChEMBLDataset(DiscreteDataset):
         """
 
         # set the value to be maximized
-        self.y_name = standard_type
+        self.y_name = standard_type.lower()
 
         # initialize the dataset using the method in the base class
         super(ChEMBLDataset, self).__init__(

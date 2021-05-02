@@ -62,6 +62,8 @@ class HopperControllerOracle(ExactOracle):
 
     """
 
+    name = "exact_average_return"
+
     @staticmethod
     def check_input_format(dataset):
         """a function that accepts a model-based optimization dataset as input

@@ -61,6 +61,8 @@ class NASBenchOracle(ExactOracle):
 
     """
 
+    name = "exact_cifar_10_test_accuracy"
+
     @staticmethod
     def check_input_format(dataset):
         """a function that accepts a model-based optimization dataset as input

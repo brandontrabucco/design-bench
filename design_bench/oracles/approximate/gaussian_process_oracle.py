@@ -2,29 +2,8 @@ from design_bench.oracles.approximate_oracle import ApproximateOracle
 from design_bench.datasets.discrete_dataset import DiscreteDataset
 from design_bench.datasets.dataset_builder import DatasetBuilder
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import Kernel, RBF
-from sklearn.gaussian_process.kernels import GenericKernelMixin
 import numpy as np
 import pickle as pkl
-
-
-class DiscreteSequenceKernel(GenericKernelMixin, Kernel):
-
-    def __init__(self, kernel_matrix):
-        self.kernel_matrix = kernel_matrix
-
-    def evaluate_kernel(self, x, y):
-        return self.kernel_matrix[x][:, y].sum()
-
-    def __call__(self, X, Y=None, eval_gradient=False):
-        return np.array([[self.evaluate_kernel(
-            x, y) for y in (X if Y is None else Y)] for x in X])
-
-    def diag(self, X):
-        return np.array([self.evaluate_kernel(x, x) for x in X])
-
-    def is_stationary(self):
-        return True  # the kernel is fixed in advance
 
 
 class GaussianProcessOracle(ApproximateOracle):
@@ -88,6 +67,8 @@ class GaussianProcessOracle(ApproximateOracle):
         truth function f(x) in a model-based optimization problem
 
     """
+
+    name = "gaussian_process"
 
     def __init__(self, dataset: DatasetBuilder, noise_std=0.0, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
@@ -181,7 +162,7 @@ class GaussianProcessOracle(ApproximateOracle):
         with zip_archive.open('gaussian_process.pkl', "r") as file:
             return pkl.load(file)  # load the random forest using pickle
 
-    def fit(self, dataset, kernel=None, max_samples=5000,
+    def fit(self, dataset, max_samples=1000,
             min_percentile=0.0, max_percentile=100.0, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
@@ -210,20 +191,8 @@ class GaussianProcessOracle(ApproximateOracle):
 
         """
 
-        # if the data set is discrete use a discrete kernel
-        if isinstance(dataset, DiscreteDataset):
-            if kernel is None:
-                n = dataset.num_classes
-                kernel = 0.9 * np.eye(n) + 0.1 * np.ones((n, n))
-            kernel = DiscreteSequenceKernel(kernel.astype(np.float32))
-
-        # otherwise if no kernel is provided use an RBF kernel
-        elif kernel is None:
-            kernel = RBF(length_scale=1.0,
-                         length_scale_bounds=(1e-5, 1e5))
-
         # build the model class and assign hyper parameters
-        model = GaussianProcessRegressor(kernel=kernel, **kwargs)
+        model = GaussianProcessRegressor(**kwargs)
 
         # sample the entire dataset without transformations
         # note this requires the dataset to be loaded in memory all at once

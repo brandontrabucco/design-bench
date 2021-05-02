@@ -67,6 +67,8 @@ class RandomForestOracle(ApproximateOracle):
 
     """
 
+    name = "random_forest"
+
     def __init__(self, dataset: DiscreteDataset, noise_std=0.0, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an

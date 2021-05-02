@@ -60,6 +60,8 @@ class TFBind8Oracle(ExactOracle):
 
     """
 
+    name = "exact_enrichment_score"
+
     @staticmethod
     def check_input_format(dataset):
         """a function that accepts a model-based optimization dataset as input

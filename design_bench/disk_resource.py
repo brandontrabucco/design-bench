@@ -98,12 +98,12 @@ def direct_download(download_target, disk_target):
 
     """
 
-    with open(disk_target, "wb") as file:
-        response = requests.get(download_target, allow_redirects=True)
-        valid_response = response.status_code < 400
-        if valid_response:
+    response = requests.get(download_target, allow_redirects=True)
+    valid_response = response.status_code < 400
+    if valid_response:
+        with open(disk_target, "wb") as file:
             file.write(response.content)
-        return valid_response
+    return valid_response
 
 
 class DiskResource(object):

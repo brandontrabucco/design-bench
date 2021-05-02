@@ -109,7 +109,8 @@ class DatasetBuilder(abc.ABC):
         design values 'x' and prediction values 'y' from a model-based
         optimization data set for training a model
 
-    subsample(max_percentile: float,
+    subsample(max_samples: int,
+              max_percentile: float,
               min_percentile: float):
         a function that exposes a subsampled version of a much larger
         model-based optimization dataset containing design values 'x'
@@ -788,7 +789,7 @@ class DatasetBuilder(abc.ABC):
         # reset the normalized state to what it originally was
         self.is_normalized_y = original_is_normalized_y
 
-    def subsample(self, max_size=None,
+    def subsample(self, max_samples=None,
                   max_percentile=100.0, min_percentile=0.0):
         """a function that exposes a subsampled version of a much larger
         model-based optimization dataset containing design values 'x'
@@ -796,7 +797,7 @@ class DatasetBuilder(abc.ABC):
 
         Arguments:
 
-        max_size: int
+        max_samples: int
             the maximum number of samples to include in the visible dataset;
             if more than this number of samples would be present, samples
             are randomly removed from the visible dataset
@@ -814,7 +815,7 @@ class DatasetBuilder(abc.ABC):
             raise ValueError("cannot update dataset when it is frozen")
 
         # return an error is the arguments are invalid
-        if max_size is not None and max_size <= 0:
+        if max_samples is not None and max_samples <= 0:
             raise ValueError("dataset cannot be made empty")
 
         # return an error is the arguments are invalid
@@ -845,7 +846,7 @@ class DatasetBuilder(abc.ABC):
         indices = np.arange(y.shape[0])[np.where(
             np.logical_and(y <= max_output, y >= min_output))[0]]
         indices = indices[np.random.choice(
-            indices.size, min(indices.size, max_size), replace=False)]
+            indices.size, min(indices.size, max_samples), replace=False)]
         self.dataset_size = indices.size
 
         # binary mask that determines which samples are visible
@@ -978,7 +979,7 @@ class DatasetBuilder(abc.ABC):
 
         # re-sample the data set and recalculate statistics
         self._disable_subsample = False
-        self.subsample(max_size=self.dataset_size,
+        self.subsample(max_samples=self.dataset_size,
                        max_percentile=self.dataset_max_percentile,
                        min_percentile=self.dataset_min_percentile)
 

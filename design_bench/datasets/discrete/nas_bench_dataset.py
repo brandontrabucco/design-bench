@@ -97,10 +97,7 @@ class NASBenchDataset(DiscreteDataset):
     internal_batch_size: int
         the integer number of samples per batch that is used internally
         when processing the dataset and generating samples
-    _disable_transform: bool
-        a boolean indicator that when set to true prevents transformations
-        from being applied when sampling from the dataset
-    _freeze_statistics: bool
+    freeze_statistics: bool
         a boolean indicator that when set to true prevents methods from
         changing the normalization and sub sampling statistics
 
@@ -138,7 +135,8 @@ class NASBenchDataset(DiscreteDataset):
         design values 'x' and prediction values 'y' from a model-based
         optimization data set for training a model
 
-    subsample(max_percentile: float,
+    subsample(max_samples: int,
+              max_percentile: float,
               min_percentile: float):
         a function that exposes a subsampled version of a much larger
         model-based optimization dataset containing design values 'x'
@@ -216,9 +214,9 @@ class NASBenchDataset(DiscreteDataset):
 
     """
 
-    name = "NASBench"
-    x_name = "Model Architecture"
-    y_name = "CIFAR-10 Test Accuracy"
+    name = "nas_bench"
+    x_name = "model_architecture"
+    y_name = "cifar_10_test_accuracy"
 
     @staticmethod
     def register_x_shards():

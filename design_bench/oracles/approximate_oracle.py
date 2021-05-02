@@ -175,6 +175,16 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         """
 
+        # initialize the oracle using the super class
+        super(ApproximateOracle, self).__init__(
+            dataset, is_batched=is_batched,
+            internal_batch_size=internal_batch_size,
+            internal_measurements=internal_measurements,
+            noise_std=noise_std,
+            expect_normalized_y=expect_normalized_y,
+            expect_normalized_x=expect_normalized_x,
+            expect_logits=expect_logits)
+
         # download the model parameters from s3
         self.resource = self.get_disk_resource(
             dataset, file=file, is_absolute=is_absolute)
@@ -185,16 +195,6 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         # load the model from disk once its downloaded
         self.model = self.load_model(self.resource.disk_target)
-
-        # initialize the oracle using the super class
-        super(ApproximateOracle, self).__init__(
-            dataset, is_batched=is_batched,
-            internal_batch_size=internal_batch_size,
-            internal_measurements=internal_measurements,
-            noise_std=noise_std,
-            expect_normalized_y=expect_normalized_y,
-            expect_normalized_x=expect_normalized_x,
-            expect_logits=expect_logits)
 
     def get_disk_resource(self, dataset, file=None, is_absolute=False):
         """a function that returns a zip file containing all the files and
@@ -223,7 +223,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         """
 
-        default = f"{dataset.name}/{type(self).__name__}.zip"
+        default = f"{dataset.name}/{self.name}.zip"
         return DiskResource(
             file if file is not None else default,
             is_absolute=is_absolute,

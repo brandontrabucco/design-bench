@@ -106,7 +106,8 @@ class ContinuousDataset(DatasetBuilder):
         design values 'x' and prediction values 'y' from a model-based
         optimization data set for training a model
 
-    subsample(max_percentile: float,
+    subsample(max_samples: int,
+              max_percentile: float,
               min_percentile: float):
         a function that exposes a subsampled version of a much larger
         model-based optimization dataset containing design values 'x'

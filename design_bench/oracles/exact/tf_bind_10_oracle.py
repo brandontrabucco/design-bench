@@ -60,6 +60,8 @@ class TFBind10Oracle(ExactOracle):
 
     """
 
+    name = "exact_ddg"
+
     @staticmethod
     def check_input_format(dataset):
         """a function that accepts a model-based optimization dataset as input

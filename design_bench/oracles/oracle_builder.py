@@ -62,6 +62,17 @@ class OracleBuilder(abc.ABC):
 
     """
 
+    @property
+    @abc.abstractmethod
+    def name(self):
+        """Attribute that specifies the name of a machine learning model used
+        as the ground truth score function for a model-based optimization
+        problem; for example, "random_forest"
+
+        """
+
+        raise NotImplementedError
+
     @staticmethod
     @abc.abstractmethod
     def check_input_format(dataset):
