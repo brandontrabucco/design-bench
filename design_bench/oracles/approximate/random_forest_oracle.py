@@ -187,10 +187,8 @@ class RandomForestOracle(ApproximateOracle):
 
         # sample the entire dataset without transformations
         # note this requires the dataset to be loaded in memory all at once
-        dataset._disable_subsample = True
         x = dataset.x
         y = dataset.y
-        dataset._disable_subsample = False
 
         # select training examples using percentile sub sampling
         # necessary when the training set is too large for the model to fit
