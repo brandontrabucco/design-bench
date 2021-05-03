@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser("Process Raw ChEMBL")
     parser.add_argument("--dir", type=str, default="data/chembl_activities")
-    parser.add_argument("--shard-folder", type=str, default="./chembl")
+    parser.add_argument("--shard-folder", type=str, default="./")
     parser.add_argument("--min-samples", type=int, default=20000)
     parser.add_argument("--samples-per-shard", type=int, default=5000)
     args = parser.parse_args()
@@ -98,9 +98,9 @@ if __name__ == "__main__":
             np.save(os.path.join(
                 args.shard_folder,
                 f"chembl-{standard_type}-"
-                f"{assay_chembl_id}-x-{shard_id}.npy"), x_sliced)
+                f"{assay_chembl_id}/chembl-x-{shard_id}.npy"), x_sliced)
 
             np.save(os.path.join(
                 args.shard_folder,
                 f"chembl-{standard_type}-"
-                f"{assay_chembl_id}-y-{shard_id}.npy"), y_sliced)
+                f"{assay_chembl_id}/chembl-y-{shard_id}.npy"), y_sliced)

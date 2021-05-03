@@ -5,7 +5,7 @@ import tensorflow.keras.layers as layers
 import tempfile
 
 
-class FullyConnectedOracle(TensorflowOracle):
+class ConvolutionalOracle(TensorflowOracle):
     """An abstract class for managing the ground truth score functions f(x)
     for model-based optimization problems, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
@@ -67,7 +67,7 @@ class FullyConnectedOracle(TensorflowOracle):
 
     """
 
-    name = "fully_connected"
+    name = "cnn"
 
     def __init__(self, dataset, noise_std=0.0, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
@@ -88,7 +88,7 @@ class FullyConnectedOracle(TensorflowOracle):
         """
 
         # initialize the oracle using the super class
-        super(FullyConnectedOracle, self).__init__(
+        super(ConvolutionalOracle, self).__init__(
             dataset, noise_std=noise_std, is_batched=True,
             internal_batch_size=32, internal_measurements=1,
             expect_normalized_y=True,
@@ -117,7 +117,10 @@ class FullyConnectedOracle(TensorflowOracle):
 
         """
 
-        return True  # any data set is always supported with this model
+        # ensure that the data has exactly one sequence dimension
+        if isinstance(dataset, DiscreteDataset) and not dataset.is_logits:
+            return len(dataset.input_shape) == 1
+        return len(dataset.input_shape) == 2
 
     def save_model_to_zip(self, model, zip_archive):
         """a function that serializes a machine learning model and stores
@@ -139,7 +142,7 @@ class FullyConnectedOracle(TensorflowOracle):
         with tempfile.NamedTemporaryFile() as file:
             model.save(file.name, save_format='h5')
             model_bytes = file.read()
-        with zip_archive.open('fully_connected.h5', "w") as file:
+        with zip_archive.open('cnn.h5', "w") as file:
             file.write(model_bytes)  # save model bytes in the h5 format
 
     def load_model_from_zip(self, zip_archive):
@@ -161,13 +164,13 @@ class FullyConnectedOracle(TensorflowOracle):
 
         """
 
-        with zip_archive.open('fully_connected.h5', "r") as file:
+        with zip_archive.open('cnn.h5', "r") as file:
             model_bytes = file.read()  # read model bytes in the h5 format
         with tempfile.NamedTemporaryFile() as file:
             file.write(model_bytes)
             return keras.models.load_model(file.name)
 
-    def fit(self, dataset, hidden_size=64, activation="relu",
+    def fit(self, dataset, hidden_size=64, activation='relu', kernel_size=3,
             hidden_layers=2, epochs=10, shuffle_buffer=1000, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
@@ -200,11 +203,12 @@ class FullyConnectedOracle(TensorflowOracle):
                 layers.Embedding(dataset.num_classes, hidden_size))
 
         # add several fully connected layers and a final output layer
-        model_layers.append(layers.Flatten())
         for i in range(hidden_layers):
             model_layers.append(
-                layers.Dense(hidden_size, activation=activation))
+                layers.Conv1D(hidden_size, kernel_size=kernel_size,
+                              padding='same', activation=activation))
             model_layers.append(layers.LayerNormalization())
+        model_layers.append(layers.GlobalAveragePooling1D())
         model_layers.append(layers.Dense(1))
 
         # build a sequential model and fit to a data generator

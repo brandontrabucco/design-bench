@@ -14,7 +14,7 @@ INVERSE_MAP = dict(a='t', t='a', c='g', g='c')
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser("Process Raw TF Binding 10")
-    parser.add_argument("--shard-folder", type=str, default="./tf_bind_10")
+    parser.add_argument("--shard-folder", type=str, default="./")
     parser.add_argument("--samples-per-shard", type=int, default=100000)
     args = parser.parse_args()
 
@@ -72,8 +72,10 @@ if __name__ == "__main__":
 
             np.save(os.path.join(
                 args.shard_folder,
-                f"tf_bind_10-{transcription_factor}-x-{shard_id}.npy"), x_sliced)
+                f"tf_bind_10-{transcription_factor}/"
+                f"tf_bind_10-x-{shard_id}.npy"), x_sliced)
 
             np.save(os.path.join(
                 args.shard_folder,
-                f"tf_bind_10-{transcription_factor}-y-{shard_id}.npy"), y_sliced)
+                f"tf_bind_10-{transcription_factor}"
+                f"/tf_bind_10-y-{shard_id}.npy"), y_sliced)
