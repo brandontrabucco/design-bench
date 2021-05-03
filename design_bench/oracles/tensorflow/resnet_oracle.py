@@ -1,11 +1,15 @@
 from design_bench.oracles.tensorflow.tensorflow_oracle import TensorflowOracle
 from design_bench.datasets.discrete_dataset import DiscreteDataset
+from scipy import stats
+import tensorflow as tf
 import tensorflow.keras as keras
 import tensorflow.keras.layers as layers
 import tempfile
+import math
+import numpy as np
 
 
-class ConvolutionalOracle(TensorflowOracle):
+class ResNetOracle(TensorflowOracle):
     """An abstract class for managing the ground truth score functions f(x)
     for model-based optimization problems, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
@@ -67,7 +71,7 @@ class ConvolutionalOracle(TensorflowOracle):
 
     """
 
-    name = "cnn"
+    name = "tensorflow_resnet"
 
     def __init__(self, dataset, noise_std=0.0, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
@@ -88,7 +92,7 @@ class ConvolutionalOracle(TensorflowOracle):
         """
 
         # initialize the oracle using the super class
-        super(ConvolutionalOracle, self).__init__(
+        super(ResNetOracle, self).__init__(
             dataset, noise_std=noise_std, is_batched=True,
             internal_batch_size=32, internal_measurements=1,
             expect_normalized_y=True,
@@ -139,11 +143,18 @@ class ConvolutionalOracle(TensorflowOracle):
 
         """
 
+        # extract the bytes of an h5 serialized model
         with tempfile.NamedTemporaryFile() as file:
-            model.save(file.name, save_format='h5')
+            model["model"].save(file.name, save_format='h5')
             model_bytes = file.read()
-        with zip_archive.open('cnn.h5', "w") as file:
+
+        # write the h5 bytes ot the zip file
+        with zip_archive.open('resnet.h5', "w") as file:
             file.write(model_bytes)  # save model bytes in the h5 format
+
+        # write the validation rank correlation to the zip file
+        with zip_archive.open('rank_correlation.txt', "w") as file:
+            file.write(model["rank_correlation"].dumps())
 
     def load_model_from_zip(self, zip_archive):
         """a function that loads components of a serialized model from a zip
@@ -164,14 +175,23 @@ class ConvolutionalOracle(TensorflowOracle):
 
         """
 
-        with zip_archive.open('cnn.h5', "r") as file:
+        # read the validation rank correlation from the zip file
+        with zip_archive.open('rank_correlation.txt', "r") as file:
+            rank_correlation = np.loads(file.read())
+
+        # read the h5 bytes from the zip file
+        with zip_archive.open('resnet.h5', "r") as file:
             model_bytes = file.read()  # read model bytes in the h5 format
+
+        # load the model using a temporary file as a buffer
         with tempfile.NamedTemporaryFile() as file:
             file.write(model_bytes)
-            return keras.models.load_model(file.name)
+            return dict(model=keras.models.load_model(file.name),
+                        rank_correlation=rank_correlation)
 
-    def fit(self, dataset, hidden_size=64, activation='relu', kernel_size=3,
-            hidden_layers=2, epochs=10, shuffle_buffer=1000, **kwargs):
+    def fit(self, dataset, hidden_size=64, activation='relu',
+            kernel_size=3, resnet_blocks=4, epochs=20,
+            shuffle_buffer=1000, learning_rate=0.0003, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -191,35 +211,93 @@ class ConvolutionalOracle(TensorflowOracle):
 
         """
 
+        # prepare the dataset for training and validation
+        dataset.update_y_statistics()
+        training, validation = dataset.split(**kwargs)
+        validation_x = self.dataset_to_oracle_x(validation.x)
+        validation_y = self.dataset_to_oracle_y(validation.y)
+
         # obtain the expected shape of inputs to the model
-        input_shape = dataset.input_shape
-        if isinstance(dataset, DiscreteDataset) and dataset.is_logits:
+        input_shape = training.input_shape
+        if isinstance(training, DiscreteDataset) and training.is_logits:
             input_shape = input_shape[:-1]
 
-        # build a model with an input layer and option embedding
-        model_layers = [keras.Input(shape=input_shape)]
-        if isinstance(dataset, DiscreteDataset):
-            model_layers.append(
-                layers.Embedding(dataset.num_classes, hidden_size))
+        # the input layer of a keras model
+        x = input_layer = keras.Input(shape=input_shape)
 
-        # add several fully connected layers and a final output layer
-        for i in range(hidden_layers):
-            model_layers.append(
-                layers.Conv1D(hidden_size, kernel_size=kernel_size,
-                              padding='same', activation=activation))
-            model_layers.append(layers.LayerNormalization())
-        model_layers.append(layers.GlobalAveragePooling1D())
-        model_layers.append(layers.Dense(1))
+        # build a model with an input layer and optional embedding
+        if isinstance(training, DiscreteDataset):
+            x = layers.Embedding(training.num_classes, hidden_size)(x)
+        else:
+            x = layers.Dense(hidden_size,
+                             activation=None, use_bias=False)(x)
 
-        # build a sequential model and fit to a data generator
-        model = keras.Sequential(model_layers)
-        model.compile(optimizer='adam', loss='mse')
+        # the exponent of a positional embedding
+        inverse_frequency_sin = 1.0 / (10000.0 ** (
+            tf.range(0.0, hidden_size, 2.0) / hidden_size))[tf.newaxis]
+        inverse_frequency_cos = 1.0 / (10000.0 ** (
+            tf.range(1.0, hidden_size, 2.0) / hidden_size))[tf.newaxis]
+
+        # calculate a positional embedding to break symmetry
+        pos = tf.range(0.0, tf.shape(x)[1], 1.0)[:, tf.newaxis]
+        positional_embedding = tf.concat([
+            tf.math.sin(pos * inverse_frequency_sin),
+            tf.math.sin(pos * inverse_frequency_cos)], axis=1)[tf.newaxis]
+
+        # add the positional encoding and normalize the activations
+        x = layers.Add()([x, positional_embedding])
+        x = layers.LayerNormalization()(x)
+
+        # add several residual blocks to the model
+        for i in range(resnet_blocks):
+
+            # first convolution layer in a residual block
+            h = layers.Conv1D(hidden_size, kernel_size=kernel_size,
+                              padding='same', activation=None)(x)
+            h = layers.LayerNormalization()(h)
+            h = layers.Activation(activation)(h)
+
+            # second convolution layer in a residual block
+            h = layers.Conv1D(hidden_size, kernel_size=kernel_size,
+                              padding='same', activation=None)(h)
+            h = layers.LayerNormalization()(h)
+            h = layers.Activation(activation)(h)
+
+            # add a residual connection to the model
+            x = layers.Add()([x, h])
+
+        # pool the final activations using an attention mechanism
+        s = layers.Softmax(axis=1)(layers.Dense(1)(x))
+        x = layers.Dot(axes=1)([x, s])
+        x = layers.Reshape((hidden_size,))(x)
+
+        # fully connected layer to regress to y values
+        output_layer = layers.Dense(1)(x)
+        model = keras.Model(inputs=input_layer,
+                            outputs=output_layer)
+
+        # build an optimizer to train the model
+        optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
+        model.compile(optimizer=optimizer, loss='mse')
+
+        # estimate the number of training steps per epoch
+        steps = int(math.ceil(
+            training.dataset_size / self.internal_batch_size))
+
+        # fit the model to a tensorflow dataset
         model.fit(self.create_tensorflow_dataset(
-            dataset, batch_size=self.internal_batch_size,
-            shuffle_buffer=shuffle_buffer, repeat=epochs), **kwargs)
+            training, batch_size=self.internal_batch_size,
+            shuffle_buffer=shuffle_buffer, repeat=epochs),
+            steps_per_epoch=steps, epochs=epochs,
+            validation_data=(validation_x, validation_y))
 
-        # return the trained model
-        return model
+        # evaluate the validation rank correlation of the model
+        rank_correlation = stats.spearmanr(
+            model.predict(validation_x)[:, 0], validation_y[:, 0])[0]
+
+        # return the trained model and rank correlation
+        return dict(model=model,
+                    rank_correlation=rank_correlation)
 
     def protected_predict(self, x):
         """Score function to be implemented by oracle subclasses, where x is
@@ -243,4 +321,4 @@ class ConvolutionalOracle(TensorflowOracle):
         """
 
         # call the model's predict function to generate predictions
-        return self.model.predict(x)
+        return self.model["model"].predict(x)

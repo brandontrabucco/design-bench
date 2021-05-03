@@ -1139,7 +1139,7 @@ class DatasetBuilder(abc.ABC):
                 return self.rebuild_dataset(x_shards, y_shards,
                                             np.stack(visible_mask, axis=0))
 
-    def split(self, fraction, subset=None, shard_size=5000,
+    def split(self, fraction=0.1, subset=None, shard_size=5000,
               to_disk=False, disk_target="dataset", is_absolute=True):
         """Split a model-based optimization data set into a training set and
         a validation set allocating 'fraction' of the data set to the
@@ -1182,11 +1182,11 @@ class DatasetBuilder(abc.ABC):
         subset = set(active_ids.tolist()) if subset is None else subset
         active_ids = np.array(list(subset))[
             np.random.choice(active_ids.size, size=int(
-                fraction * float(active_ids.size)), replace=False).tolist()]
+                fraction * float(active_ids.size)), replace=False)]
 
         # generate a set of ids for the validation set
         # noinspection PyTypeChecker
-        validation_ids = set(active_ids.tolist()).intersection(subset)
+        validation_ids = set(active_ids.tolist())
         training_ids = subset.difference(validation_ids)
 
         # build a new training  and validation dataset using the split

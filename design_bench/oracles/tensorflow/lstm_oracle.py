@@ -67,7 +67,7 @@ class LSTMOracle(TensorflowOracle):
 
     """
 
-    name = "lstm"
+    name = "tensorflow_lstm"
 
     def __init__(self, dataset, noise_std=0.0, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
@@ -170,8 +170,8 @@ class LSTMOracle(TensorflowOracle):
             file.write(model_bytes)
             return keras.models.load_model(file.name)
 
-    def fit(self, dataset, hidden_size=64,
-            hidden_layers=2, epochs=10, shuffle_buffer=1000, **kwargs):
+    def fit(self, dataset, hidden_size=64, hidden_layers=2,
+            epochs=10, shuffle_buffer=1000, learning_rate=0.0003, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -212,7 +212,8 @@ class LSTMOracle(TensorflowOracle):
 
         # build a sequential model and fit to a data generator
         model = keras.Sequential(model_layers)
-        model.compile(optimizer='adam', loss='mse')
+        optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
+        model.compile(optimizer=optimizer, loss='mse')
         model.fit(self.create_tensorflow_dataset(
             dataset, batch_size=self.internal_batch_size,
             shuffle_buffer=shuffle_buffer, repeat=epochs), **kwargs)

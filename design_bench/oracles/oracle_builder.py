@@ -384,8 +384,9 @@ class OracleBuilder(abc.ABC):
         y_batch = []
 
         # iterate through all possible read positions in x_batch
-        for read_position in range(0, int(
-                math.ceil(x_batch.shape[0] / batch_size)), batch_size):
+        for read_position in range(int(
+                math.ceil(x_batch.shape[0] / batch_size))):
+            read_position *= batch_size
 
             # slice out a batch_size portion of x_batch
             x_sliced = x_batch[read_position:read_position + batch_size]
