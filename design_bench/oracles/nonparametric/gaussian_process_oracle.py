@@ -97,8 +97,8 @@ class GaussianProcessOracle(ApproximateOracle):
             expect_logits=False if isinstance(
                 dataset, DiscreteDataset) else None, **kwargs)
 
-    @staticmethod
-    def check_input_format(dataset):
+    @classmethod
+    def check_input_format(cls, dataset):
         """a function that accepts a model-based optimization dataset as input
         and determines whether the provided dataset is compatible with this
         oracle score function (is this oracle a correct one)
@@ -201,9 +201,9 @@ class GaussianProcessOracle(ApproximateOracle):
 
         # select training examples using percentile sub sampling
         # necessary when the training set is too large for the model to fit
-        indices = self.get_indices(y, max_samples=max_samples,
-                                   min_percentile=min_percentile,
-                                   max_percentile=max_percentile)
+        indices = self.get_subsample_indices(y, max_samples=max_samples,
+                                             min_percentile=min_percentile,
+                                             max_percentile=max_percentile)
         x = x[indices]
         y = y[indices]
 
@@ -218,7 +218,7 @@ class GaussianProcessOracle(ApproximateOracle):
         # cleanup the dataset and return the trained model
         return model
 
-    def protected_score(self, x):
+    def protected_predict(self, x):
         """Score function to be implemented by oracle subclasses, where x is
         either a batch of designs if self.is_batched is True or is a
         single design when self._is_batched is False

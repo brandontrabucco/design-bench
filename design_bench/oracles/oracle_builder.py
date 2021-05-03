@@ -73,9 +73,9 @@ class OracleBuilder(abc.ABC):
 
         raise NotImplementedError
 
-    @staticmethod
+    @classmethod
     @abc.abstractmethod
-    def check_input_format(dataset):
+    def check_input_format(cls, dataset):
         """a function that accepts a model-based optimization dataset as input
         and determines whether the provided dataset is compatible with this
         oracle score function (is this oracle a correct one)
@@ -98,7 +98,7 @@ class OracleBuilder(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def protected_score(self, x):
+    def protected_predict(self, x):
         """Score function to be implemented by oracle subclasses, where x is
         either a batch of designs if self.is_batched is True or is a
         single design when self._is_batched is False
@@ -189,35 +189,6 @@ class OracleBuilder(abc.ABC):
         # attributes that describe model predictions
         self.noise_std = noise_std
         self.num_evaluations = self.dataset.dataset_size
-
-    @staticmethod
-    def get_indices(y_dataset, max_samples=5000,
-                    min_percentile=0.0, max_percentile=100.0):
-        """Helper function for generating indices for subsampling training
-        samples from a model-based optimization dataset, particularly when
-        using a learned model where not all samples fit into memory
-
-        Arguments:
-
-        y_dataset: np.ndarray
-            a numpy array of prediction values from a model-based optimization
-            dataset that will be subsampled using the given statistics
-
-        Returns:
-
-        y_dataset: np.ndarray
-            a numpy array of smaller size that the original y_dataset, having
-            been subsampled using the given statistics
-
-        """
-
-        min_value = np.percentile(y_dataset[:, 0], min_percentile)
-        max_value = np.percentile(y_dataset[:, 0], max_percentile)
-        indices = np.where(np.logical_and(
-            y_dataset[:, 0] >= min_value, y_dataset[:, 0] <= max_value))[0]
-        size = indices.size
-        return indices[np.random.choice(
-            size, size=min(size, max_samples), replace=False)]
 
     def dataset_to_oracle_x(self, x_batch):
         """Helper function for converting from designs contained in the
@@ -383,7 +354,7 @@ class OracleBuilder(abc.ABC):
 
         return y_batch
 
-    def score(self, x_batch):
+    def predict(self, x_batch):
         """a function that accepts a batch of design values 'x' as input and
         for each design computes a prediction value 'y' which corresponds
         to the score in a model-based optimization problem
@@ -428,7 +399,7 @@ class OracleBuilder(abc.ABC):
                 x_sliced = np.squeeze(x_sliced, 0)
 
             # take multiple independent measurements of the score
-            y_sliced = np.mean([self.protected_score(x_sliced) for _ in
+            y_sliced = np.mean([self.protected_predict(x_sliced) for _ in
                                 range(self.internal_measurements)], axis=0)
 
             # if the inner score function is nto batched then add back

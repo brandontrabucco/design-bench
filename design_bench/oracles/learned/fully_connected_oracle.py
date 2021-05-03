@@ -1,13 +1,11 @@
-from design_bench.oracles.approximate_oracle import ApproximateOracle
+from design_bench.oracles.learned.learned_oracle import LearnedOracle
 from design_bench.datasets.discrete_dataset import DiscreteDataset
-from design_bench.datasets.continuous_dataset import ContinuousDataset
-import tensorflow as tf
 import tensorflow.keras as keras
 import tensorflow.keras.layers as layers
 import tempfile
 
 
-class FullyConnectedOracle(ApproximateOracle):
+class FullyConnectedOracle(LearnedOracle):
     """An abstract class for managing the ground truth score functions f(x)
     for model-based optimization problems, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
@@ -98,8 +96,8 @@ class FullyConnectedOracle(ApproximateOracle):
             expect_logits=False if isinstance(
                 dataset, DiscreteDataset) else None, **kwargs)
 
-    @staticmethod
-    def check_input_format(dataset):
+    @classmethod
+    def check_input_format(cls, dataset):
         """a function that accepts a model-based optimization dataset as input
         and determines whether the provided dataset is compatible with this
         oracle score function (is this oracle a correct one)
@@ -169,70 +167,8 @@ class FullyConnectedOracle(ApproximateOracle):
             file.write(model_bytes)
             return keras.models.load_model(file.name)
 
-    def create_tensorflow_dataset(self, dataset, batch_size=32,
-                                  shuffle_buffer=1000, repeat=10):
-        """Helper function that converts a model-based optimization dataset
-        into a tensorflow dataset using the tf.data.Dataset API
-
-        Arguments:
-
-        dataset: DatasetBuilder
-            an instance of a subclass of the DatasetBuilder class which has
-            a set of design values 'x' and prediction values 'y', and defines
-            batching and sampling methods for those attributes
-        batch_size: int
-            an integer passed to tf.data.Dataset.batch that determines
-            the number of samples per batch
-        shuffle_buffer: int
-            an integer passed to tf.data.Dataset.shuffle that determines
-            the number of samples to load before shuffling
-        repeat: int
-            an integer passed to tf.data.Dataset.repeat that determines
-            the number of epochs the dataset repeats for
-
-        Returns:
-
-        tf_dataset: tf.data.Dataset
-            a dataset using the tf.data.Dataset API that samples from a
-            model-based optimization dataset
-
-        """
-
-        # obtain the expected shape of samples to the model
-        input_shape = dataset.input_shape
-        if isinstance(dataset, DiscreteDataset) and dataset.is_logits:
-            input_shape = input_shape[:-1]
-
-        # map from the dataset format to the oracle format using numpy
-        def process(x, y):
-            return self.dataset_to_oracle_x(x), self.dataset_to_oracle_y(y)
-
-        # map from the dataset format to the oracle format using tensorflow
-        def process_tf(x, y):
-            dtype = tf.int32 if isinstance(dataset, DiscreteDataset) \
-                             else tf.float32
-            x, y = tf.numpy_function(process, (x, y), (dtype, tf.float32))
-            x.set_shape([None, *input_shape])
-            y.set_shape([None, 1])
-            return x, y
-
-        # create a dataset from individual samples
-        tf_dataset = tf.data.Dataset.from_generator(
-            dataset.iterate_samples,
-            (dataset.input_dtype, dataset.output_dtype),
-            (tf.TensorShape(dataset.input_shape),
-             tf.TensorShape(dataset.output_shape)))
-
-        # batch and repeat the dataset
-        tf_dataset = tf_dataset.shuffle(shuffle_buffer)
-        tf_dataset = tf_dataset.batch(batch_size)
-        tf_dataset = tf_dataset.repeat(repeat)
-        auto = tf.data.experimental.AUTOTUNE
-        tf_dataset = tf_dataset.map(process_tf, num_parallel_calls=auto)
-        return tf_dataset.prefetch(auto)
-
-    def fit(self, dataset, hidden_size=64,
-            activation="relu", hidden_layers=2, **kwargs):
+    def fit(self, dataset, hidden_size=64, activation="relu",
+            hidden_layers=2, epochs=10, shuffle_buffer=1000, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -252,32 +188,35 @@ class FullyConnectedOracle(ApproximateOracle):
 
         """
 
+        # obtain the expected shape of inputs to the model
         input_shape = dataset.input_shape
         if isinstance(dataset, DiscreteDataset) and dataset.is_logits:
             input_shape = input_shape[:-1]
 
-        tf_dataset = self.create_tensorflow_dataset(
-            dataset, batch_size=32, shuffle_buffer=1000, repeat=10)
-
+        # build a model with an input layer and option embedding
         model_layers = [keras.Input(shape=input_shape)]
         if isinstance(dataset, DiscreteDataset):
             model_layers.append(
                 layers.Embedding(dataset.num_classes, hidden_size))
 
+        # add several fully connected layers and a final output layer
         model_layers.append(layers.Flatten())
         for i in range(hidden_layers):
             model_layers.append(
                 layers.Dense(hidden_size, activation=activation))
         model_layers.append(layers.Dense(1))
 
+        # build a sequential model and fit to a data generator
         model = keras.Sequential(model_layers)
         model.compile(optimizer='adam', loss='mse')
-        model.fit(tf_dataset, **kwargs)
+        model.fit(self.create_tensorflow_dataset(
+            dataset, batch_size=self.internal_batch_size,
+            shuffle_buffer=shuffle_buffer, repeat=epochs), **kwargs)
 
-        # cleanup the dataset and return the trained model
+        # return the trained model
         return model
 
-    def protected_score(self, x):
+    def protected_predict(self, x):
         """Score function to be implemented by oracle subclasses, where x is
         either a batch of designs if self.is_batched is True or is a
         single design when self._is_batched is False

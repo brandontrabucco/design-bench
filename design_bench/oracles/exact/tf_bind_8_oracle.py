@@ -62,30 +62,37 @@ class TFBind8Oracle(ExactOracle):
 
     name = "exact_enrichment_score"
 
-    @staticmethod
-    def check_input_format(dataset):
-        """a function that accepts a model-based optimization dataset as input
-        and determines whether the provided dataset is compatible with this
-        oracle score function (is this oracle a correct one)
-
-        Arguments:
-
-        dataset: DatasetBuilder
-            an instance of a subclass of the DatasetBuilder class which has
-            a set of design values 'x' and prediction values 'y', and defines
-            batching and sampling methods for those attributes
-
-        Returns:
-
-        is_compatible: bool
-            a boolean indicator that is true when the specified dataset is
-            compatible with this ground truth score function
+    @classmethod
+    def supported_datasets(cls):
+        """An attribute the defines the set of dataset classes which this
+        oracle can be applied to forming a valid ground truth score
+        function for a model-based optimization problem
 
         """
 
-        return isinstance(dataset, TFBind8Dataset)
+        return {TFBind8Dataset}
 
-    def protected_score(self, x):
+    @classmethod
+    def fully_characterized(cls):
+        """An attribute the defines whether all possible inputs to the
+        model-based optimization problem have been evaluated and
+        are are returned via lookup in self.predict
+
+        """
+
+        return True
+
+    @classmethod
+    def is_simulated(cls):
+        """An attribute the defines whether the values returned by the oracle
+         were obtained by running a computer simulation rather than
+         performing physical experiments with real data
+
+        """
+
+        return False
+
+    def protected_predict(self, x):
         """Score function to be implemented by oracle subclasses, where x is
         either a batch of designs if self.is_batched is True or is a
         single design when self._is_batched is False

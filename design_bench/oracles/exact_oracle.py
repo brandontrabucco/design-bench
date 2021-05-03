@@ -59,4 +59,59 @@ class ExactOracle(OracleBuilder, abc.ABC):
 
     """
 
-    pass
+    @classmethod
+    @abc.abstractmethod
+    def supported_datasets(cls):
+        """An attribute the defines the set of dataset classes which this
+        oracle can be applied to forming a valid ground truth score
+        function for a model-based optimization problem
+
+        """
+
+        raise NotImplementedError
+
+    @classmethod
+    @abc.abstractmethod
+    def fully_characterized(cls):
+        """An attribute the defines whether all possible inputs to the
+        model-based optimization problem have been evaluated and
+        are are returned via lookup in self.predict
+
+        """
+
+        raise NotImplementedError
+
+    @classmethod
+    @abc.abstractmethod
+    def is_simulated(cls):
+        """An attribute the defines whether the values returned by the oracle
+         were obtained by running a computer simulation rather than
+         performing physical experiments with real data
+
+        """
+
+        raise NotImplementedError
+
+    @classmethod
+    def check_input_format(cls, dataset):
+        """a function that accepts a model-based optimization dataset as input
+        and determines whether the provided dataset is compatible with this
+        oracle score function (is this oracle a correct one)
+
+        Arguments:
+
+        dataset: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class which has
+            a set of design values 'x' and prediction values 'y', and defines
+            batching and sampling methods for those attributes
+
+        Returns:
+
+        is_compatible: bool
+            a boolean indicator that is true when the specified dataset is
+            compatible with this ground truth score function
+
+        """
+
+        return any([isinstance(dataset, x)
+                    for x in cls.supported_datasets()])
