@@ -1,4 +1,4 @@
-from design_bench.oracles.approximate_oracle import ApproximateOracle
+from design_bench.oracles.sklearn.sklearn_oracle import SKLearnOracle
 from design_bench.datasets.discrete_dataset import DiscreteDataset
 from design_bench.datasets.dataset_builder import DatasetBuilder
 from sklearn.gaussian_process import GaussianProcessRegressor
@@ -6,7 +6,7 @@ import numpy as np
 import pickle as pkl
 
 
-class GaussianProcessOracle(ApproximateOracle):
+class GaussianProcessOracle(SKLearnOracle):
     """An abstract class for managing the ground truth score functions f(x)
     for model-based optimization problems, where the
     goal is to find a design 'x' that maximizes a prediction 'y':

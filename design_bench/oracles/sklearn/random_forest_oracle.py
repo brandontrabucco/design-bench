@@ -1,11 +1,11 @@
-from design_bench.oracles.learned.learned_oracle import LearnedOracle
+from design_bench.oracles.sklearn.sklearn_oracle import SKLearnOracle
 from design_bench.datasets.discrete_dataset import DiscreteDataset
-import tensorflow.keras as keras
-import tensorflow.keras.layers as layers
-import tempfile
+from sklearn.ensemble import RandomForestRegressor
+import numpy as np
+import pickle as pkl
 
 
-class FullyConnectedOracle(LearnedOracle):
+class RandomForestOracle(SKLearnOracle):
     """An abstract class for managing the ground truth score functions f(x)
     for model-based optimization problems, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
@@ -67,9 +67,9 @@ class FullyConnectedOracle(LearnedOracle):
 
     """
 
-    name = "fully_connected"
+    name = "random_forest"
 
-    def __init__(self, dataset, noise_std=0.0, **kwargs):
+    def __init__(self, dataset: DiscreteDataset, noise_std=0.0, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -88,12 +88,12 @@ class FullyConnectedOracle(LearnedOracle):
         """
 
         # initialize the oracle using the super class
-        super(FullyConnectedOracle, self).__init__(
+        super(RandomForestOracle, self).__init__(
             dataset, noise_std=noise_std, is_batched=True,
             internal_batch_size=32, internal_measurements=1,
             expect_normalized_y=True,
-            expect_normalized_x=not isinstance(dataset, DiscreteDataset),
-            expect_logits=False if isinstance(
+            expect_normalized_x=True,
+            expect_logits=True if isinstance(
                 dataset, DiscreteDataset) else None, **kwargs)
 
     @classmethod
@@ -136,11 +136,8 @@ class FullyConnectedOracle(LearnedOracle):
 
         """
 
-        with tempfile.NamedTemporaryFile() as file:
-            model.save(file.name, save_format='h5')
-            model_bytes = file.read()
-        with zip_archive.open('fully_connected.h5', "w") as file:
-            file.write(model_bytes)  # save model bytes in the h5 format
+        with zip_archive.open('random_forest.pkl', "w") as file:
+            return pkl.dump(model, file)  # save the model using pickle
 
     def load_model_from_zip(self, zip_archive):
         """a function that loads components of a serialized model from a zip
@@ -151,7 +148,7 @@ class FullyConnectedOracle(LearnedOracle):
 
         zip_archive: ZipFile
             an instance of the python ZipFile interface that has loaded
-            the file path specified by self.resource.disk_target
+            the file path specified by self.resource.disk_targetteh
 
         Returns:
 
@@ -161,14 +158,11 @@ class FullyConnectedOracle(LearnedOracle):
 
         """
 
-        with zip_archive.open('fully_connected.h5', "r") as file:
-            model_bytes = file.read()  # read model bytes in the h5 format
-        with tempfile.NamedTemporaryFile() as file:
-            file.write(model_bytes)
-            return keras.models.load_model(file.name)
+        with zip_archive.open('random_forest.pkl', "r") as file:
+            return pkl.load(file)  # load the random forest using pickle
 
-    def fit(self, dataset, hidden_size=64, activation="relu",
-            hidden_layers=2, epochs=10, shuffle_buffer=1000, **kwargs):
+    def fit(self, dataset, max_samples=1000,
+            min_percentile=0.0, max_percentile=100.0, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -188,32 +182,31 @@ class FullyConnectedOracle(LearnedOracle):
 
         """
 
-        # obtain the expected shape of inputs to the model
-        input_shape = dataset.input_shape
-        if isinstance(dataset, DiscreteDataset) and dataset.is_logits:
-            input_shape = input_shape[:-1]
+        # build the model class and assign hyper parameters
+        model = RandomForestRegressor(**kwargs)
 
-        # build a model with an input layer and option embedding
-        model_layers = [keras.Input(shape=input_shape)]
-        if isinstance(dataset, DiscreteDataset):
-            model_layers.append(
-                layers.Embedding(dataset.num_classes, hidden_size))
+        # sample the entire dataset without transformations
+        # note this requires the dataset to be loaded in memory all at once
+        x = dataset.x
+        y = dataset.y
 
-        # add several fully connected layers and a final output layer
-        model_layers.append(layers.Flatten())
-        for i in range(hidden_layers):
-            model_layers.append(
-                layers.Dense(hidden_size, activation=activation))
-        model_layers.append(layers.Dense(1))
+        # select training examples using percentile sub sampling
+        # necessary when the training set is too large for the model to fit
+        indices = self.get_subsample_indices(y, max_samples=max_samples,
+                                             min_percentile=min_percentile,
+                                             max_percentile=max_percentile)
+        x = x[indices]
+        y = y[indices]
 
-        # build a sequential model and fit to a data generator
-        model = keras.Sequential(model_layers)
-        model.compile(optimizer='adam', loss='mse')
-        model.fit(self.create_tensorflow_dataset(
-            dataset, batch_size=self.internal_batch_size,
-            shuffle_buffer=shuffle_buffer, repeat=epochs), **kwargs)
+        # convert samples into the expected format of the oracle
+        x = self.dataset_to_oracle_x(x)
+        y = self.dataset_to_oracle_y(y)
 
-        # return the trained model
+        # fit the random forest model to the dataset
+        model.fit(x.reshape((x.shape[0], np.prod(x.shape[1:]))),
+                  y.reshape((y.shape[0],)))
+
+        # cleanup the dataset and return the trained model
         return model
 
     def protected_predict(self, x):
@@ -238,4 +231,5 @@ class FullyConnectedOracle(LearnedOracle):
         """
 
         # call the model's predict function to generate predictions
-        return self.model.predict(x)
+        return self.model.predict(
+            x.reshape((x.shape[0], np.prod(x.shape[1:]))))[:, np.newaxis]

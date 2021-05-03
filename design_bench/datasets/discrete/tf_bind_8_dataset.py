@@ -388,10 +388,6 @@ class TFBind8Dataset(DiscreteDataset):
 
     """
 
-    name = "tf_bind_8"
-    x_name = "dna_sequence"
-    y_name = "enrichment_score"
-
     @staticmethod
     def register_x_shards(transcription_factor='SIX6_REF_R1'):
         """Registers a remote file for download that contains design values
@@ -474,6 +470,11 @@ class TFBind8Dataset(DiscreteDataset):
             if multiple sets of data set shard files can be loaded
 
         """
+
+        # set the names the describe the dataset
+        self.name = f"tf_bind_8-{transcription_factor}"
+        self.y_name = "enrichment_score"
+        self.x_name = "dna_sequence"
 
         # initialize the dataset using the method in the base class
         super(TFBind8Dataset, self).__init__(

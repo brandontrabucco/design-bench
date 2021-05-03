@@ -335,10 +335,6 @@ class TFBind10Dataset(DiscreteDataset):
 
     """
 
-    name = "tf_bind_10"
-    x_name = "dna_sequence"
-    y_name = "ddg"
-
     @staticmethod
     def register_x_shards(transcription_factor='pho4'):
         """Registers a remote file for download that contains design values
@@ -421,6 +417,11 @@ class TFBind10Dataset(DiscreteDataset):
             if multiple sets of data set shard files can be loaded
 
         """
+
+        # set the names the describe the dataset
+        self.name = f"tf_bind_10-{transcription_factor}"
+        self.y_name = "ddg"
+        self.x_name = "dna_sequence"
 
         # initialize the dataset using the method in the base class
         super(TFBind10Dataset, self).__init__(

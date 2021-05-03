@@ -4,7 +4,7 @@ import tensorflow as tf
 import abc
 
 
-class LearnedOracle(ApproximateOracle, abc.ABC):
+class TensorflowOracle(ApproximateOracle, abc.ABC):
     """An abstract class for managing the ground truth score functions f(x)
     for model-based optimization problems, where the
     goal is to find a design 'x' that maximizes a prediction 'y':

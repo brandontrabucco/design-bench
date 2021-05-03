@@ -1525,9 +1525,6 @@ class ChEMBLDataset(DiscreteDataset):
 
     """
 
-    name = "chembl"
-    x_name = "smiles"
-
     @staticmethod
     def register_x_shards(assay_chembl_id="CHEMBL3507681",
                           standard_type="Inhibition"):
@@ -1626,8 +1623,10 @@ class ChEMBLDataset(DiscreteDataset):
 
         """
 
-        # set the value to be maximized
-        self.y_name = standard_type.lower()
+        # set the names the describe the dataset
+        self.name = f"chembl-{standard_type}-{assay_chembl_id}"
+        self.y_name = standard_type
+        self.x_name = "smiles"
 
         # initialize the dataset using the method in the base class
         super(ChEMBLDataset, self).__init__(

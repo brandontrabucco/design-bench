@@ -4,6 +4,19 @@ import numpy as np
 
 
 class ProteinKernel(GenericKernelMixin, Kernel):
+    """Kernel for the sklearn GaussianProcessRegressor on protein amino acid
+    sequences using a protein-specific kernel taken from this paper:
+    https://link.springer.com/article/10.1007/s10208-013-9173-9
+
+    Initialize with:
+
+    >>> from design_bench.oracles.sklearn.kernels import ProteinKernel
+    >>> from design_bench.oracles.sklearn import GaussianProcessOracle
+    >>> from design_bench.datasets.discrete.gfp_dataset import GFPDataset
+    >>> dataset = GFPDataset()
+    >>> gp = GaussianProcessOracle(dataset, kernel=ProteinKernel())
+
+    """
 
     def __init__(self):
         self.blosum = np.array([

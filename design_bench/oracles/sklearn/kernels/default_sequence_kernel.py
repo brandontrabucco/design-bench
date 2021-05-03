@@ -4,6 +4,19 @@ import numpy as np
 
 
 class DefaultSequenceKernel(GenericKernelMixin, Kernel):
+    """Kernel for the sklearn GaussianProcessRegressor on discrete data
+    when a domain-specific kernel is not already known
+
+    Initialize with:
+
+    >>> from design_bench.oracles.sklearn.kernels import DefaultSequenceKernel
+    >>> from design_bench.oracles.sklearn import GaussianProcessOracle
+    >>> from design_bench.datasets.discrete.gfp_dataset import GFPDataset
+    >>> dataset = GFPDataset()
+    >>> kernel = DefaultSequenceKernel(dataset.num_classes)
+    >>> gp = GaussianProcessOracle(dataset, kernel=kernel)
+
+    """
 
     def __init__(self, size, diagonal=1.0, off_diagonal=0.1):
         self.kernel_matrix = np.full((size, size), off_diagonal)
