@@ -28,6 +28,7 @@ if __name__ == "__main__":
     transcription_factors = df['protein'].unique().tolist()
 
     os.makedirs(args.shard_folder, exist_ok=True)
+    files_list = []
     for transcription_factor in transcription_factors:
 
         data = df.loc[df['protein'] == transcription_factor]
@@ -73,12 +74,15 @@ if __name__ == "__main__":
             os.makedirs(os.path.join(
                 args.shard_folder,
                 f"tf_bind_10-{transcription_factor}/"), exist_ok=True)
+            files_list.append(f"tf_bind_10-{transcription_factor}/"
+                              f"tf_bind_10-x-{shard_id}.npy")
             np.save(os.path.join(
                 args.shard_folder,
                 f"tf_bind_10-{transcription_factor}/"
                 f"tf_bind_10-x-{shard_id}.npy"), x_sliced)
-
             np.save(os.path.join(
                 args.shard_folder,
                 f"tf_bind_10-{transcription_factor}"
                 f"/tf_bind_10-y-{shard_id}.npy"), y_sliced)
+
+    print(files_list)

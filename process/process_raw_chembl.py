@@ -58,6 +58,7 @@ if __name__ == "__main__":
         data.groupby(["Standard Type", "Assay ChEMBL ID"]))))[0]
 
     os.makedirs(args.shard_folder, exist_ok=True)
+    files_list = []
     for standard_type, assay_chembl_id in group:
 
         # download the molecule dataset if not already
@@ -98,6 +99,8 @@ if __name__ == "__main__":
             os.makedirs(os.path.join(
                 args.shard_folder,
                 f"chembl-{standard_type}-{assay_chembl_id}"), exist_ok=True)
+            files_list.append(f"chembl-{standard_type}-{assay_chembl_id}/"
+                              f"chembl-x-{shard_id}.npy")
             np.save(os.path.join(
                 args.shard_folder,
                 f"chembl-{standard_type}-{assay_chembl_id}/"
@@ -106,3 +109,8 @@ if __name__ == "__main__":
                 args.shard_folder,
                 f"chembl-{standard_type}-{assay_chembl_id}/"
                 f"chembl-y-{shard_id}.npy"), y_sliced)
+
+            print(f"chembl-{standard_type}-{assay_chembl_id}/"
+                  f"chembl-x-{shard_id}.npy", x_sliced.shape[0])
+
+    print(files_list)

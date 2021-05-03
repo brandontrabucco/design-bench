@@ -113,11 +113,13 @@ if __name__ == "__main__":
     parser.add_argument("--tfrecord",
                         type=str, default="./data/nasbench_full.tfrecord")
     parser.add_argument("--shard-folder",
-                        type=str, default="./nas_bench")
+                        type=str, default="./")
     parser.add_argument("--samples-per-shard",
                         type=int, default=50000)
     args = parser.parse_args()
-    os.makedirs(args.shard_folder, exist_ok=True)
+    files_list = []
+    os.makedirs(os.path.join(
+        args.shard_folder, f"nas_bench/"), exist_ok=True)
 
     # loop through all possible architectures
     x_list = []
@@ -132,13 +134,14 @@ if __name__ == "__main__":
 
             x_shard = np.stack(x_list, axis=0).astype(np.int32)
             x_shard_path = os.path.join(
-                args.shard_folder, f"nas_bench-x-{shard_id}.npy")
+                args.shard_folder, f"nas_bench/nas_bench-x-{shard_id}.npy")
             np.save(x_shard_path, x_shard)
 
             y_shard = np.stack(y_list, axis=0).astype(np.float32)
             y_shard_path = os.path.join(
-                args.shard_folder, f"nas_bench-y-{shard_id}.npy")
+                args.shard_folder, f"nas_bench/nas_bench-y-{shard_id}.npy")
             np.save(y_shard_path, y_shard)
+            files_list.append(f"nas_bench/nas_bench-x-{shard_id}.npy")
 
             x_list = []
             y_list = []
@@ -149,10 +152,13 @@ if __name__ == "__main__":
 
         x_shard = np.stack(x_list, axis=0).astype(np.int32)
         x_shard_path = os.path.join(
-            args.shard_folder, f"nas_bench-x-{shard_id}.npy")
+            args.shard_folder, f"nas_bench/nas_bench-x-{shard_id}.npy")
         np.save(x_shard_path, x_shard)
 
         y_shard = np.stack(y_list, axis=0).astype(np.float32)
         y_shard_path = os.path.join(
-            args.shard_folder, f"nas_bench-y-{shard_id}.npy")
+            args.shard_folder, f"nas_bench/nas_bench-y-{shard_id}.npy")
         np.save(y_shard_path, y_shard)
+        files_list.append(f"nas_bench/nas_bench-x-{shard_id}.npy")
+
+    print(files_list)

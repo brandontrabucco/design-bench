@@ -15,7 +15,7 @@ AA_IDX = {AA[i]: i for i in range(len(AA))}
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser("Process Raw GFP")
-    parser.add_argument("--shard-folder", type=str, default="./gfp")
+    parser.add_argument("--shard-folder", type=str, default="./")
     parser.add_argument("--samples-per-shard", type=int, default=5000)
     args = parser.parse_args()
 
@@ -47,7 +47,9 @@ if __name__ == "__main__":
         y.shape[0] / args.samples_per_shard))
 
     # loop once per batch contained in the shard
-    os.makedirs(args.shard_folder, exist_ok=True)
+    os.makedirs(os.path.join(
+        args.shard_folder, f"gfp/"), exist_ok=True)
+    files_list = []
     for shard_id in range(batch_per_shard):
 
         # slice out a component of the current shard
@@ -56,10 +58,12 @@ if __name__ == "__main__":
         y_sliced = y[shard_id * args.samples_per_shard:
                      (shard_id + 1) * args.samples_per_shard]
 
+        files_list.append(f"gfp/gfp-x-{shard_id}.npy")
         np.save(os.path.join(
             args.shard_folder,
-            f"gfp-x-{shard_id}.npy"), x_sliced)
+            f"gfp/gfp-x-{shard_id}.npy"), x_sliced)
+        np.save(os.path.join(
+            args.shard_folder,
+            f"gfp/gfp-y-{shard_id}.npy"), y_sliced)
 
-        np.save(os.path.join(
-            args.shard_folder,
-            f"gfp-y-{shard_id}.npy"), y_sliced)
+    print(files_list)

@@ -33,6 +33,7 @@ if __name__ == "__main__":
         f).replace("_8mers.txt", "") for f in all_files]
 
     os.makedirs(args.shard_folder, exist_ok=True)
+    files_list = []
     for transcription_factor in transcription_factors:
 
         data = pd.read_csv(os.path.join(
@@ -75,6 +76,8 @@ if __name__ == "__main__":
             os.makedirs(os.path.join(
                 args.shard_folder,
                 f"tf_bind_8-{transcription_factor}/"), exist_ok=True)
+            files_list.append(f"tf_bind_8-{transcription_factor}/"
+                              f"tf_bind_8-x-{shard_id}.npy")
             np.save(os.path.join(
                 args.shard_folder,
                 f"tf_bind_8-{transcription_factor}/"
@@ -83,3 +86,5 @@ if __name__ == "__main__":
                 args.shard_folder,
                 f"tf_bind_8-{transcription_factor}/"
                 f"tf_bind_8-y-{shard_id}.npy"), y_sliced)
+
+    print(files_list)

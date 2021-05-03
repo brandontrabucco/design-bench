@@ -15,7 +15,7 @@ INVERSE_MAP = dict(a='t', t='a', c='g', g='c')
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser("Process Raw UTR")
-    parser.add_argument("--shard-folder", type=str, default="./utr")
+    parser.add_argument("--shard-folder", type=str, default="./")
     parser.add_argument("--samples-per-shard", type=int, default=20000)
     parser.add_argument("--k-most-read", type=int, default=280000)
     args = parser.parse_args()
@@ -61,7 +61,10 @@ if __name__ == "__main__":
 
     # loop once per batch contained in the shard
 
-    os.makedirs(args.shard_folder, exist_ok=True)
+    os.makedirs(os.path.join(
+                args.shard_folder,
+                f"utr/"), exist_ok=True)
+    files_list = []
     for shard_id in range(batch_per_shard):
 
         # slice out a component of the current shard
@@ -70,10 +73,12 @@ if __name__ == "__main__":
         y_sliced = y[shard_id * args.samples_per_shard:
                      (shard_id + 1) * args.samples_per_shard]
 
+        files_list.append(f"utr/utr-x-{shard_id}.npy")
         np.save(os.path.join(
             args.shard_folder,
-            f"utr-x-{shard_id}.npy"), x_sliced)
+            f"utr/utr-x-{shard_id}.npy"), x_sliced)
+        np.save(os.path.join(
+            args.shard_folder,
+            f"utr/utr-y-{shard_id}.npy"), y_sliced)
 
-        np.save(os.path.join(
-            args.shard_folder,
-            f"utr-y-{shard_id}.npy"), y_sliced)
+    print(files_list)
