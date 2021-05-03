@@ -95,12 +95,14 @@ if __name__ == "__main__":
             y_sliced = y[shard_id * args.samples_per_shard:
                          (shard_id + 1) * args.samples_per_shard]
 
+            os.makedirs(os.path.join(
+                args.shard_folder,
+                f"chembl-{standard_type}-{assay_chembl_id}"), exist_ok=True)
             np.save(os.path.join(
                 args.shard_folder,
-                f"chembl-{standard_type}-"
-                f"{assay_chembl_id}/chembl-x-{shard_id}.npy"), x_sliced)
-
+                f"chembl-{standard_type}-{assay_chembl_id}/"
+                f"chembl-x-{shard_id}.npy"), x_sliced)
             np.save(os.path.join(
                 args.shard_folder,
-                f"chembl-{standard_type}-"
-                f"{assay_chembl_id}/chembl-y-{shard_id}.npy"), y_sliced)
+                f"chembl-{standard_type}-{assay_chembl_id}/"
+                f"chembl-y-{shard_id}.npy"), y_sliced)

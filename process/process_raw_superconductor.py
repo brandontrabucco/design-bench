@@ -15,10 +15,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # download the gfp dataset if not already
-    google_drive_download('1_jcPkQ-M1FRhkEONoE57WEbp_Rivkho2',
-                          os.path.join(DATA_DIR, 'gfp_data.csv'))
-
-    # download the gfp dataset if not already
     google_drive_download('1AguXqbNrSc665sablzVJh4RHLodeXglx',
                           os.path.join(DATA_DIR, 'superconductor_unique_m.csv'))
 

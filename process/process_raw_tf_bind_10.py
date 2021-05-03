@@ -70,6 +70,9 @@ if __name__ == "__main__":
             y_sliced = y[shard_id * args.samples_per_shard:
                          (shard_id + 1) * args.samples_per_shard]
 
+            os.makedirs(os.path.join(
+                args.shard_folder,
+                f"tf_bind_10-{transcription_factor}/"), exist_ok=True)
             np.save(os.path.join(
                 args.shard_folder,
                 f"tf_bind_10-{transcription_factor}/"

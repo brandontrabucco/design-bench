@@ -7,6 +7,7 @@ import argparse
 import os
 import math
 import glob
+import zipfile
 
 
 if __name__ == "__main__":
@@ -17,8 +18,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # download the tf_bind_8 dataset if not already present
+    target = os.path.join(DATA_DIR, 'TF_binding_landscapes.zip')
     google_drive_download('1xS6N5qSwyFLC-ZPTADYrxZuPHjBkZCrj',
-                          os.path.join(DATA_DIR, 'TF_binding_landscapes.zip'))
+                          target)
+    with zipfile.ZipFile(target, 'r') as zip_ref:
+        zip_ref.extractall(os.path.dirname(target))
 
     # load the static dataset
     tf_dir = os.path.join(os.path.join(
@@ -68,11 +72,13 @@ if __name__ == "__main__":
             y_sliced = y[shard_id * args.samples_per_shard:
                          (shard_id + 1) * args.samples_per_shard]
 
+            os.makedirs(os.path.join(
+                args.shard_folder,
+                f"tf_bind_8-{transcription_factor}/"), exist_ok=True)
             np.save(os.path.join(
                 args.shard_folder,
                 f"tf_bind_8-{transcription_factor}/"
                 f"tf_bind_8-x-{shard_id}.npy"), x_sliced)
-
             np.save(os.path.join(
                 args.shard_folder,
                 f"tf_bind_8-{transcription_factor}/"

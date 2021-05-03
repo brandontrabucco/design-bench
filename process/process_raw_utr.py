@@ -6,6 +6,7 @@ import numpy as np
 import argparse
 import os
 import math
+import zipfile
 
 
 INVERSE_MAP = dict(a='t', t='a', c='g', g='c')
@@ -20,8 +21,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # download the gfp dataset if not already
+    target = os.path.join(DATA_DIR, 'utr.zip')
     google_drive_download('1pRypiGVYl-kmJZaMhVbuA1PEvqauWBBM',
-                          os.path.join(DATA_DIR, 'utr.zip'))
+                          target)
+    with zipfile.ZipFile(target, 'r') as zip_ref:
+        zip_ref.extractall(os.path.dirname(target))
     utr_dir = os.path.join(DATA_DIR, 'utr')
 
     # load the static dataset and sort by total reads
