@@ -189,9 +189,9 @@ class ResNetOracle(TensorflowOracle):
             return dict(model=keras.models.load_model(file.name),
                         rank_correlation=rank_correlation)
 
-    def fit(self, dataset, hidden_size=64, activation='relu',
-            kernel_size=3, resnet_blocks=4, epochs=20,
-            shuffle_buffer=1000, learning_rate=0.0003, **kwargs):
+    def fit(self, dataset, hidden_size=512, activation='relu',
+            kernel_size=3, resnet_blocks=4, epochs=50,
+            shuffle_buffer=5000, learning_rate=0.0003, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -212,7 +212,6 @@ class ResNetOracle(TensorflowOracle):
         """
 
         # prepare the dataset for training and validation
-        dataset.update_y_statistics()
         training, validation = dataset.split(**kwargs)
         validation_x = self.dataset_to_oracle_x(validation.x)
         validation_y = self.dataset_to_oracle_y(validation.y)
@@ -233,16 +232,14 @@ class ResNetOracle(TensorflowOracle):
                              activation=None, use_bias=False)(x)
 
         # the exponent of a positional embedding
-        inverse_frequency_sin = 1.0 / (10000.0 ** (
-            tf.range(0.0, hidden_size, 2.0) / hidden_size))[tf.newaxis]
-        inverse_frequency_cos = 1.0 / (10000.0 ** (
-            tf.range(1.0, hidden_size, 2.0) / hidden_size))[tf.newaxis]
+        inverse_frequency = 1.0 / (10000.0 ** (tf.range(
+            0.0, hidden_size, 2.0) / hidden_size))[tf.newaxis]
 
         # calculate a positional embedding to break symmetry
         pos = tf.range(0.0, tf.shape(x)[1], 1.0)[:, tf.newaxis]
         positional_embedding = tf.concat([
-            tf.math.sin(pos * inverse_frequency_sin),
-            tf.math.sin(pos * inverse_frequency_cos)], axis=1)[tf.newaxis]
+            tf.math.sin(pos * inverse_frequency),
+            tf.math.cos(pos * inverse_frequency)], axis=1)[tf.newaxis]
 
         # add the positional encoding and normalize the activations
         x = layers.Add()([x, positional_embedding])
@@ -276,13 +273,15 @@ class ResNetOracle(TensorflowOracle):
         model = keras.Model(inputs=input_layer,
                             outputs=output_layer)
 
+        # estimate the number of training steps per epoch
+        steps = int(math.ceil(training.dataset_size
+                              / self.internal_batch_size))
+
         # build an optimizer to train the model
+        learning_rate = keras.experimental.CosineDecay(
+            learning_rate, steps * epochs, alpha=0.0)
         optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
         model.compile(optimizer=optimizer, loss='mse')
-
-        # estimate the number of training steps per epoch
-        steps = int(math.ceil(
-            training.dataset_size / self.internal_batch_size))
 
         # fit the model to a tensorflow dataset
         model.fit(self.create_tensorflow_dataset(
