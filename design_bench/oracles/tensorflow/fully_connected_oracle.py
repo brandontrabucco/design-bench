@@ -1,8 +1,12 @@
 from design_bench.oracles.tensorflow.tensorflow_oracle import TensorflowOracle
 from design_bench.datasets.discrete_dataset import DiscreteDataset
+from scipy import stats
+import tensorflow as tf
 import tensorflow.keras as keras
 import tensorflow.keras.layers as layers
 import tempfile
+import math
+import numpy as np
 
 
 class FullyConnectedOracle(TensorflowOracle):
@@ -117,7 +121,7 @@ class FullyConnectedOracle(TensorflowOracle):
 
         """
 
-        return True  # any data set is always supported with this model
+        return True
 
     def save_model_to_zip(self, model, zip_archive):
         """a function that serializes a machine learning model and stores
@@ -136,11 +140,18 @@ class FullyConnectedOracle(TensorflowOracle):
 
         """
 
+        # extract the bytes of an h5 serialized model
         with tempfile.NamedTemporaryFile() as file:
-            model.save(file.name, save_format='h5')
+            model["model"].save(file.name, save_format='h5')
             model_bytes = file.read()
+
+        # write the h5 bytes ot the zip file
         with zip_archive.open('fully_connected.h5', "w") as file:
             file.write(model_bytes)  # save model bytes in the h5 format
+
+        # write the validation rank correlation to the zip file
+        with zip_archive.open('rank_correlation.npy', "w") as file:
+            file.write(model["rank_correlation"].dumps())
 
     def load_model_from_zip(self, zip_archive):
         """a function that loads components of a serialized model from a zip
@@ -161,15 +172,23 @@ class FullyConnectedOracle(TensorflowOracle):
 
         """
 
+        # read the validation rank correlation from the zip file
+        with zip_archive.open('rank_correlation.npy', "r") as file:
+            rank_correlation = np.loads(file.read())
+
+        # read the h5 bytes from the zip file
         with zip_archive.open('fully_connected.h5', "r") as file:
             model_bytes = file.read()  # read model bytes in the h5 format
+
+        # load the model using a temporary file as a buffer
         with tempfile.NamedTemporaryFile() as file:
             file.write(model_bytes)
-            return keras.models.load_model(file.name)
+            return dict(model=keras.models.load_model(file.name),
+                        rank_correlation=rank_correlation)
 
-    def fit(self, dataset, hidden_size=64, activation="relu",
-            hidden_layers=2, epochs=10, shuffle_buffer=1000,
-            learning_rate=0.0003, **kwargs):
+    def fit(self, dataset, hidden_size=64, activation='relu',
+            hidden_layers=12, epochs=50,
+            shuffle_buffer=5000, learning_rate=0.0003, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -189,35 +208,73 @@ class FullyConnectedOracle(TensorflowOracle):
 
         """
 
+        # prepare the dataset for training and validation
+        training, validation = dataset.split(**kwargs)
+        validation_x = self.dataset_to_oracle_x(validation.x)
+        validation_y = self.dataset_to_oracle_y(validation.y)
+
         # obtain the expected shape of inputs to the model
-        input_shape = dataset.input_shape
-        if isinstance(dataset, DiscreteDataset) and dataset.is_logits:
+        input_shape = training.input_shape
+        if isinstance(training, DiscreteDataset) and training.is_logits:
             input_shape = input_shape[:-1]
 
-        # build a model with an input layer and option embedding
-        model_layers = [keras.Input(shape=input_shape)]
-        if isinstance(dataset, DiscreteDataset):
-            model_layers.append(
-                layers.Embedding(dataset.num_classes, hidden_size))
+        # the input layer of a keras model
+        x = input_layer = keras.Input(shape=input_shape)
 
-        # add several fully connected layers and a final output layer
-        model_layers.append(layers.Flatten())
+        # build a model with an input layer and optional embedding
+        if isinstance(training, DiscreteDataset):
+            x = layers.Embedding(training.num_classes, hidden_size)(x)
+
+        # ensure the input has hidden_size channels
+        x = layers.Flatten()(x)
+        x = layers.Dense(hidden_size,
+                         activation=None, use_bias=False)(x)
+
+        # add several residual blocks to the model
         for i in range(hidden_layers):
-            model_layers.append(
-                layers.Dense(hidden_size, activation=activation))
-            model_layers.append(layers.LayerNormalization())
-        model_layers.append(layers.Dense(1))
 
-        # build a sequential model and fit to a data generator
-        model = keras.Sequential(model_layers)
+            # first dense layer in a residual block
+            h = layers.LayerNormalization()(x)
+            h = layers.Activation(activation)(h)
+            h = layers.Dense(hidden_size, activation=None)(h)
+
+            # second dense layer in a residual block
+            h = layers.LayerNormalization()(h)
+            h = layers.Activation(activation)(h)
+            h = layers.Dense(hidden_size, activation=None)(h)
+
+            # add a residual connection to the model
+            x = layers.Add()([x, h])
+
+        # fully connected layer to regress to y values
+        output_layer = layers.Dense(1)(x)
+        model = keras.Model(inputs=input_layer,
+                            outputs=output_layer)
+
+        # estimate the number of training steps per epoch
+        steps = int(math.ceil(training.dataset_size
+                              / self.internal_batch_size))
+
+        # build an optimizer to train the model
+        learning_rate = keras.experimental.CosineDecay(
+            learning_rate, steps * epochs, alpha=0.0)
         optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
         model.compile(optimizer=optimizer, loss='mse')
-        model.fit(self.create_tensorflow_dataset(
-            dataset, batch_size=self.internal_batch_size,
-            shuffle_buffer=shuffle_buffer, repeat=epochs), **kwargs)
 
-        # return the trained model
-        return model
+        # fit the model to a tensorflow dataset
+        model.fit(self.create_tensorflow_dataset(
+            training, batch_size=self.internal_batch_size,
+            shuffle_buffer=shuffle_buffer, repeat=epochs),
+            steps_per_epoch=steps, epochs=epochs,
+            validation_data=(validation_x, validation_y))
+
+        # evaluate the validation rank correlation of the model
+        rank_correlation = stats.spearmanr(
+            model.predict(validation_x)[:, 0], validation_y[:, 0])[0]
+
+        # return the trained model and rank correlation
+        return dict(model=model,
+                    rank_correlation=rank_correlation)
 
     def protected_predict(self, x):
         """Score function to be implemented by oracle subclasses, where x is
@@ -241,4 +298,4 @@ class FullyConnectedOracle(TensorflowOracle):
         """
 
         # call the model's predict function to generate predictions
-        return self.model.predict(x)
+        return self.model["model"].predict(x)

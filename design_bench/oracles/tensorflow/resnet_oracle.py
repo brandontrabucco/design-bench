@@ -153,7 +153,7 @@ class ResNetOracle(TensorflowOracle):
             file.write(model_bytes)  # save model bytes in the h5 format
 
         # write the validation rank correlation to the zip file
-        with zip_archive.open('rank_correlation.txt', "w") as file:
+        with zip_archive.open('rank_correlation.npy', "w") as file:
             file.write(model["rank_correlation"].dumps())
 
     def load_model_from_zip(self, zip_archive):
@@ -176,7 +176,7 @@ class ResNetOracle(TensorflowOracle):
         """
 
         # read the validation rank correlation from the zip file
-        with zip_archive.open('rank_correlation.txt', "r") as file:
+        with zip_archive.open('rank_correlation.npy', "r") as file:
             rank_correlation = np.loads(file.read())
 
         # read the h5 bytes from the zip file
@@ -189,8 +189,8 @@ class ResNetOracle(TensorflowOracle):
             return dict(model=keras.models.load_model(file.name),
                         rank_correlation=rank_correlation)
 
-    def fit(self, dataset, hidden_size=512, activation='relu',
-            kernel_size=3, resnet_blocks=4, epochs=50,
+    def fit(self, dataset, hidden_size=64, activation='relu',
+            kernel_size=3, resnet_blocks=12, epochs=50,
             shuffle_buffer=5000, learning_rate=0.0003, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
@@ -249,16 +249,16 @@ class ResNetOracle(TensorflowOracle):
         for i in range(resnet_blocks):
 
             # first convolution layer in a residual block
-            h = layers.Conv1D(hidden_size, kernel_size=kernel_size,
-                              padding='same', activation=None)(x)
-            h = layers.LayerNormalization()(h)
+            h = layers.LayerNormalization()(x)
             h = layers.Activation(activation)(h)
+            h = layers.Conv1D(hidden_size, kernel_size,
+                              padding='same', activation=None)(h)
 
             # second convolution layer in a residual block
-            h = layers.Conv1D(hidden_size, kernel_size=kernel_size,
-                              padding='same', activation=None)(h)
             h = layers.LayerNormalization()(h)
             h = layers.Activation(activation)(h)
+            h = layers.Conv1D(hidden_size, kernel_size,
+                              padding='same', activation=None)(h)
 
             # add a residual connection to the model
             x = layers.Add()([x, h])
