@@ -127,7 +127,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         raise NotImplementedError
 
-    def __init__(self, dataset: DatasetBuilder,
+    def __init__(self, dataset: DatasetBuilder, fit=None,
                  file=None, is_absolute=False, is_batched=True,
                  internal_batch_size=32, internal_measurements=1,
                  noise_std=0.0, expect_normalized_y=False,
@@ -189,8 +189,11 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         # download the model parameters from s3
         self.resource = self.get_disk_resource(
             dataset, file=file, is_absolute=is_absolute)
-        if not self.resource.is_downloaded \
-                and not self.resource.download(unzip=False):
+        if (fit is not None and fit) or \
+                (not self.resource.is_downloaded
+                 and not self.resource.download(unzip=False)):
+            if fit is not None and not fit:
+                raise ValueError("model not downloaded or trained")
             self.save_model(self.resource.disk_target,
                             self.fit(dataset, **kwargs))
 

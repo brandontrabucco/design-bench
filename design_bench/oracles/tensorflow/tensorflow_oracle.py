@@ -69,7 +69,7 @@ class TensorflowOracle(ApproximateOracle, abc.ABC):
     """
 
     def create_tensorflow_dataset(self, dataset, batch_size=32,
-                                  shuffle_buffer=1000, repeat=10):
+                                  shuffle_buffer=1000, repeat=1):
         """Helper function that converts a model-based optimization dataset
         into a tensorflow dataset using the tf.data.Dataset API
 

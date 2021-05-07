@@ -73,7 +73,7 @@ class LSTMOracle(TensorflowOracle):
 
     name = "tensorflow_lstm"
 
-    def __init__(self, dataset, noise_std=0.0, **kwargs):
+    def __init__(self, dataset, noise_std=0.0, batch_size=32, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -94,7 +94,7 @@ class LSTMOracle(TensorflowOracle):
         # initialize the oracle using the super class
         super(LSTMOracle, self).__init__(
             dataset, noise_std=noise_std, is_batched=True,
-            internal_batch_size=32, internal_measurements=1,
+            internal_batch_size=batch_size, internal_measurements=1,
             expect_normalized_y=True,
             expect_normalized_x=not isinstance(dataset, DiscreteDataset),
             expect_logits=False if isinstance(
@@ -189,9 +189,8 @@ class LSTMOracle(TensorflowOracle):
             return dict(model=keras.models.load_model(file.name),
                         rank_correlation=rank_correlation)
 
-    def fit(self, dataset, hidden_size=64, activation='relu',
-            kernel_size=3, resnet_blocks=12, epochs=50,
-            shuffle_buffer=5000, learning_rate=0.0003, **kwargs):
+    def fit(self, dataset, hidden_size=512, num_layers=2, epochs=25,
+            shuffle_buffer=5000, learning_rate=0.001, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -231,43 +230,36 @@ class LSTMOracle(TensorflowOracle):
             x = layers.Dense(hidden_size,
                              activation=None, use_bias=False)(x)
 
-        # the exponent of a positional embedding
-        inverse_frequency = 1.0 / (10000.0 ** (tf.range(
-            0.0, hidden_size, 2.0) / hidden_size))[tf.newaxis]
+        # prepare the inputs to the LSTM cell
+        kwargs = dict(return_sequences=True, return_state=True)
+        forward_x = reverse_x = x
+        hidden_states = []
 
-        # calculate a positional embedding to break symmetry
-        pos = tf.range(0.0, tf.shape(x)[1], 1.0)[:, tf.newaxis]
-        positional_embedding = tf.concat([
-            tf.math.sin(pos * inverse_frequency),
-            tf.math.cos(pos * inverse_frequency)], axis=1)[tf.newaxis]
+        # build an LSTM that processes the sequence forward
+        # keep track of the final hidden state leaving the LSTM cell
+        for i in range(num_layers):
 
-        # add the positional encoding and normalize the activations
-        x = layers.Add()([x, positional_embedding])
-        x = layers.LayerNormalization()(x)
+            # process the sequence going forward
+            forward_x, forward_h, _ = layers.LSTM(
+                hidden_size, go_backwards=False, **kwargs)(forward_x)
 
-        # add several residual blocks to the model
-        for i in range(resnet_blocks):
+            # keep track of the final hidden state of this layer
+            hidden_states.append(forward_h)
 
-            # first convolution layer in a residual block
-            h = layers.LayerNormalization()(x)
-            h = layers.LSTM(hidden_size, return_sequences=True,
-                            go_backwards=False)(h)
+        # build an LSTM that processes the sequence in reverse
+        # keep track of the final hidden state leaving the LSTM cell
+        for i in range(num_layers):
 
-            # second convolution layer in a residual block
-            h = layers.LayerNormalization()(h)
-            h = layers.LSTM(hidden_size, return_sequences=True,
-                            go_backwards=True)(h)
+            # process the sequence going forward
+            reverse_x, reverse_h, _ = layers.LSTM(
+                hidden_size, go_backwards=True, **kwargs)(reverse_x)
 
-            # add a residual connection to the model
-            x = layers.Add()([x, h])
-
-        # pool the final activations using an attention mechanism
-        s = layers.Softmax(axis=1)(layers.Dense(1)(x))
-        x = layers.Dot(axes=1)([x, s])
-        x = layers.Reshape((hidden_size,))(x)
+            # keep track of the final hidden state of this layer
+            hidden_states.append(reverse_h)
 
         # fully connected layer to regress to y values
-        output_layer = layers.Dense(1)(x)
+        output_layer = layers.Dense(1)(
+            layers.Concatenate(axis=1)(hidden_states))
         model = keras.Model(inputs=input_layer,
                             outputs=output_layer)
 
@@ -276,9 +268,9 @@ class LSTMOracle(TensorflowOracle):
                               / self.internal_batch_size))
 
         # build an optimizer to train the model
-        learning_rate = keras.experimental.CosineDecay(
+        lr = keras.experimental.CosineDecay(
             learning_rate, steps * epochs, alpha=0.0)
-        optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
+        optimizer = keras.optimizers.Adam(learning_rate=lr)
         model.compile(optimizer=optimizer, loss='mse')
 
         # fit the model to a tensorflow dataset

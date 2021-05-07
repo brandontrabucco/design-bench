@@ -1,4 +1,4 @@
-from design_bench.datasets.discrete.gfp_dataset import GFPDataset
+from design_bench.datasets.discrete import ChEMBLDataset
 from design_bench.oracles.sklearn.kernels import ProteinKernel
 from design_bench.oracles.sklearn import GaussianProcessOracle
 from design_bench.oracles.sklearn import RandomForestOracle
@@ -10,5 +10,5 @@ from scipy import stats
 
 if __name__ == "__main__":
 
-    resnet = ResNetOracle(GFPDataset())
+    resnet = LSTMOracle(ChEMBLDataset())
     print(resnet.model["rank_correlation"])

@@ -73,7 +73,7 @@ class FullyConnectedOracle(TensorflowOracle):
 
     name = "tensorflow_fully_connected"
 
-    def __init__(self, dataset, noise_std=0.0, **kwargs):
+    def __init__(self, dataset, noise_std=0.0, batch_size=32, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -94,7 +94,7 @@ class FullyConnectedOracle(TensorflowOracle):
         # initialize the oracle using the super class
         super(FullyConnectedOracle, self).__init__(
             dataset, noise_std=noise_std, is_batched=True,
-            internal_batch_size=32, internal_measurements=1,
+            internal_batch_size=batch_size, internal_measurements=1,
             expect_normalized_y=True,
             expect_normalized_x=not isinstance(dataset, DiscreteDataset),
             expect_logits=False if isinstance(
@@ -186,9 +186,8 @@ class FullyConnectedOracle(TensorflowOracle):
             return dict(model=keras.models.load_model(file.name),
                         rank_correlation=rank_correlation)
 
-    def fit(self, dataset, hidden_size=64, activation='relu',
-            hidden_layers=12, epochs=50,
-            shuffle_buffer=5000, learning_rate=0.0003, **kwargs):
+    def fit(self, dataset, hidden_size=512, activation='relu', num_layers=2,
+            epochs=5, shuffle_buffer=5000, learning_rate=0.001, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -225,26 +224,14 @@ class FullyConnectedOracle(TensorflowOracle):
         if isinstance(training, DiscreteDataset):
             x = layers.Embedding(training.num_classes, hidden_size)(x)
 
-        # ensure the input has hidden_size channels
+        # flatten all sequence dimensions into the channels
         x = layers.Flatten()(x)
-        x = layers.Dense(hidden_size,
-                         activation=None, use_bias=False)(x)
 
-        # add several residual blocks to the model
-        for i in range(hidden_layers):
-
-            # first dense layer in a residual block
-            h = layers.LayerNormalization()(x)
-            h = layers.Activation(activation)(h)
-            h = layers.Dense(hidden_size, activation=None)(h)
-
-            # second dense layer in a residual block
-            h = layers.LayerNormalization()(h)
-            h = layers.Activation(activation)(h)
-            h = layers.Dense(hidden_size, activation=None)(h)
-
-            # add a residual connection to the model
-            x = layers.Add()([x, h])
+        # process input with several fully connected layers
+        for i in range(num_layers):
+            x = layers.Dense(hidden_size, activation=None)(x)
+            x = layers.LayerNormalization()(x)
+            x = layers.Activation(activation)(x)
 
         # fully connected layer to regress to y values
         output_layer = layers.Dense(1)(x)
@@ -256,9 +243,9 @@ class FullyConnectedOracle(TensorflowOracle):
                               / self.internal_batch_size))
 
         # build an optimizer to train the model
-        learning_rate = keras.experimental.CosineDecay(
+        lr = keras.experimental.CosineDecay(
             learning_rate, steps * epochs, alpha=0.0)
-        optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
+        optimizer = keras.optimizers.Adam(learning_rate=lr)
         model.compile(optimizer=optimizer, loss='mse')
 
         # fit the model to a tensorflow dataset

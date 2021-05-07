@@ -845,8 +845,10 @@ class DatasetBuilder(abc.ABC):
         # calculate indices of samples that are visible
         indices = np.arange(y.shape[0])[np.where(
             np.logical_and(y <= max_output, y >= min_output))[0]]
+        max_samples = indices.size \
+            if max_samples is None else min(indices.size, max_samples)
         indices = indices[np.random.choice(
-            indices.size, min(indices.size, max_samples), replace=False)]
+            indices.size, max_samples, replace=False)]
         self.dataset_size = indices.size
 
         # binary mask that determines which samples are visible
@@ -1181,8 +1183,8 @@ class DatasetBuilder(abc.ABC):
         active_ids = np.where(self.dataset_visible_mask)[0]
         subset = set(active_ids.tolist()) if subset is None else subset
         active_ids = np.array(list(subset))[
-            np.random.choice(active_ids.size, size=int(
-                fraction * float(active_ids.size)), replace=False)]
+            np.random.choice(len(subset), size=int(
+                fraction * float(len(subset))), replace=False)]
 
         # generate a set of ids for the validation set
         # noinspection PyTypeChecker
