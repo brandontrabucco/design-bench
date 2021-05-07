@@ -5,6 +5,7 @@ from design_bench.oracles.sklearn import RandomForestOracle
 from design_bench.oracles.tensorflow import FullyConnectedOracle
 from design_bench.oracles.tensorflow import LSTMOracle
 from design_bench.oracles.tensorflow import ResNetOracle
+from design_bench.oracles.tensorflow import TransformerOracle
 from scipy import stats
 import numpy as np
 import pandas as pd

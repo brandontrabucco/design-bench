@@ -229,8 +229,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         default = f"{dataset.name}/{self.name}.zip"
         return DiskResource(
-            file if file is not None else default,
-            is_absolute=is_absolute,
+            file if file is not None else default, is_absolute=is_absolute,
             download_method=None if file is not None else "direct",
             download_target=None if file is not None else
             f"https://design-bench.s3-us-west-1.amazonaws.com/{default}")

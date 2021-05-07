@@ -189,9 +189,13 @@ class ChEMBLDataset(DiscreteDataset):
 
     """
 
+    name = "chembl"
+    y_name = "standard_value"
+    x_name = "smiles"
+
     @staticmethod
-    def register_x_shards(assay_chembl_id="CHEMBL3507681",
-                          standard_type="Inhibition"):
+    def register_x_shards(assay_chembl_id="CHEMBL1964047",
+                          standard_type="GI50"):  # max percentile 53 works well
         """Registers a remote file for download that contains design values
         in a format compatible with the dataset builder class;
         these files are downloaded all at once in the dataset initialization
@@ -224,8 +228,8 @@ class ChEMBLDataset(DiscreteDataset):
             if f"{standard_type}-{assay_chembl_id}" in file]
 
     @staticmethod
-    def register_y_shards(assay_chembl_id="CHEMBL3507681",
-                          standard_type="Inhibition"):
+    def register_y_shards(assay_chembl_id="CHEMBL1964047",
+                          standard_type="GI50"):
         """Registers a remote file for download that contains prediction
         values in a format compatible with the dataset builder class;
         these files are downloaded all at once in the dataset initialization
@@ -258,8 +262,8 @@ class ChEMBLDataset(DiscreteDataset):
             download_method="direct") for file in CHEMBL_FILES
             if f"{standard_type}-{assay_chembl_id}" in file]
 
-    def __init__(self, assay_chembl_id="CHEMBL3507681",
-                 standard_type="Inhibition",
+    def __init__(self, assay_chembl_id="CHEMBL1964047",
+                 standard_type="GI50",
                  soft_interpolation=0.6, **kwargs):
         """Initialize a model-based optimization dataset and prepare
         that dataset by loading that dataset from disk and modifying
@@ -290,7 +294,6 @@ class ChEMBLDataset(DiscreteDataset):
         # set the names the describe the dataset
         self.name = f"chembl-{standard_type}-{assay_chembl_id}"
         self.y_name = standard_type
-        self.x_name = "smiles"
 
         # initialize the dataset using the method in the base class
         super(ChEMBLDataset, self).__init__(
