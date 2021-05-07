@@ -1,4 +1,5 @@
 from design_bench.task import Task
+from design_bench.disk_resource import DiskResource
 import re
 import importlib
 
@@ -89,6 +90,11 @@ class TaskSpecification(object):
         if dataset_kwargs is not None:
             kwargs.update(dataset_kwargs)
 
+        # remove certain keys from the dictionary
+        max_samples = kwargs.pop("max_samples", None)
+        min_percentile = kwargs.pop("min_percentile", 0)
+        max_percentile = kwargs.pop("max_percentile", 100)
+
         # if self.entry_point is a function call it
         if callable(self.dataset):
             dataset = self.dataset(**kwargs)
@@ -119,16 +125,35 @@ class TaskSpecification(object):
             return
 
         # potentially subsample the dataset
-        dataset.subsample(
-            max_samples=dataset_kwargs.get("max_samples", None),
-            min_percentile=dataset_kwargs.get("min_percentile", 0),
-            max_percentile=dataset_kwargs.get("max_percentile", 100))
+        dataset.subsample(max_samples=max_samples,
+                          min_percentile=min_percentile,
+                          max_percentile=max_percentile)
 
-        # relabel the dataset using the new oracle model
-        dataset = dataset.clone(to_disk=True,
-                                disk_target=f"{dataset.name}-{oracle.name}",
-                                is_absolute=False)
-        dataset.relabel(lambda x, y: oracle.predict(x))
+        name = f"{dataset.name}-{oracle.name}"
+        new_y_shards = []
+
+        # attempt to download the appropriate shards
+        for shard in dataset.y_shards:
+            if isinstance(shard, DiskResource):
+                target = shard.disk_target.replace(dataset.name, name)
+
+                # create a virtual disk resource for the new shard
+                new_y_shards.append(DiskResource(
+                    target, is_absolute=True, download_method="direct",
+                    download_target=f"https://design-bench."
+                                    f"s3-us-west-1.amazonaws.com/{target}"))
+
+        # if the relabeled shard were not downloaded
+        if len(new_y_shards) == 0 or not all([
+                f.is_downloaded or f.download() for f in new_y_shards]):
+
+            # relabel the dataset using the new oracle model
+            dataset = dataset.clone(to_disk=len(new_y_shards) > 0,
+                                    is_absolute=False, disk_target=name)
+            dataset.relabel(lambda x, y: oracle.predict(x))
+
+        else:
+            dataset.y_shards = new_y_shards
 
         # return a task composing this oracle and dataset
         return Task(dataset, oracle)
