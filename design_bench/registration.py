@@ -136,12 +136,13 @@ class TaskSpecification(object):
         for shard in dataset.y_shards:
             if isinstance(shard, DiskResource):
                 target = shard.disk_target.replace(dataset.name, name)
+                file = "".join(target.partition(name)[1:])
 
                 # create a virtual disk resource for the new shard
                 new_y_shards.append(DiskResource(
                     target, is_absolute=True, download_method="direct",
                     download_target=f"https://design-bench."
-                                    f"s3-us-west-1.amazonaws.com/{target}"))
+                                    f"s3-us-west-1.amazonaws.com/{file}"))
 
         # if the relabeled shard were not downloaded
         if len(new_y_shards) == 0 or not all([
