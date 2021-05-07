@@ -173,7 +173,7 @@ class SuperconductorDataset(ContinuousDataset):
 
     """
 
-    name = "superconductor"
+    name = "superconductor/superconductor"
     x_name = "chemical_formula"
     y_name = "critical_temperature"
 

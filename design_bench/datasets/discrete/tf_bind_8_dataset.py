@@ -189,6 +189,10 @@ class TFBind8Dataset(DiscreteDataset):
 
     """
 
+    name = "tf_bind_8/tf_bind_8"
+    y_name = "enrichment_score"
+    x_name = "dna_sequence"
+
     @staticmethod
     def register_x_shards(transcription_factor='SIX6_REF_R1'):
         """Registers a remote file for download that contains design values
@@ -273,7 +277,7 @@ class TFBind8Dataset(DiscreteDataset):
         """
 
         # set the names the describe the dataset
-        self.name = f"tf_bind_8-{transcription_factor}"
+        self.name = f"tf_bind_8-{transcription_factor}/tf_bind_8"
         self.y_name = "enrichment_score"
         self.x_name = "dna_sequence"
 

@@ -189,7 +189,7 @@ class ChEMBLDataset(DiscreteDataset):
 
     """
 
-    name = "chembl"
+    name = "chembl/chembl"
     y_name = "standard_value"
     x_name = "smiles"
 
@@ -292,7 +292,7 @@ class ChEMBLDataset(DiscreteDataset):
         """
 
         # set the names the describe the dataset
-        self.name = f"chembl-{standard_type}-{assay_chembl_id}"
+        self.name = f"chembl-{standard_type}-{assay_chembl_id}/chembl"
         self.y_name = standard_type
 
         # initialize the dataset using the method in the base class

@@ -216,7 +216,7 @@ class UTRDataset(DiscreteDataset):
 
     """
 
-    name = "utr"
+    name = "utr/utr"
     x_name = "dna_sequence"
     y_name = "ribosome_loading"
 

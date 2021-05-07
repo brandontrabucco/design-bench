@@ -214,7 +214,7 @@ class NASBenchDataset(DiscreteDataset):
 
     """
 
-    name = "nas_bench"
+    name = "nas_bench/nas_bench"
     x_name = "model_architecture"
     y_name = "cifar_10_test_accuracy"
 

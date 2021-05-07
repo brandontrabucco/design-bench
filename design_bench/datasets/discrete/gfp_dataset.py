@@ -200,7 +200,7 @@ class GFPDataset(DiscreteDataset):
 
     """
 
-    name = "gfp"
+    name = "gfp/gfp"
     x_name = "amino_acid_sequence"
     y_name = "fluorescence"
 

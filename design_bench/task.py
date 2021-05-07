@@ -1,89 +1,148 @@
-from typing import Tuple
-import numpy as np
-import abc
+from design_bench.datasets.dataset_builder import DatasetBuilder
+from design_bench.oracles.oracle_builder import OracleBuilder
 
 
-class Task(abc.ABC):
-    """A minimalistic task specification that includes designs
-    represented by x and scores represented by y
+class Task(object):
 
-    Attributes:
-
-    x: np.ndarray
-        the data set as a numpy tensor whose first 'axis' is
-        the batch 'axis' and can take any shape
-    y: np.ndarray
-        the scores for every point in the data set represented
-        as a tensor shaped like [num_samples, 1]
-    input_shape: Tuple[int]
-        Returns the shape of a single sample of x from the data set
-        and excludes the batch 'axis'
-    input_size: int
-        Returns the size of a single sample of x from the data set
-        and excludes the batch 'axis'
-    oracle_type: str
-        Specifies the oracle being used within the Task.score method
-        For example: "exact" uses a simulator or real-world measurement
-                     "neural_network" uses a proxy neural network
-                     "random_forest" uses a proxy random forest
-                     "gaussian_process" uses a proxy gaussian process
-
-    Methods:
-
-    score(self, x: np.ndarray) -> np.ndarray
-        Calculates a score for the provided tensor x using a ground truth
-        oracle function (the goal of the task is to maximize this)
-    """
-
-    x: np.ndarray = None
-    y: np.ndarray = None
-    oracle_type: str = None
-
-    @abc.abstractmethod
-    def score(self,
-              x: np.ndarray) -> np.ndarray:
-        """Calculates a score for the provided tensor x using a ground truth
-        oracle function (the goal of the task is to maximize this)
-
-        Args:
-
-        x: np.ndarray
-            a batch of sampled designs that will be evaluated by
-            an oracle score function
-
-        Returns:
-
-        scores: np.ndarray
-            a batch of scores that correspond to the x values provided
-            in the function argument
-        """
-
-        return NotImplemented
+    def __init__(self, dataset: DatasetBuilder, oracle: OracleBuilder):
+        self.dataset, self.oracle = dataset, oracle
 
     @property
-    def input_shape(self) -> Tuple[int]:
-        """Returns the shape of a single sample of x from the data set
-        and excludes the batch 'axis'
-
-        Returns:
-
-        shape: Tuple[int]
-            a tuple of integers that corresponds to the shape of the
-            inputs to a function of samples of x
-        """
-
-        return self.x.shape[1:]
+    def oracle_name(self):
+        return self.oracle.name
 
     @property
-    def input_size(self) -> int:
-        """Returns the size of a single sample fo x from the data set
-        and excludes the batch 'axis'
+    def dataset_name(self):
+        return self.dataset.name
 
-        Returns:
+    @property
+    def x_name(self):
+        return self.dataset.x_name
 
-        size: int
-            an integer that represents the total number of channels across
-            all axes of a single sample from the data set
-        """
+    @property
+    def y_name(self):
+        return self.dataset.y_name
 
-        return int(np.prod(self.input_shape))
+    @property
+    def dataset_size(self):
+        return self.dataset.dataset_size
+
+    @property
+    def dataset_max_percentile(self):
+        return self.dataset.dataset_max_percentile
+
+    @property
+    def dataset_min_percentile(self):
+        return self.dataset.dataset_min_percentile
+
+    @property
+    def dataset_max_output(self):
+        return self.dataset.dataset_max_output
+
+    @property
+    def dataset_min_output(self):
+        return self.dataset.dataset_min_output
+
+    @property
+    def input_shape(self):
+        return self.dataset.input_shape
+
+    @property
+    def input_size(self):
+        return self.dataset.input_size
+
+    @property
+    def input_dtype(self):
+        return self.dataset.input_dtype
+
+    @property
+    def output_shape(self):
+        return self.dataset.output_shape
+
+    @property
+    def output_size(self):
+        return self.dataset.output_size
+
+    @property
+    def output_dtype(self):
+        return self.dataset.output_dtype
+
+    @property
+    def x(self):
+        return self.dataset.x
+
+    @property
+    def y(self):
+        return self.dataset.y
+
+    def iterate_batches(self, batch_size, return_x=True,
+                        return_y=True, drop_remainder=False):
+        return iter(self.dataset.iterate_batches(
+            batch_size, return_x=return_x,
+            return_y=return_y, drop_remainder=drop_remainder))
+
+    def iterate_samples(self, return_x=True, return_y=True):
+        return iter(self.dataset.iterate_samples(return_x=return_x,
+                                                 return_y=return_y))
+
+    def __iter__(self):
+        return iter(self.dataset)
+
+    def map_normalize_x(self):
+        self.dataset.map_normalize_x()
+
+    def map_normalize_y(self):
+        self.dataset.map_normalize_y()
+
+    def map_denormalize_x(self):
+        self.dataset.map_denormalize_x()
+
+    def map_denormalize_y(self):
+        self.dataset.map_denormalize_y()
+
+    def map_to_integers(self):
+        if not hasattr(self.dataset, "map_to_integers"):
+            raise ValueError("only supported on discrete datasets")
+        self.dataset.map_to_integers()
+
+    def map_to_logits(self):
+        if not hasattr(self.dataset, "map_to_logits"):
+            raise ValueError("only supported on discrete datasets")
+        self.dataset.map_to_logits()
+
+    def normalize_x(self, x):
+        return self.dataset.normalize_x(x)
+
+    def normalize_y(self, y):
+        return self.dataset.normalize_y(y)
+
+    def denormalize_x(self, x):
+        return self.dataset.denormalize_x(x)
+
+    def denormalize_y(self, y):
+        return self.dataset.denormalize_y(y)
+
+    def to_integers(self, x):
+        if not hasattr(self.dataset, "map_to_integers"):
+            raise ValueError("only supported on discrete datasets")
+        return self.dataset.to_integers(x)
+
+    def to_logits(self, x):
+        if not hasattr(self.dataset, "map_to_logits"):
+            raise ValueError("only supported on discrete datasets")
+        return self.dataset.to_logits(x)
+
+    def predict(self, x_batch):
+        return self.oracle.predict(x_batch)
+
+    def oracle_to_dataset_x(self, x_batch):
+        return self.oracle.oracle_to_dataset_x(x_batch)
+
+    def oracle_to_dataset_y(self, y_batch):
+        return self.oracle.oracle_to_dataset_y(y_batch)
+
+    def dataset_to_oracle_x(self, x_batch):
+        return self.oracle.dataset_to_oracle_x(x_batch)
+
+    def dataset_to_oracle_y(self, y_batch):
+        return self.oracle.dataset_to_oracle_y(y_batch)

@@ -169,7 +169,7 @@ class HopperControllerDataset(ContinuousDataset):
 
     """
 
-    name = "hopper_controller"
+    name = "hopper_controller/hopper_controller"
     x_name = "policy_weights"
     y_name = "average_return"
 
