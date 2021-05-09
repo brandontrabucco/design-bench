@@ -390,7 +390,8 @@ class DatasetBuilder(abc.ABC):
         elif isinstance(self.y_shards[shard_id], DiskResource):
             return np.load(self.y_shards[shard_id].disk_target)
 
-    def set_shard_x(self, shard_id, shard_data):
+    def set_shard_x(self, shard_id, shard_data,
+                    to_disk=None, disk_target=None, is_absolute=None):
         """A helper function used for assigning the data associated with a
         particular shard specified by shard_id containing design values
         in a model-based optimization data set
@@ -400,26 +401,48 @@ class DatasetBuilder(abc.ABC):
         shard_id: int
             an integer representing the particular identifier of the shard
             to be loaded from a model-based optimization data set
-
         shard_data: np.ndarray
             a numpy array that represents the data to be encoded in the
             shard specified by the integer identifier shard_id
+        to_disk: boolean
+            a boolean that indicates whether to store the data set
+            in memory as numpy arrays or to the disk
+        disk_target: str
+            a string that determines the name and sub folder of the saved
+            data set if to_disk is set to be true
+        is_absolute: boolean
+            a boolean that indicates whether the disk_target path is taken
+            relative to the benchmark data folder
 
         """
+
+        # check that all arguments are set when saving to disk
+        if to_disk is not None and to_disk and \
+                (disk_target is None or is_absolute is None):
+            raise ValueError("must specify location when saving to disk")
 
         # check the shard id is in bounds
         if 0 < shard_id >= self.get_num_shards():
             raise ValueError(f"shard id={shard_id} out of bounds")
 
-        # if that shard entry is a numpy array
-        if isinstance(self.x_shards[shard_id], np.ndarray):
+        # store shard in memory as a numpy array
+        if (to_disk is not None and not to_disk) or \
+                (to_disk is None and isinstance(
+                    self.x_shards[shard_id], np.ndarray)):
             self.x_shards[shard_id] = shard_data
 
-        # if that shard entry is stored on the disk
-        elif isinstance(self.x_shards[shard_id], DiskResource):
+        # write shard to a new resource file given by "disk_target"
+        if to_disk is not None and to_disk:
+            disk_target = f"{disk_target}-x-{len(shard_id)}.npy"
+            self.x_shards[shard_id] = DiskResource(disk_target,
+                                                   is_absolute=is_absolute)
+
+        # possibly write shard to an existing file on disk
+        if isinstance(self.x_shards[shard_id], DiskResource):
             np.save(self.x_shards[shard_id].disk_target, shard_data)
 
-    def set_shard_y(self, shard_id, shard_data):
+    def set_shard_y(self, shard_id, shard_data,
+                    to_disk=None, disk_target=None, is_absolute=None):
         """A helper function used for assigning the data associated with a
         particular shard specified by shard_id containing prediction values
         in a model-based optimization data set
@@ -429,23 +452,44 @@ class DatasetBuilder(abc.ABC):
         shard_id: int
             an integer representing the particular identifier of the shard
             to be loaded from a model-based optimization data set
-
         shard_data: np.ndarray
             a numpy array that represents the data to be encoded in the
             shard specified by the integer identifier shard_id
+        to_disk: boolean
+            a boolean that indicates whether to store the data set
+            in memory as numpy arrays or to the disk
+        disk_target: str
+            a string that determines the name and sub folder of the saved
+            data set if to_disk is set to be true
+        is_absolute: boolean
+            a boolean that indicates whether the disk_target path is taken
+            relative to the benchmark data folder
 
         """
+
+        # check that all arguments are set when saving to disk
+        if to_disk is not None and to_disk and \
+                (disk_target is None or is_absolute is None):
+            raise ValueError("must specify location when saving to disk")
 
         # check the shard id is in bounds
         if 0 < shard_id >= self.get_num_shards():
             raise ValueError(f"shard id={shard_id} out of bounds")
 
-        # if that shard entry is a numpy array
-        if isinstance(self.y_shards[shard_id], np.ndarray):
+        # store shard in memory as a numpy array
+        if (to_disk is not None and not to_disk) or \
+                (to_disk is None and isinstance(
+                    self.y_shards[shard_id], np.ndarray)):
             self.y_shards[shard_id] = shard_data
 
-        # if that shard entry is stored on the disk
-        elif isinstance(self.y_shards[shard_id], DiskResource):
+        # write shard to a new resource file given by "disk_target"
+        if to_disk is not None and to_disk:
+            disk_target = f"{disk_target}-y-{len(shard_id)}.npy"
+            self.y_shards[shard_id] = DiskResource(disk_target,
+                                                   is_absolute=is_absolute)
+
+        # possibly write shard to an existing file on disk
+        if isinstance(self.y_shards[shard_id], DiskResource):
             np.save(self.y_shards[shard_id].disk_target, shard_data)
 
     def batch_transform(self, x_batch, y_batch,
@@ -898,7 +942,8 @@ class DatasetBuilder(abc.ABC):
         return np.concatenate([y for y in self.iterate_batches(
             self.internal_batch_size, return_x=False)], axis=0)
 
-    def relabel(self, relabel_function):
+    def relabel(self, relabel_function,
+                to_disk=None, disk_target=None, is_absolute=None):
         """a function that accepts a function that maps from a dataset of
         design values 'x' and prediction values y to a new set of
         prediction values 'y' and relabels a model-based optimization dataset
@@ -909,12 +954,26 @@ class DatasetBuilder(abc.ABC):
             a function capable of mapping from a numpy array of design
             values 'x' and prediction values 'y' to new predictions 'y' 
             using batching to prevent memory overflow
+        to_disk: boolean
+            a boolean that indicates whether to store the data set
+            in memory as numpy arrays or to the disk
+        disk_target: str
+            a string that determines the name and sub folder of the saved
+            data set if to_disk is set to be true
+        is_absolute: boolean
+            a boolean that indicates whether the disk_target path is taken
+            relative to the benchmark data folder
 
         """
 
         # check that statistics are not frozen for this dataset
         if self.freeze_statistics:
             raise ValueError("cannot update dataset when it is frozen")
+
+        # check that all arguments are set when saving to disk
+        if to_disk is not None and to_disk and \
+                (disk_target is None or is_absolute is None):
+            raise ValueError("must specify location when saving to disk")
 
         # prevent the data set for being sub-sampled or normalized
         self._disable_subsample = True
@@ -966,8 +1025,9 @@ class DatasetBuilder(abc.ABC):
                         or examples_processed >= examples:
 
                     # serialize the value of the new shard data
-                    self.set_shard_y(shard_id,
-                                     np.concatenate(y_shard, axis=0))
+                    self.set_shard_y(shard_id, np.concatenate(y_shard, axis=0),
+                                     to_disk=to_disk, disk_target=disk_target,
+                                     is_absolute=is_absolute)
 
                     # reset the buffer for incomplete batches
                     y_shard = []
@@ -989,7 +1049,9 @@ class DatasetBuilder(abc.ABC):
         """Initialize a model-based optimization dataset and prepare
         that dataset by loading that dataset from disk and modifying
         its distribution of designs and predictions
+
         Arguments:
+
         x_shards: Union[         np.ndarray,           RemoteResource,
                         Iterable[np.ndarray], Iterable[RemoteResource]]
             a single shard or a list of shards representing the design values
@@ -1003,10 +1065,13 @@ class DatasetBuilder(abc.ABC):
         visible_mask: np.ndarray
             a numpy array of shape [dataset_size] containing boolean entries
             specifying which samples are visible in the provided Iterable
+
         Returns:
+
         dataset: DatasetBuilder
             an instance of a data set builder subclass containing a copy
             of all statistics associated with this dataset
+
         """
 
         # new dataset that shares statistics with this one
@@ -1045,7 +1110,9 @@ class DatasetBuilder(abc.ABC):
         """Generate a cloned copy of a model-based optimization dataset
         using the provided name and shard generation settings; useful
         when relabelling a dataset buffer from the disk
+
         Arguments:
+
         subset: set
             a python set of integers representing the ids of the samples
             to be included in the generated shards
@@ -1061,10 +1128,13 @@ class DatasetBuilder(abc.ABC):
         is_absolute: boolean
             a boolean that indicates whether the disk_target path is taken
             relative to the benchmark data folder
+
         Returns:
+
         dataset: DatasetBuilder
             an instance of a data set builder subclass containing a copy
             of all data originally associated with this dataset
+
         """
 
         # check if the subset is empty

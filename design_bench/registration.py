@@ -149,9 +149,9 @@ class TaskSpecification(object):
                 f.is_downloaded or f.download() for f in new_y_shards]):
 
             # relabel the dataset using the new oracle model
-            dataset = dataset.clone(to_disk=len(new_y_shards) > 0,
-                                    is_absolute=False, disk_target=name)
-            dataset.relabel(lambda x, y: oracle.predict(x))
+            dataset.relabel(lambda x, y: oracle.predict(x),
+                            to_disk=len(new_y_shards) > 0,
+                            is_absolute=False, disk_target=name)
 
         else:
             dataset.y_shards = new_y_shards
