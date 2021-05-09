@@ -2,18 +2,7 @@ from design_bench.datasets.discrete_dataset import DiscreteDataset
 from design_bench.disk_resource import DiskResource
 
 
-GFP_FILES = ["gfp/gfp-x-6.npy",
-             "gfp/gfp-x-11.npy",
-             "gfp/gfp-x-1.npy",
-             "gfp/gfp-x-9.npy",
-             "gfp/gfp-x-0.npy",
-             "gfp/gfp-x-4.npy",
-             "gfp/gfp-x-3.npy",
-             "gfp/gfp-x-2.npy",
-             "gfp/gfp-x-7.npy",
-             "gfp/gfp-x-8.npy",
-             "gfp/gfp-x-10.npy",
-             "gfp/gfp-x-5.npy"]
+GFP_FILES = ['gfp/gfp-x-0.npy', 'gfp/gfp-x-1.npy', 'gfp/gfp-x-2.npy', 'gfp/gfp-x-3.npy', 'gfp/gfp-x-4.npy', 'gfp/gfp-x-5.npy', 'gfp/gfp-x-6.npy', 'gfp/gfp-x-7.npy', 'gfp/gfp-x-8.npy', 'gfp/gfp-x-9.npy', 'gfp/gfp-x-10.npy', 'gfp/gfp-x-11.npy']
 
 
 class GFPDataset(DiscreteDataset):

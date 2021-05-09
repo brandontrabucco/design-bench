@@ -115,7 +115,7 @@ class NASBenchOracle(ExactOracle):
         """
 
         x_key = tuple(x.tolist())
-        return self.sequence_to_score[x_key] \
+        return self.sequence_to_score[x_key].astype(np.float32) \
             if x_key in self.sequence_to_score else np.zeros([1])
 
     def __init__(self, dataset: DiscreteDataset, noise_std=0.0):

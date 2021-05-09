@@ -231,5 +231,5 @@ class RandomForestOracle(SKLearnOracle):
         """
 
         # call the model's predict function to generate predictions
-        return self.model.predict(
-            x.reshape((x.shape[0], np.prod(x.shape[1:]))))[:, np.newaxis]
+        return self.model.predict(x.reshape((x.shape[0], np.prod(
+            x.shape[1:]))))[:, np.newaxis].astype(np.float32)

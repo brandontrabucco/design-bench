@@ -1,6 +1,7 @@
 from design_bench.oracles.exact_oracle import ExactOracle
 from design_bench.datasets.discrete_dataset import DiscreteDataset
 from design_bench.datasets.discrete.tf_bind_8_dataset import TFBind8Dataset
+import numpy as np
 
 
 class TFBind8Oracle(ExactOracle):
@@ -113,7 +114,7 @@ class TFBind8Oracle(ExactOracle):
 
         """
 
-        return self.sequence_to_score[tuple(x.tolist())]
+        return self.sequence_to_score[tuple(x.tolist())].astype(np.float32)
 
     def __init__(self, dataset: DiscreteDataset, noise_std=0.0):
         """Initialize the ground truth score function f(x) for a model-based

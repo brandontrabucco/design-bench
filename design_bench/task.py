@@ -232,7 +232,7 @@ class Task(object):
             dataset = import_name(dataset)(**kwargs)
 
         # return if the dataset could not be loaded
-        else:
+        elif not isinstance(dataset, DatasetBuilder):
             raise ValueError("dataset could not be loaded")
 
         # expose the built dataset
@@ -250,7 +250,7 @@ class Task(object):
             oracle = import_name(oracle)(dataset, **kwargs)
 
         # return if the oracle could not be loaded
-        else:
+        elif not isinstance(oracle, OracleBuilder):
             raise ValueError("oracle could not be loaded")
 
         # expose the built oracle

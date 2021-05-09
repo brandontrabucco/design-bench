@@ -148,7 +148,7 @@ class HopperControllerOracle(ExactOracle):
             path_returns += rew.astype(np.float32)
 
         # return the sum of rewards for a single trajectory
-        return path_returns
+        return path_returns.astype(np.float32)
 
     def __init__(self, dataset: ContinuousDataset,
                  noise_std=0.0, internal_measurements=1):
