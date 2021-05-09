@@ -54,10 +54,12 @@ class TaskSpecification(object):
 
         """
 
-        # store the init arguments
+        # store the task name and task arguments
         self.task_name = task_name
         self.dataset = dataset
         self.oracle = oracle
+
+        # instantiate default keyword arguments
         self.dataset_kwargs = dataset_kwargs if dataset_kwargs else {}
         self.oracle_kwargs = oracle_kwargs if oracle_kwargs else {}
 
@@ -267,20 +269,80 @@ class TaskRegistry(object):
 registry = TaskRegistry()
 
 
-# wrap the TaskRegistry.register function globally
 def register(task_name, dataset, oracle,
              dataset_kwargs=None, oracle_kwargs=None):
+    """Register a specification for a model-based optimization task that
+    dynamically imports that task when self.make is called.
+
+    Args:
+
+    task_name: str
+        the name of the model-based optimization task which must match
+        with the regex expression given by TASK_PATTERN
+    dataset: str or callable
+        the import path to the target dataset class or a callable that
+        returns the target dataset class when called
+    oracle: str or callable
+        the import path to the target oracle class or a callable that
+        returns the target oracle class when called
+    dataset_kwargs: dict
+        additional keyword arguments that are provided to the dataset
+        class when it is initialized for the first time
+    oracle_kwargs: dict
+        additional keyword arguments that are provided to the oracle
+        class when it is initialized for the first time
+
+    """
+
     return registry.register(
         task_name, dataset, oracle,
         dataset_kwargs=dataset_kwargs, oracle_kwargs=oracle_kwargs)
 
 
-# wrap the TaskRegistry.make function globally
 def make(task_name, dataset_kwargs=None, oracle_kwargs=None, **kwargs):
+    """Instantiates the intended task using the additional
+    keyword arguments provided in this function.
+
+    Args:
+
+    task_name: str
+        the name of the model-based optimization task which must match
+        with the regex expression given by TASK_PATTERN
+    dataset_kwargs: dict
+        additional keyword arguments that are provided to the dataset
+        class when it is initialized for the first time
+    oracle_kwargs: dict
+        additional keyword arguments that are provided to the oracle
+        class when it is initialized for the first time
+
+    Returns:
+
+    task: Task
+        an instantiation of the task specified by task name which
+        conforms to the standard task api
+
+    """
+
     return registry.make(task_name, dataset_kwargs=dataset_kwargs,
                          oracle_kwargs=oracle_kwargs, **kwargs)
 
 
-# wrap the TaskRegistry.spec function globally
 def spec(task_name):
+    """Looks up the task specification identifed by the task
+    name argument provided here
+
+    Args:
+
+    task_name: str
+        the name of the model-based optimization task which must match
+        with the regex expression given by TASK_PATTERN
+
+    Returns:
+
+    spec: TaskSpecification
+        a specification whose make function will dynamically import
+        and create the task specified by 'name'
+
+    """
+
     return registry.spec(task_name)

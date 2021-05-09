@@ -173,11 +173,11 @@ class Task(object):
 
     --- for discrete tasks only
 
-    to_logits(np.ndarray) > np.ndarray:
+    to_logits(np.ndarray) -> np.ndarray:
         A helper function that accepts design values represented as a numpy
         array of integers as input and converts them to floating point
         logits of a certain probability distribution
-    to_integers(np.ndarray) > np.ndarray:
+    to_integers(np.ndarray) -> np.ndarray:
         A helper function that accepts design values represented as a numpy
         array of floating point logits as input and converts them to integer
         representing the max of the distribution
