@@ -2,9 +2,9 @@ from design_bench.datasets.continuous_dataset import ContinuousDataset
 from design_bench.disk_resource import DiskResource
 
 
-SUPERCONDUCTOR_FILES = ["superconductor/superconductor-x-2.npy",
-                        "superconductor/superconductor-x-0.npy",
+SUPERCONDUCTOR_FILES = ["superconductor/superconductor-x-0.npy",
                         "superconductor/superconductor-x-1.npy",
+                        "superconductor/superconductor-x-2.npy",
                         "superconductor/superconductor-x-3.npy",
                         "superconductor/superconductor-x-4.npy"]
 

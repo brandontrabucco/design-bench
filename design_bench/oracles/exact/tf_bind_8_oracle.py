@@ -114,7 +114,10 @@ class TFBind8Oracle(ExactOracle):
 
         """
 
-        return self.sequence_to_score[tuple(x.tolist())].astype(np.float32)
+        x_key = tuple(x.tolist())
+        return self.sequence_to_score[x_key].astype(np.float32) \
+            if x_key in self.sequence_to_score else np.full(
+            [1], self.dataset.dataset_min_output, dtype=np.float32)
 
     def __init__(self, dataset: DiscreteDataset, noise_std=0.0):
         """Initialize the ground truth score function f(x) for a model-based
