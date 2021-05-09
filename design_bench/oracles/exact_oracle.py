@@ -47,7 +47,7 @@ class ExactOracle(OracleBuilder, abc.ABC):
 
     Public Methods:
 
-    score(np.ndarray) -> np.ndarray:
+    predict(np.ndarray) -> np.ndarray:
         a function that accepts a batch of design values 'x' as input and for
         each design computes a prediction value 'y' which corresponds
         to the score in a model-based optimization problem

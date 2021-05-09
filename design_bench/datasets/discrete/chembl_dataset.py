@@ -96,6 +96,11 @@ class ChEMBLDataset(DiscreteDataset):
         a numpy array that is automatically calculated to be the standard
         deviation of visible prediction values in the dataset
 
+    is_logits: bool (only supported for a DiscreteDataset)
+        a value that indicates whether the design values contained in the
+        model-based optimization dataset have already been converted to
+        logits and need not be converted again
+
     Public Methods:
 
     iterate_batches(batch_size: int, return_x: bool,

@@ -72,7 +72,7 @@ class TaskSpecification(object):
         # otherwise select the dataset and oracle name with regex
         self.dataset_name, self.oracle_name = match.group(1), match.group(2)
 
-    def make(self, dataset_kwargs=None, oracle_kwargs=None):
+    def make(self, dataset_kwargs=None, oracle_kwargs=None, **kwargs):
         """Instantiates the intended task using the additional
         keyword arguments provided in this function.
 
@@ -106,7 +106,7 @@ class TaskSpecification(object):
         # return a task composing this oracle and dataset
         return Task(self.dataset, self.oracle,
                     dataset_kwargs=dataset_kwargs,
-                    oracle_kwargs=oracle_kwargs)
+                    oracle_kwargs=oracle_kwargs, **kwargs)
 
     def __repr__(self):
         return "TaskSpecification({}, {}, {}, " \
@@ -125,7 +125,8 @@ class TaskRegistry(object):
 
         self.task_specs = {}
 
-    def make(self, task_name, dataset_kwargs=None, oracle_kwargs=None):
+    def make(self, task_name,
+             dataset_kwargs=None, oracle_kwargs=None, **kwargs):
         """Instantiates the intended task using the additional
         keyword arguments provided in this function.
 
@@ -149,8 +150,9 @@ class TaskRegistry(object):
 
         """
 
-        return self.spec(task_name).make(dataset_kwargs=dataset_kwargs,
-                                         oracle_kwargs=oracle_kwargs)
+        return self.spec(task_name).make(
+            dataset_kwargs=dataset_kwargs,
+            oracle_kwargs=oracle_kwargs, **kwargs)
 
     def all(self):
         """Generate a list of the names of all currently registered
@@ -274,9 +276,9 @@ def register(task_name, dataset, oracle,
 
 
 # wrap the TaskRegistry.make function globally
-def make(task_name, dataset_kwargs=None, oracle_kwargs=None):
+def make(task_name, dataset_kwargs=None, oracle_kwargs=None, **kwargs):
     return registry.make(task_name, dataset_kwargs=dataset_kwargs,
-                         oracle_kwargs=oracle_kwargs)
+                         oracle_kwargs=oracle_kwargs, **kwargs)
 
 
 # wrap the TaskRegistry.spec function globally

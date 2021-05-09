@@ -50,7 +50,7 @@ class OracleBuilder(abc.ABC):
 
     Public Methods:
 
-    score(np.ndarray) -> np.ndarray:
+    predict(np.ndarray) -> np.ndarray:
         a function that accepts a batch of design values 'x' as input and for
         each design computes a prediction value 'y' which corresponds
         to the score in a model-based optimization problem
@@ -59,6 +59,23 @@ class OracleBuilder(abc.ABC):
         a function that accepts a list of integers as input and returns true
         when design values 'x' with the shape specified by that list are
         compatible with this class of approximate oracle
+
+    dataset_to_oracle_x(np.ndarray) -> np.ndarray
+        Helper function for converting from designs contained in the
+        dataset format into a format the oracle is expecting to process,
+        such as from integers to logits of a categorical distribution
+    dataset_to_oracle_y(np.ndarray) -> np.ndarray
+        Helper function for converting from predictions contained in the
+        dataset format into a format the oracle is expecting to process,
+        such as from normalized to denormalized predictions
+    oracle_to_dataset_x(np.ndarray) -> np.ndarray
+        Helper function for converting from designs in the format of the
+        oracle into the design format the dataset contains, such as
+        from categorical logits to integers
+    oracle_to_dataset_y(np.ndarray) -> np.ndarray
+        Helper function for converting from predictions in the
+        format of the oracle into a format the dataset contains,
+        such as from normalized to denormalized predictions
 
     """
 
