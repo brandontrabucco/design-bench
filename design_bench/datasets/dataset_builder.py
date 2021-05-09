@@ -223,7 +223,9 @@ class DatasetBuilder(abc.ABC):
 
         raise NotImplementedError
 
-    def __init__(self, x_shards, y_shards, internal_batch_size=32):
+    def __init__(self, x_shards, y_shards, internal_batch_size=32,
+                 is_normalized_x=False, is_normalized_y=False,
+                 max_samples=None, max_percentile=100.0, min_percentile=0.0):
         """Initialize a model-based optimization dataset and prepare
         that dataset by loading that dataset from disk and modifying
         its distribution of designs and predictions
@@ -244,6 +246,22 @@ class DatasetBuilder(abc.ABC):
             the number of samples per batch to use when computing
             normalization statistics of the data set and while relabeling
             the prediction values of the data set
+        is_normalized_x: bool
+            a boolean indicator that specifies whether the designs
+            in the dataset are being normalized
+        is_normalized_y: bool
+            a boolean indicator that specifies whether the predictions
+            in the dataset are being normalized
+        max_samples: int
+            the maximum number of samples to include in the visible dataset;
+            if more than this number of samples would be present, samples
+            are randomly removed from the visible dataset
+        max_percentile: float
+            the percentile between 0 and 100 of prediction values 'y' above
+            which are hidden from access by members outside the class
+        min_percentile: float
+            the percentile between 0 and 100 of prediction values 'y' below
+            which are hidden from access by members outside the class
 
         """
 
@@ -312,6 +330,15 @@ class DatasetBuilder(abc.ABC):
         self._disable_subsample = False
         self.dataset_visible_mask = np.full(
             [self.dataset_size], True, dtype=np.bool)
+
+        # handle requests to normalize and subsample the dataset
+        if is_normalized_x:
+            self.map_normalize_x()
+        if is_normalized_y:
+            self.map_normalize_y()
+        self.subsample(max_samples=max_samples,
+                       min_percentile=min_percentile,
+                       max_percentile=max_percentile)
 
     def get_num_shards(self):
         """A helper function that returns the number of shards in a
@@ -650,15 +677,15 @@ class DatasetBuilder(abc.ABC):
                         elif return_y:
                             yield np.concatenate(y_batch, axis=0)
 
+                        # reset the buffer for incomplete batches
+                        y_batch_size = 0
+                        x_batch = [] if return_x else None
+                        y_batch = [] if return_y else None
+
                     except GeneratorExit:
 
                         # handle cleanup when break is called
                         return
-
-                    # reset the buffer for incomplete batches
-                    y_batch_size = 0
-                    x_batch = [] if return_x else None
-                    y_batch = [] if return_y else None
 
     def iterate_samples(self, return_x=True, return_y=True):
         """Returns an object that supports iterations, which yields tuples of

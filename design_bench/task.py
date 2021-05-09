@@ -1,11 +1,105 @@
 from design_bench.datasets.dataset_builder import DatasetBuilder
 from design_bench.oracles.oracle_builder import OracleBuilder
+from design_bench.disk_resource import DiskResource
+from typing import Union
+import importlib
+import os
+import re
+
+
+# used to determine the name of a dataset that is sharded to disk
+SHARD_PATTERN = re.compile(r'(.+)-(\w)-(\d+).npy$')
+
+
+# this is used to import data set classes dynamically
+def import_name(name):
+    mod_name, attr_name = name.split(":")
+    return getattr(importlib.import_module(mod_name), attr_name)
 
 
 class Task(object):
 
-    def __init__(self, dataset: DatasetBuilder, oracle: OracleBuilder):
-        self.dataset, self.oracle = dataset, oracle
+    def __init__(self, dataset: Union[DatasetBuilder, type, str],
+                 oracle: Union[OracleBuilder, type, str],
+                 dataset_kwargs=None, oracle_kwargs=None):
+
+        # use additional_kwargs to override self.kwargs
+        kwargs = dict()
+        if dataset_kwargs is not None:
+            kwargs.update(dataset_kwargs)
+
+        # if self.entry_point is a function call it
+        if callable(dataset):
+            dataset = dataset(**kwargs)
+
+        # if self.entry_point is a string import it first
+        elif isinstance(dataset, str):
+            dataset = import_name(dataset)(**kwargs)
+
+        # return if the dataset could not be loaded
+        else:
+            raise ValueError("dataset could not be loaded")
+
+        # use additional_kwargs to override self.kwargs
+        kwargs = dict()
+        if oracle_kwargs is not None:
+            kwargs.update(oracle_kwargs)
+
+        # if self.entry_point is a function call it
+        if callable(oracle):
+            oracle = oracle(dataset, **kwargs)
+
+        # if self.entry_point is a string import it first
+        elif isinstance(dataset, str):
+            oracle = import_name(oracle)(dataset, **kwargs)
+
+        # return if the oracle could not be loaded
+        else:
+            raise ValueError("oracle could not be loaded")
+
+        # expose the dataset and oracle model
+        self.dataset = dataset
+        self.oracle = oracle
+        new_shards = []
+
+        # attempt to download the appropriate shards
+        for shard in dataset.y_shards:
+            if isinstance(shard, DiskResource):
+
+                # create a name for the new sharded prediction
+                m = SHARD_PATTERN.search(shard.disk_target)
+                file = f"{m.group(1)}-{oracle.name}-y-{m.group(3)}.npy"
+                bare = os.path.join(os.path.basename(os.path.dirname(file)),
+                                    os.path.basename(file))
+
+                # create a disk resource for the new shard
+                new_shards.append(DiskResource(
+                    file, is_absolute=True, download_method="direct",
+                    download_target=f"https://design-bench."
+                                    f"s3-us-west-1.amazonaws.com/{bare}"))
+
+        # check if every shard was downloaded successfully
+        # this naturally handles when the shard is already downloaded
+        if len(new_shards) > 0 or all([f.is_downloaded or f.download()
+                                       for f in new_shards]):
+            dataset.y_shards = new_shards
+
+        else:
+
+            # test if the shards are stored on the disk
+            # this means that downloading cached predictions failed
+            name = None
+            test_shard = dataset.y_shards[0]
+            if isinstance(test_shard, DiskResource):
+
+                # create a name for the new sharded prediction
+                m = SHARD_PATTERN.search(test_shard.disk_target)
+                name = f"{m.group(1)}-{oracle.name}"
+
+            # relabel the dataset using the new oracle model
+            dataset.relabel(lambda x, y: oracle.predict(x),
+                            to_disk=name is not None,
+                            is_absolute=True, disk_target=name)
 
     @property
     def oracle_name(self):

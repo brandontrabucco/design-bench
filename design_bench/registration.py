@@ -1,34 +1,42 @@
 from design_bench.task import Task
-from design_bench.disk_resource import DiskResource
 import re
-import importlib
 
 
-# these are the default task name match criterion and error messages
+# the format of allowed task names using regex
 TASK_PATTERN = re.compile(r'(\w+)-(\w+)-v(\d+)$')
+
+
+# error message for when an improper name is used
 MISMATCH_MESSAGE = 'Attempted to register malformed task name: {}. (' \
-                   'Currently all names must be of the form {}.)'
-DEPRECATED_MESSAGE = 'Task {} not found (valid versions include {})'
+                   'Currently all names must conform to regex template {}.)'
+
+
+# error message when a task version is not found but other versions are
+DEPRECATED_MESSAGE = 'Task {} not found (versions include {})'
+
+
+# error message when an oracle is not registered with a dataset
+ORACLE_MESSAGE = 'Oracle {} not found with Dataset {} (oracles include {})'
+
+
+# error message when no tasks are found with a particular name
 UNKNOWN_MESSAGE = 'No registered task with name: {}'
+
+
+# error message when a task with this name is already specified
 REREGISTRATION_MESSAGE = 'Cannot re-register id: {}'
-
-
-# this is used to import data set classes dynamically
-def import_name(name):
-    mod_name, attr_name = name.split(":")
-    return getattr(importlib.import_module(mod_name), attr_name)
 
 
 class TaskSpecification(object):
 
-    def __init__(self, name, dataset, oracle,
+    def __init__(self, task_name, dataset, oracle,
                  dataset_kwargs=None, oracle_kwargs=None):
         """Create a specification for a model-based optimization task that
         dynamically imports that task when self.make is called.
 
         Arguments:
 
-        name: str
+        task_name: str
             the name of the model-based optimization task which must match
             with the regex expression given by TASK_PATTERN
         dataset: str or callable
@@ -47,22 +55,22 @@ class TaskSpecification(object):
         """
 
         # store the init arguments
-        self.name = name
+        self.task_name = task_name
         self.dataset = dataset
         self.oracle = oracle
-        self.dataset_kwargs = {} if dataset_kwargs is None else dataset_kwargs
-        self.oracle_kwargs = {} if oracle_kwargs is None else oracle_kwargs
+        self.dataset_kwargs = dataset_kwargs if dataset_kwargs else {}
+        self.oracle_kwargs = oracle_kwargs if oracle_kwargs else {}
 
         # check if the name matches with the regex template
-        match = TASK_PATTERN.search(name)
+        match = TASK_PATTERN.search(task_name)
 
         # if there is no match raise a ValueError
         if not match:
             raise ValueError(
-                MISMATCH_MESSAGE.format(name, TASK_PATTERN.pattern))
+                MISMATCH_MESSAGE.format(task_name, TASK_PATTERN.pattern))
 
-        # otherwise select the task name from the regex match
-        self.task_name = match.group(0)
+        # otherwise select the dataset and oracle name with regex
+        self.dataset_name, self.oracle_name = match.group(1), match.group(2)
 
     def make(self, dataset_kwargs=None, oracle_kwargs=None):
         """Instantiates the intended task using the additional
@@ -86,82 +94,25 @@ class TaskSpecification(object):
         """
 
         # use additional_kwargs to override self.kwargs
-        kwargs = self.dataset_kwargs.copy()
+        dataset_kwargs_final = self.dataset_kwargs
         if dataset_kwargs is not None:
-            kwargs.update(dataset_kwargs)
-
-        # remove certain keys from the dictionary
-        max_samples = kwargs.pop("max_samples", None)
-        min_percentile = kwargs.pop("min_percentile", 0)
-        max_percentile = kwargs.pop("max_percentile", 100)
-
-        # if self.entry_point is a function call it
-        if callable(self.dataset):
-            dataset = self.dataset(**kwargs)
-
-        # if self.entry_point is a string import it first
-        elif isinstance(self.dataset, str):
-            dataset = import_name(self.dataset)(**kwargs)
-
-        # return if the dataset could not be loaded
-        else:
-            return
+            dataset_kwargs_final.update(dataset_kwargs)
 
         # use additional_kwargs to override self.kwargs
-        kwargs = self.oracle_kwargs.copy()
+        oracle_kwargs_final = self.oracle_kwargs
         if oracle_kwargs is not None:
-            kwargs.update(oracle_kwargs)
-
-        # if self.entry_point is a function call it
-        if callable(self.oracle):
-            oracle = self.oracle(dataset, **kwargs)
-
-        # if self.entry_point is a string import it first
-        elif isinstance(self.dataset, str):
-            oracle = import_name(self.oracle)(dataset, **kwargs)
-
-        # return if the oracle could not be loaded
-        else:
-            return
-
-        # potentially subsample the dataset
-        dataset.subsample(max_samples=max_samples,
-                          min_percentile=min_percentile,
-                          max_percentile=max_percentile)
-
-        name = f"{dataset.name}-{oracle.name}"
-        new_y_shards = []
-
-        # attempt to download the appropriate shards
-        for shard in dataset.y_shards:
-            if isinstance(shard, DiskResource):
-                target = shard.disk_target.replace(dataset.name, name)
-                file = "".join(target.partition(name)[1:])
-
-                # create a virtual disk resource for the new shard
-                new_y_shards.append(DiskResource(
-                    target, is_absolute=True, download_method="direct",
-                    download_target=f"https://design-bench."
-                                    f"s3-us-west-1.amazonaws.com/{file}"))
-
-        # if the relabeled shard were not downloaded
-        if len(new_y_shards) == 0 or not all([
-                f.is_downloaded or f.download() for f in new_y_shards]):
-
-            # relabel the dataset using the new oracle model
-            dataset.relabel(lambda x, y: oracle.predict(x),
-                            to_disk=len(new_y_shards) > 0,
-                            is_absolute=False, disk_target=name)
-
-        else:
-            dataset.y_shards = new_y_shards
+            oracle_kwargs_final.update(oracle_kwargs)
 
         # return a task composing this oracle and dataset
-        return Task(dataset, oracle)
+        return Task(self.dataset, self.oracle,
+                    dataset_kwargs=dataset_kwargs,
+                    oracle_kwargs=oracle_kwargs)
 
     def __repr__(self):
-        return "TaskSpecification({}, {}, {})".format(
-            self.name, self.dataset, self.oracle)
+        return "TaskSpecification({}, {}, {}, " \
+               "dataset_kwargs={}, oracle_kwargs={})".format(
+                self.task_name, self.dataset, self.oracle,
+                self.dataset_kwargs, self.oracle_kwargs)
 
 
 class TaskRegistry(object):
@@ -174,13 +125,13 @@ class TaskRegistry(object):
 
         self.task_specs = {}
 
-    def make(self, name, dataset_kwargs=None, oracle_kwargs=None):
+    def make(self, task_name, dataset_kwargs=None, oracle_kwargs=None):
         """Instantiates the intended task using the additional
         keyword arguments provided in this function.
 
         Args:
 
-        name: str
+        task_name: str
             the name of the model-based optimization task which must match
             with the regex expression given by TASK_PATTERN
         dataset_kwargs: dict
@@ -198,8 +149,8 @@ class TaskRegistry(object):
 
         """
 
-        return self.spec(name).make(dataset_kwargs=dataset_kwargs,
-                                    oracle_kwargs=oracle_kwargs)
+        return self.spec(task_name).make(dataset_kwargs=dataset_kwargs,
+                                         oracle_kwargs=oracle_kwargs)
 
     def all(self):
         """Generate a list of the names of all currently registered
@@ -215,13 +166,13 @@ class TaskRegistry(object):
 
         return self.task_specs.values()
 
-    def spec(self, name):
+    def spec(self, task_name):
         """Looks up the task specification identifed by the task
         name argument provided here
 
         Args:
 
-        name: str
+        task_name: str
             the name of the model-based optimization task which must match
             with the regex expression given by TASK_PATTERN
 
@@ -234,44 +185,55 @@ class TaskRegistry(object):
         """
 
         # check if the name matches with the regex template
-        match = TASK_PATTERN.search(name)
+        match = TASK_PATTERN.search(task_name)
 
         # if there is no match raise a ValueError
         if not match:
             raise ValueError(
-                MISMATCH_MESSAGE.format(name, TASK_PATTERN.pattern))
+                MISMATCH_MESSAGE.format(task_name, TASK_PATTERN.pattern))
 
         # try to locate the task specification
         try:
-            return self.task_specs[name]
+            return self.task_specs[task_name]
 
         # if it does not exist try to find out why
         except KeyError:
 
             # make a list of all similar registered tasks
-            task_name = match.group(0)
-            matching_tasks = [valid_name for valid_name, valid_spec
-                              in self.task_specs.items()
-                              if task_name == valid_spec.task_name]
+            dataset_name, oracle_name = match.group(1), match.group(2)
 
-            # there is a similar matching task
-            if matching_tasks:
+            matching = [valid_name for valid_name, valid_spec
+                        in self.task_specs.items()
+                        if dataset_name == valid_spec.dataset_name
+                        and oracle_name == valid_spec.oracle_name]
+
+            # there is another version available
+            if matching:
                 raise ValueError(
-                    DEPRECATED_MESSAGE.format(name, matching_tasks))
+                    DEPRECATED_MESSAGE.format(task_name, matching))
+
+            matching = [valid_name for valid_name, valid_spec
+                        in self.task_specs.items()
+                        if dataset_name == valid_spec.dataset_name]
+
+            # there is another oracle available
+            if matching:
+                raise ValueError(
+                    ORACLE_MESSAGE.format(dataset_name, oracle_name, matching))
 
             # there are no similar matching tasks
             else:
                 raise ValueError(
-                    UNKNOWN_MESSAGE.format(name))
+                    UNKNOWN_MESSAGE.format(task_name))
 
-    def register(self, name, dataset, oracle,
+    def register(self, task_name, dataset, oracle,
                  dataset_kwargs=None, oracle_kwargs=None):
         """Register a specification for a model-based optimization task that
         dynamically imports that task when self.make is called.
 
         Args:
 
-        name: str
+        task_name: str
             the name of the model-based optimization task which must match
             with the regex expression given by TASK_PATTERN
         dataset: str or callable
@@ -290,12 +252,12 @@ class TaskRegistry(object):
         """
 
         # raise an error if that task is already registered
-        if name in self.task_specs:
-            raise ValueError(REREGISTRATION_MESSAGE.format(name))
+        if task_name in self.task_specs:
+            raise ValueError(REREGISTRATION_MESSAGE.format(task_name))
 
         # otherwise add that task to the collection
-        self.task_specs[name] = TaskSpecification(
-            name, dataset, oracle,
+        self.task_specs[task_name] = TaskSpecification(
+            task_name, dataset, oracle,
             dataset_kwargs=dataset_kwargs, oracle_kwargs=oracle_kwargs)
 
 
@@ -304,19 +266,19 @@ registry = TaskRegistry()
 
 
 # wrap the TaskRegistry.register function globally
-def register(name, dataset, oracle,
+def register(task_name, dataset, oracle,
              dataset_kwargs=None, oracle_kwargs=None):
     return registry.register(
-        name, dataset, oracle,
+        task_name, dataset, oracle,
         dataset_kwargs=dataset_kwargs, oracle_kwargs=oracle_kwargs)
 
 
 # wrap the TaskRegistry.make function globally
-def make(name, dataset_kwargs=None, oracle_kwargs=None):
-    return registry.make(name, dataset_kwargs=dataset_kwargs,
+def make(task_name, dataset_kwargs=None, oracle_kwargs=None):
+    return registry.make(task_name, dataset_kwargs=dataset_kwargs,
                          oracle_kwargs=oracle_kwargs)
 
 
 # wrap the TaskRegistry.spec function globally
-def spec(name):
-    return registry.spec(name)
+def spec(task_name):
+    return registry.spec(task_name)
