@@ -325,4 +325,4 @@ class TransformerOracle(TensorflowOracle):
         """
 
         # call the model's predict function to generate predictions
-        return self.model["model"].predict(x)
+        return self.model["model"].predict(x).numpy().astype(np.float32)
