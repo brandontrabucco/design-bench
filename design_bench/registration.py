@@ -223,7 +223,8 @@ class TaskRegistry(object):
             # there is another oracle available
             if matching:
                 raise ValueError(
-                    ORACLE_MESSAGE.format(dataset_name, oracle_name, matching))
+                    ORACLE_MESSAGE.format(oracle_name,
+                                          dataset_name, matching))
 
             # there are no similar matching tasks
             else:

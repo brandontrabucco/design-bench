@@ -3,7 +3,6 @@ from design_bench.datasets.dataset_builder import DatasetBuilder
 from design_bench.disk_resource import DiskResource
 import abc
 import zipfile
-import numpy as np
 
 
 class ApproximateOracle(OracleBuilder, abc.ABC):
