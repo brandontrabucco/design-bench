@@ -460,7 +460,7 @@ class DatasetBuilder(abc.ABC):
 
         # write shard to a new resource file given by "disk_target"
         if to_disk is not None and to_disk:
-            disk_target = f"{disk_target}-x-{len(shard_id)}.npy"
+            disk_target = f"{disk_target}-x-{shard_id}.npy"
             self.x_shards[shard_id] = DiskResource(disk_target,
                                                    is_absolute=is_absolute)
 
@@ -511,7 +511,7 @@ class DatasetBuilder(abc.ABC):
 
         # write shard to a new resource file given by "disk_target"
         if to_disk is not None and to_disk:
-            disk_target = f"{disk_target}-y-{len(shard_id)}.npy"
+            disk_target = f"{disk_target}-y-{shard_id}.npy"
             self.y_shards[shard_id] = DiskResource(disk_target,
                                                    is_absolute=is_absolute)
 

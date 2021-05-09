@@ -21,7 +21,7 @@ class Task(object):
 
     def __init__(self, dataset: Union[DatasetBuilder, type, str],
                  oracle: Union[OracleBuilder, type, str],
-                 dataset_kwargs=None, oracle_kwargs=None):
+                 dataset_kwargs=None, oracle_kwargs=None, relabel=True):
 
         # use additional_kwargs to override self.kwargs
         kwargs = dict()
@@ -50,11 +50,12 @@ class Task(object):
             oracle = oracle(dataset, **kwargs)
 
         # if self.entry_point is a string import it first
-        elif isinstance(dataset, str):
+        elif isinstance(oracle, str):
             oracle = import_name(oracle)(dataset, **kwargs)
 
         # return if the oracle could not be loaded
         else:
+            print(oracle)
             raise ValueError("oracle could not be loaded")
 
         # expose the dataset and oracle model
@@ -64,7 +65,7 @@ class Task(object):
 
         # attempt to download the appropriate shards
         for shard in dataset.y_shards:
-            if isinstance(shard, DiskResource):
+            if relabel and isinstance(shard, DiskResource):
 
                 # create a name for the new sharded prediction
                 m = SHARD_PATTERN.search(shard.disk_target)
@@ -80,11 +81,11 @@ class Task(object):
 
         # check if every shard was downloaded successfully
         # this naturally handles when the shard is already downloaded
-        if len(new_shards) > 0 or all([f.is_downloaded or f.download()
-                                       for f in new_shards]):
+        if relabel and len(new_shards) > 0 and all([
+                f.is_downloaded or f.download() for f in new_shards]):
             dataset.y_shards = new_shards
 
-        else:
+        elif relabel:
 
             # test if the shards are stored on the disk
             # this means that downloading cached predictions failed
