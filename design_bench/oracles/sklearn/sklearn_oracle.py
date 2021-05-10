@@ -1,5 +1,4 @@
 from design_bench.oracles.approximate_oracle import ApproximateOracle
-import numpy as np
 import abc
 
 
@@ -65,31 +64,4 @@ class SKLearnOracle(ApproximateOracle, abc.ABC):
 
     """
 
-    @staticmethod
-    def get_subsample_indices(y_dataset, max_samples=5000,
-                              min_percentile=0.0, max_percentile=100.0):
-        """Helper function for generating indices for subsampling training
-        samples from a model-based optimization dataset, particularly when
-        using a learned model where not all samples fit into memory
-
-        Arguments:
-
-        y_dataset: np.ndarray
-            a numpy array of prediction values from a model-based optimization
-            dataset that will be subsampled using the given statistics
-
-        Returns:
-
-        y_dataset: np.ndarray
-            a numpy array of smaller size that the original y_dataset, having
-            been subsampled using the given statistics
-
-        """
-
-        min_value = np.percentile(y_dataset[:, 0], min_percentile)
-        max_value = np.percentile(y_dataset[:, 0], max_percentile)
-        indices = np.where(np.logical_and(
-            y_dataset[:, 0] >= min_value, y_dataset[:, 0] <= max_value))[0]
-        size = indices.size
-        return indices[np.random.choice(
-            size, size=min(size, max_samples), replace=False)]
+    pass

@@ -110,7 +110,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit(self, dataset, **kwargs):
+    def protected_fit(self, dataset, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -122,9 +122,58 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
 
+        Returns:
+
+        model: Any
+            any format of of machine learning model that will be stored
+            in the self.model attribute for later use
+
         """
 
         raise NotImplementedError
+
+    def fit(self, dataset, max_samples=1000,
+            min_percentile=0.0, max_percentile=100.0, **kwargs):
+        """a function that accepts a set of design values 'x' and prediction
+        values 'y' and fits an approximate oracle to serve as the ground
+        truth function f(x) in a model-based optimization problem
+
+        Arguments:
+
+        dataset: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class which has
+            a set of design values 'x' and prediction values 'y', and defines
+            batching and sampling methods for those attributes
+
+        Returns:
+
+        model: Any
+            any format of of machine learning model that will be stored
+            in the self.model attribute for later use
+
+        """
+
+        # record the original dataset statistics so that
+        # they can be reinstated after fitting the sklearn oracle
+        dataset_size = dataset.dataset_size
+        dataset_min_percentile = dataset.dataset_min_percentile
+        dataset_max_percentile = dataset.dataset_max_percentile
+
+        # temporarily subsample the dataset for fitting a model
+        dataset.subsample(max_samples=max_samples,
+                          min_percentile=min_percentile,
+                          max_percentile=max_percentile)
+
+        # fit a specific model to the newly subsampled dataset
+        model = self.protected_fit(dataset, **kwargs)
+
+        # revert the subsampling statistics to their original state
+        dataset.subsample(max_samples=dataset_size,
+                          min_percentile=dataset_min_percentile,
+                          max_percentile=dataset_max_percentile)
+
+        # return the final model
+        return model
 
     def __init__(self, dataset: DatasetBuilder, fit=None,
                  file=None, is_absolute=False, is_batched=True,

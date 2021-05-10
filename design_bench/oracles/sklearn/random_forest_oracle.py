@@ -161,8 +161,7 @@ class RandomForestOracle(SKLearnOracle):
         with zip_archive.open('random_forest.pkl', "r") as file:
             return pkl.load(file)  # load the random forest using pickle
 
-    def fit(self, dataset, max_samples=1000,
-            min_percentile=0.0, max_percentile=100.0, **kwargs):
+    def protected_fit(self, dataset, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -189,14 +188,6 @@ class RandomForestOracle(SKLearnOracle):
         # note this requires the dataset to be loaded in memory all at once
         x = dataset.x
         y = dataset.y
-
-        # select training examples using percentile sub sampling
-        # necessary when the training set is too large for the model to fit
-        indices = self.get_subsample_indices(y, max_samples=max_samples,
-                                             min_percentile=min_percentile,
-                                             max_percentile=max_percentile)
-        x = x[indices]
-        y = y[indices]
 
         # convert samples into the expected format of the oracle
         x = self.dataset_to_oracle_x(x)

@@ -186,8 +186,9 @@ class FullyConnectedOracle(TensorflowOracle):
             return dict(model=keras.models.load_model(file.name),
                         rank_correlation=rank_correlation)
 
-    def fit(self, dataset, hidden_size=512, activation='relu', num_layers=2,
-            epochs=5, shuffle_buffer=5000, learning_rate=0.001, **kwargs):
+    def protected_fit(self, dataset, hidden_size=512, activation='relu',
+                      num_layers=2, epochs=5, shuffle_buffer=5000,
+                      learning_rate=0.001, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem

@@ -189,9 +189,10 @@ class TransformerOracle(TensorflowOracle):
             return dict(model=keras.models.load_model(file.name),
                         rank_correlation=rank_correlation)
 
-    def fit(self, dataset, hidden_size=512, feed_forward_size=2048,
-            activation='relu', num_heads=8, num_blocks=4, epochs=25,
-            shuffle_buffer=5000, learning_rate=0.0001, decay_rate=0.95, **kwargs):
+    def protected_fit(self, dataset, hidden_size=512, feed_forward_size=2048,
+                      activation='relu', num_heads=8, num_blocks=4, epochs=25,
+                      shuffle_buffer=5000, learning_rate=0.0001,
+                      decay_rate=0.95, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem

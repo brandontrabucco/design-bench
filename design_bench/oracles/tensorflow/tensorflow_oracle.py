@@ -99,12 +99,14 @@ class TensorflowOracle(ApproximateOracle, abc.ABC):
 
         # obtain the expected shape of samples to the model
         input_shape = dataset.input_shape
-        if isinstance(dataset, DiscreteDataset) and dataset.is_logits:
+        if isinstance(dataset,
+                      DiscreteDataset) and dataset.is_logits:
             input_shape = input_shape[:-1]
 
         # map from dataset format to oracle format using numpy
         def dataset_to_oracle_numpy(x, y):
-            return self.dataset_to_oracle_x(x), self.dataset_to_oracle_y(y)
+            return self.dataset_to_oracle_x(x), \
+                   self.dataset_to_oracle_y(y)
 
         # map from dataset format to oracle format using tensorflow
         def dataset_to_oracle_tensorflow(x, y):

@@ -107,8 +107,8 @@ class TaskSpecification(object):
 
         # return a task composing this oracle and dataset
         return Task(self.dataset, self.oracle,
-                    dataset_kwargs=dataset_kwargs,
-                    oracle_kwargs=oracle_kwargs, **kwargs)
+                    dataset_kwargs=dataset_kwargs_final,
+                    oracle_kwargs=oracle_kwargs_final, **kwargs)
 
     def __repr__(self):
         return "TaskSpecification({}, {}, {}, " \

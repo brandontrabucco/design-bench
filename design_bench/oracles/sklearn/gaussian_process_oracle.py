@@ -162,8 +162,7 @@ class GaussianProcessOracle(SKLearnOracle):
         with zip_archive.open('gaussian_process.pkl', "r") as file:
             return pkl.load(file)  # load the random forest using pickle
 
-    def fit(self, dataset, max_samples=1000,
-            min_percentile=0.0, max_percentile=100.0, **kwargs):
+    def protected_fit(self, dataset, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -174,14 +173,6 @@ class GaussianProcessOracle(SKLearnOracle):
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
-        kernel: Kernel or np.ndarray
-            an instance of an sklearn Kernel if the dataset is continuous or
-            an instance of a numpy array if the dataset is discrete, which
-            will be passed to an instance of DiscreteSequenceKernel
-        max_samples: int
-            the maximum number of samples to be used when fitting a gaussian
-            process, where the dataset is uniformly randomly sub sampled
-            if the dataset is larger than max_samples
 
         Returns:
 
@@ -198,14 +189,6 @@ class GaussianProcessOracle(SKLearnOracle):
         # note this requires the dataset to be loaded in memory all at once
         x = dataset.x
         y = dataset.y
-
-        # select training examples using percentile sub sampling
-        # necessary when the training set is too large for the model to fit
-        indices = self.get_subsample_indices(y, max_samples=max_samples,
-                                             min_percentile=min_percentile,
-                                             max_percentile=max_percentile)
-        x = x[indices]
-        y = y[indices]
 
         # convert samples into the expected format of the oracle
         x = self.dataset_to_oracle_x(x)

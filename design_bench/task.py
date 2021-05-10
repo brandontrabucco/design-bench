@@ -222,6 +222,9 @@ class Task(object):
 
         # use additional_kwargs to override self.kwargs
         kwargs = dataset_kwargs if dataset_kwargs else dict()
+        max_samples = kwargs.pop("max_samples", None)
+        min_percentile = kwargs.pop("min_percentile", 0)
+        max_percentile = kwargs.pop("max_percentile", 100)
 
         # if self.entry_point is a function call it
         if callable(dataset):
@@ -255,6 +258,11 @@ class Task(object):
 
         # expose the built oracle
         self.oracle = oracle
+
+        # only subsample once the oracle is built
+        self.dataset.subsample(max_samples=max_samples,
+                               min_percentile=min_percentile,
+                               max_percentile=max_percentile)
 
         # only relabel when an approximate model is used
         relabel = relabel and isinstance(oracle, ApproximateOracle)
