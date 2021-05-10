@@ -136,6 +136,5 @@ class TensorflowOracle(ApproximateOracle, abc.ABC):
 
         # update the dataset format and dtype the return
         auto = tf.data.experimental.AUTOTUNE
-        generator = generator.map(dataset_to_oracle_tensorflow,
-                                  num_parallel_calls=auto)
-        return generator.prefetch(auto)
+        return generator.map(dataset_to_oracle_tensorflow,
+                             num_parallel_calls=auto).prefetch(auto)

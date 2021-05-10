@@ -30,6 +30,9 @@ register('GFP-LSTM-v0',
 
          # keyword arguments for training the LSTM oracle
          oracle_kwargs=dict(noise_std=0.0,
+                            max_samples=None,
+                            max_percentile=100,
+                            min_percentile=50,
                             hidden_size=512,
                             num_layers=2,
                             epochs=25,

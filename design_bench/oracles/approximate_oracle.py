@@ -132,7 +132,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         raise NotImplementedError
 
-    def fit(self, dataset, max_samples=1000,
+    def fit(self, dataset, max_samples=None,
             min_percentile=0.0, max_percentile=100.0, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
@@ -144,6 +144,16 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
+        max_samples: int
+            the maximum number of samples to include in the visible dataset;
+            if more than this number of samples would be present, samples
+            are randomly removed from the visible dataset
+        max_percentile: float
+            the percentile between 0 and 100 of prediction values 'y' above
+            which are hidden from access by members outside the class
+        min_percentile: float
+            the percentile between 0 and 100 of prediction values 'y' below
+            which are hidden from access by members outside the class
 
         Returns:
 
@@ -154,7 +164,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         """
 
         # record the original dataset statistics so that
-        # they can be reinstated after fitting the sklearn oracle
+        # they can be reinstated after fitting the approximate oracle
         dataset_size = dataset.dataset_size
         dataset_min_percentile = dataset.dataset_min_percentile
         dataset_max_percentile = dataset.dataset_max_percentile
