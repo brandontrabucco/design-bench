@@ -186,9 +186,10 @@ class FullyConnectedOracle(TensorflowOracle):
             return dict(model=keras.models.load_model(file.name),
                         rank_correlation=rank_correlation)
 
-    def protected_fit(self, dataset, hidden_size=512, activation='relu',
-                      num_layers=2, epochs=5, shuffle_buffer=5000,
-                      learning_rate=0.001, **kwargs):
+    def protected_fit(self, dataset, embedding_size=64, hidden_size=512,
+                      activation='relu', num_layers=2, epochs=5,
+                      shuffle_buffer=5000, learning_rate=0.001,
+                      split_kwargs=None, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -209,7 +210,8 @@ class FullyConnectedOracle(TensorflowOracle):
         """
 
         # prepare the dataset for training and validation
-        training, validation = dataset.split(**kwargs)
+        training, validation = dataset.split(
+            **(split_kwargs if split_kwargs else {}))
         validation_x = self.dataset_to_oracle_x(validation.x)
         validation_y = self.dataset_to_oracle_y(validation.y)
 
@@ -223,7 +225,7 @@ class FullyConnectedOracle(TensorflowOracle):
 
         # build a model with an input layer and optional embedding
         if isinstance(training, DiscreteDataset):
-            x = layers.Embedding(training.num_classes, hidden_size)(x)
+            x = layers.Embedding(training.num_classes, embedding_size)(x)
 
         # flatten all sequence dimensions into the channels
         x = layers.Flatten()(x)
@@ -286,4 +288,4 @@ class FullyConnectedOracle(TensorflowOracle):
         """
 
         # call the model's predict function to generate predictions
-        return self.model["model"].predict(x).numpy().astype(np.float32)
+        return self.model["model"].predict(x).astype(np.float32)

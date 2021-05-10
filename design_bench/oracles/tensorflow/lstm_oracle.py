@@ -191,7 +191,7 @@ class LSTMOracle(TensorflowOracle):
 
     def protected_fit(self, dataset, hidden_size=512, num_layers=2,
                       epochs=25, shuffle_buffer=5000,
-                      learning_rate=0.001, **kwargs):
+                      learning_rate=0.001, split_kwargs=None, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -212,7 +212,8 @@ class LSTMOracle(TensorflowOracle):
         """
 
         # prepare the dataset for training and validation
-        training, validation = dataset.split(**kwargs)
+        training, validation = dataset.split(
+            **(split_kwargs if split_kwargs else {}))
         validation_x = self.dataset_to_oracle_x(validation.x)
         validation_y = self.dataset_to_oracle_y(validation.y)
 
@@ -311,4 +312,4 @@ class LSTMOracle(TensorflowOracle):
         """
 
         # call the model's predict function to generate predictions
-        return self.model["model"].predict(x).numpy().astype(np.float32)
+        return self.model["model"].predict(x).astype(np.float32)
