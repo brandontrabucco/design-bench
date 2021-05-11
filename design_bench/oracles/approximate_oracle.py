@@ -159,6 +159,12 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
+        split_kwargs: dict
+            a dictionary of keyword arguments that will be passed to
+            dataset.split when constructing a vaidation set
+        model_kwargs: dict
+            a dictionary of keyword arguments that parameterize the
+            architecture and learning algorithm of the model
         max_samples: int
             the maximum number of samples to include in the visible dataset;
             if more than this number of samples would be present, samples
@@ -208,7 +214,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         # evaluate validation rank correlation of model
         rank_correlation = stats.spearmanr(
-            model.predict(validation.x)[:, 0],
+            self.predict(validation.x, model=model)[:, 0],
             self.dataset_to_oracle_y(validation.y)[:, 0])[0]
 
         # revert subsampling statistics to original state

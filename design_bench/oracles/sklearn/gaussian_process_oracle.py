@@ -172,12 +172,15 @@ class GaussianProcessOracle(SKLearnOracle):
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
+        model_kwargs: dict
+            a dictionary of keyword arguments that parameterize the
+            architecture and learning algorithm of the model
 
         Returns:
 
         model: Any
             any format of of machine learning model that will be stored
-            in the self.model attribute for later use
+            in the self.params["model"] attribute for later use
 
         """
 
@@ -200,7 +203,7 @@ class GaussianProcessOracle(SKLearnOracle):
         # return the trained model
         return model
 
-    def protected_predict(self, x):
+    def protected_predict(self, x, model=None):
         """Score function to be implemented by oracle subclasses, where x is
         either a batch of designs if self.is_batched is True or is a
         single design when self._is_batched is False
@@ -211,6 +214,9 @@ class GaussianProcessOracle(SKLearnOracle):
             a batch or single design 'x' that will be given as input to the
             oracle model in order to obtain a prediction value 'y' for
             each 'x' which is then returned
+        model: Any
+            any format of of machine learning model that will be stored
+            in the self.params["model"] attribute for later use
 
         Returns:
 
@@ -222,6 +228,6 @@ class GaussianProcessOracle(SKLearnOracle):
         """
 
         # call the model's predict function to generate predictions
-        return self.params["model"].predict(x.reshape((
-            x.shape[0], np.prod(
+        return (model if model else self.params["model"]).predict(
+            x.reshape((x.shape[0], np.prod(
                 x.shape[1:]))))[:, np.newaxis].astype(np.float32)

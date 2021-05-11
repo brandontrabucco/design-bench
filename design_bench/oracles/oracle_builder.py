@@ -115,7 +115,7 @@ class OracleBuilder(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def protected_predict(self, x):
+    def protected_predict(self, x, **kwargs):
         """Score function to be implemented by oracle subclasses, where x is
         either a batch of designs if self.is_batched is True or is a
         single design when self._is_batched is False
@@ -371,7 +371,7 @@ class OracleBuilder(abc.ABC):
 
         return y_batch
 
-    def predict(self, x_batch):
+    def predict(self, x_batch, **kwargs):
         """a function that accepts a batch of design values 'x' as input and
         for each design computes a prediction value 'y' which corresponds
         to the score in a model-based optimization problem
@@ -417,8 +417,9 @@ class OracleBuilder(abc.ABC):
                 x_sliced = np.squeeze(x_sliced, 0)
 
             # take multiple independent measurements of the score
-            y_sliced = np.mean([self.protected_predict(x_sliced) for _ in
-                                range(self.internal_measurements)], axis=0)
+            y_sliced = np.mean([self.protected_predict(
+                x_sliced, **kwargs) for _ in
+                range(self.internal_measurements)], axis=0)
 
             # if the inner score function is nto batched then add back
             # an outermost batch dimension of one
