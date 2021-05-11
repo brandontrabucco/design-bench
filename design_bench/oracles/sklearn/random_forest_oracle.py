@@ -215,7 +215,7 @@ class RandomForestOracle(SKLearnOracle):
 
         # evaluate the validation rank correlation of the model
         rank_correlation = stats.spearmanr(
-            model.predict(validation_x)[:, 0], validation_y[:, 0])[0]
+            model.predict(validation_x), validation_y[:, 0])[0]
 
         # return the trained model and rank correlation
         return dict(model=model,
