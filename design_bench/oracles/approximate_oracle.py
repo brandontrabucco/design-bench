@@ -224,7 +224,8 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         # return the final model and its training parameters
         return dict(model=model, rank_correlation=rank_correlation,
-                    split_kwargs=split_kwargs, model_kwargs=model_kwargs)
+                    split_kwargs=final_split_kwargs,
+                    model_kwargs=final_model_kwargs)
 
     def __init__(self, dataset: DatasetBuilder, noise_std=0.0,
                  disk_target=None, is_absolute=False, is_batched=True,

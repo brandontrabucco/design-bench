@@ -167,20 +167,20 @@ register('GFP-Transformer-v0',
 
          # keyword arguments for training Transformer oracle
          oracle_kwargs=dict(noise_std=0.0,
-                            max_samples=10,
+                            max_samples=None,
                             max_percentile=100,
                             min_percentile=0,
 
                             # parameters used for building the model
-                            model_kwargs=dict(hidden_size=512,
-                                              feed_forward_size=2048,
+                            model_kwargs=dict(hidden_size=64,
+                                              feed_forward_size=256,
                                               activation='relu',
-                                              num_heads=8,
+                                              num_heads=2,
                                               num_blocks=4,
-                                              epochs=5000,
+                                              epochs=50,
                                               shuffle_buffer=5000,
                                               learning_rate=0.001,
-                                              decay_rate=0.99),
+                                              decay_rate=0.9),
 
                             # parameters used for building the validation set
                             split_kwargs=dict(val_fraction=0.1,

@@ -426,6 +426,12 @@ class OracleBuilder(abc.ABC):
             if not self.is_batched:
                 y_sliced = y_sliced[np.newaxis]
 
+            # potentially add gaussian random noise to the score
+            # to save on computation only do this when the std is > 0
+            if self.noise_std > 0:
+                y_sliced += self.noise_std * np.random.normal(
+                    0.0, 1.0, y_sliced.shape).astype(y_sliced.dtype)
+
             # convert from the oracle format to the dataset format
             y_sliced = self.oracle_to_dataset_y(y_sliced)
 
@@ -437,9 +443,4 @@ class OracleBuilder(abc.ABC):
 
         # increment the total number of predictions made by the oracle
         self.num_evaluations += y_batch.shape[0]
-
-        # potentially add gaussian random noise to the score
-        noise = 0 if self.noise_std == 0 else \
-            np.random.normal(0.0, self.noise_std,
-                             y_batch.shape).astype(y_batch.dtype)
-        return y_batch + noise
+        return y_batch
