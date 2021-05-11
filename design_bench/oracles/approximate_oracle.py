@@ -319,7 +319,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
-        file: str
+        disk_target: str
             a path to a zip file that would contain a serialized model, and is
             useful when there are multiple versions of the same model
         is_absolute: bool
@@ -354,8 +354,8 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             a path to a zip file that would contain a serialized model, and is
             useful when there are multiple versions of the same model
         params: Any
-            any format of of machine learning model that will be stored
-            in the self.model attribute for later use
+            a dictionary of parameters containing a machine learning model
+            and values that describe its architecture and performance
 
         """
 
@@ -389,8 +389,8 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         Returns:
 
         params: Any
-            any format of of machine learning model that will be stored
-            in the self.model attribute for later use
+            a dictionary of parameters containing a machine learning model
+            and values that describe its architecture and performance
 
         """
 
