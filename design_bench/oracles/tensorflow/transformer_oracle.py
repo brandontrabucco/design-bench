@@ -1,6 +1,5 @@
 from design_bench.oracles.tensorflow.tensorflow_oracle import TensorflowOracle
 from design_bench.datasets.discrete_dataset import DiscreteDataset
-from scipy import stats
 import tensorflow as tf
 import tensorflow.keras as keras
 import tensorflow.keras.layers as layers
@@ -72,8 +71,12 @@ class TransformerOracle(TensorflowOracle):
     """
 
     name = "tensorflow_transformer"
+    default_model_kwargs = dict(hidden_size=512, feed_forward_size=2048,
+                                activation='relu', num_heads=8, num_blocks=4,
+                                epochs=25, shuffle_buffer=5000,
+                                learning_rate=0.0001, decay_rate=0.95)
 
-    def __init__(self, dataset, noise_std=0.0, batch_size=32, **kwargs):
+    def __init__(self, dataset, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -84,17 +87,12 @@ class TransformerOracle(TensorflowOracle):
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
-        noise_std: float
-            the standard deviation of gaussian noise added to the prediction
-            values 'y' coming out of the ground truth score function f(x)
-            in order to make the optimization problem difficult
 
         """
 
         # initialize the oracle using the super class
         super(TransformerOracle, self).__init__(
-            dataset, noise_std=noise_std, is_batched=True,
-            internal_batch_size=batch_size, internal_measurements=1,
+            dataset, is_batched=True, internal_measurements=1,
             expect_normalized_y=True,
             expect_normalized_x=not isinstance(dataset, DiscreteDataset),
             expect_logits=False if isinstance(
@@ -145,16 +143,12 @@ class TransformerOracle(TensorflowOracle):
 
         # extract the bytes of an h5 serialized model
         with tempfile.NamedTemporaryFile() as file:
-            model["model"].save(file.name, save_format='h5')
+            model.save(file.name, save_format='h5')
             model_bytes = file.read()
 
         # write the h5 bytes ot the zip file
         with zip_archive.open('transformer.h5', "w") as file:
             file.write(model_bytes)  # save model bytes in the h5 format
-
-        # write the validation rank correlation to the zip file
-        with zip_archive.open('rank_correlation.npy', "w") as file:
-            file.write(model["rank_correlation"].dumps())
 
     def load_model_from_zip(self, zip_archive):
         """a function that loads components of a serialized model from a zip
@@ -175,10 +169,6 @@ class TransformerOracle(TensorflowOracle):
 
         """
 
-        # read the validation rank correlation from the zip file
-        with zip_archive.open('rank_correlation.npy', "r") as file:
-            rank_correlation = np.loads(file.read())
-
         # read the h5 bytes from the zip file
         with zip_archive.open('transformer.h5', "r") as file:
             model_bytes = file.read()  # read model bytes in the h5 format
@@ -186,20 +176,20 @@ class TransformerOracle(TensorflowOracle):
         # load the model using a temporary file as a buffer
         with tempfile.NamedTemporaryFile() as file:
             file.write(model_bytes)
-            return dict(model=keras.models.load_model(file.name),
-                        rank_correlation=rank_correlation)
+            return keras.models.load_model(file.name)
 
-    def protected_fit(self, dataset, hidden_size=512, feed_forward_size=2048,
-                      activation='relu', num_heads=8, num_blocks=4, epochs=25,
-                      shuffle_buffer=5000, learning_rate=0.0001,
-                      decay_rate=0.95, split_kwargs=None, **kwargs):
-        """a function that accepts a set of design values 'x' and prediction
-        values 'y' and fits an approximate oracle to serve as the ground
-        truth function f(x) in a model-based optimization problem
+    def protected_fit(self, training, validation, model_kwargs=None):
+        """a function that accepts a training dataset and a validation dataset
+        containing design values 'x' and prediction values 'y' in a model-based
+        optimization problem and fits an approximate model
 
         Arguments:
 
-        dataset: DatasetBuilder
+        training: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class which has
+            a set of design values 'x' and prediction values 'y', and defines
+            batching and sampling methods for those attributes
+        validation: DatasetBuilder
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
@@ -212,12 +202,23 @@ class TransformerOracle(TensorflowOracle):
 
         """
 
+        # these parameters control the neural network architecture
+        hidden_size = model_kwargs["hidden_size"]
+        feed_forward_size = model_kwargs["feed_forward_size"]
+        activation = model_kwargs["activation"]
+        num_blocks = model_kwargs["num_blocks"]
+        num_heads = model_kwargs["num_heads"]
+
+        # these parameters control the model training
+        epochs = model_kwargs["epochs"]
+        shuffle_buffer = model_kwargs["shuffle_buffer"]
+        learning_rate = model_kwargs["learning_rate"]
+        decay_rate = model_kwargs["decay_rate"]
+
         # calculate the dimensionality within each attention block
         attention_size = hidden_size // num_heads
 
         # prepare the dataset for training and validation
-        training, validation = dataset.split(
-            **(split_kwargs if split_kwargs else {}))
         validation_x = self.dataset_to_oracle_x(validation.x)
         validation_y = self.dataset_to_oracle_y(validation.y)
 
@@ -296,13 +297,8 @@ class TransformerOracle(TensorflowOracle):
             steps_per_epoch=steps_per_epoch, epochs=epochs,
             validation_data=(validation_x, validation_y))
 
-        # evaluate the validation rank correlation of the model
-        rank_correlation = stats.spearmanr(
-            model.predict(validation_x)[:, 0], validation_y[:, 0])[0]
-
         # return the trained model and rank correlation
-        return dict(model=model,
-                    rank_correlation=rank_correlation)
+        return model
 
     def protected_predict(self, x):
         """Score function to be implemented by oracle subclasses, where x is
@@ -326,4 +322,4 @@ class TransformerOracle(TensorflowOracle):
         """
 
         # call the model's predict function to generate predictions
-        return self.model["model"].predict(x).astype(np.float32)
+        return self.params["model"].predict(x).astype(np.float32)

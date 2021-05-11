@@ -2,7 +2,6 @@ from design_bench.oracles.sklearn.sklearn_oracle import SKLearnOracle
 from design_bench.datasets.discrete_dataset import DiscreteDataset
 from design_bench.datasets.dataset_builder import DatasetBuilder
 from sklearn.gaussian_process import GaussianProcessRegressor
-from scipy import stats
 import numpy as np
 import pickle as pkl
 
@@ -71,7 +70,7 @@ class GaussianProcessOracle(SKLearnOracle):
 
     name = "gaussian_process"
 
-    def __init__(self, dataset: DatasetBuilder, noise_std=0.0, **kwargs):
+    def __init__(self, dataset: DatasetBuilder, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -82,17 +81,12 @@ class GaussianProcessOracle(SKLearnOracle):
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
-        noise_std: float
-            the standard deviation of gaussian noise added to the prediction
-            values 'y' coming out of the ground truth score function f(x)
-            in order to make the optimization problem difficult
 
         """
 
         # initialize the oracle using the super class
         super(GaussianProcessOracle, self).__init__(
-            dataset, noise_std=noise_std, is_batched=True,
-            internal_batch_size=32, internal_measurements=1,
+            dataset, is_batched=True, internal_measurements=1,
             expect_normalized_y=True,
             expect_normalized_x=not isinstance(dataset, DiscreteDataset),
             expect_logits=False if isinstance(
@@ -139,11 +133,7 @@ class GaussianProcessOracle(SKLearnOracle):
         """
 
         with zip_archive.open('gaussian_process.pkl', "w") as file:
-            pkl.dump(model["model"], file)  # save the model using pickle
-
-        # write the validation rank correlation to the zip file
-        with zip_archive.open('rank_correlation.npy', "w") as file:
-            file.write(model["rank_correlation"].dumps())
+            pkl.dump(model, file)  # save the model using pickle
 
     def load_model_from_zip(self, zip_archive):
         """a function that loads components of a serialized model from a zip
@@ -164,22 +154,21 @@ class GaussianProcessOracle(SKLearnOracle):
 
         """
 
-        # read the validation rank correlation from the zip file
-        with zip_archive.open('rank_correlation.npy', "r") as file:
-            rank_correlation = np.loads(file.read())
-
         with zip_archive.open('gaussian_process.pkl', "r") as file:
-            return dict(model=pkl.load(file),
-                        rank_correlation=rank_correlation)
+            return pkl.load(file)  # load the model using pickle
 
-    def protected_fit(self, dataset, split_kwargs=None, **kwargs):
-        """a function that accepts a set of design values 'x' and prediction
-        values 'y' and fits an approximate oracle to serve as the ground
-        truth function f(x) in a model-based optimization problem
+    def protected_fit(self, training, validation, model_kwargs=None):
+        """a function that accepts a training dataset and a validation dataset
+        containing design values 'x' and prediction values 'y' in a model-based
+        optimization problem and fits an approximate model
 
         Arguments:
 
-        dataset: DatasetBuilder
+        training: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class which has
+            a set of design values 'x' and prediction values 'y', and defines
+            batching and sampling methods for those attributes
+        validation: DatasetBuilder
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
@@ -192,12 +181,8 @@ class GaussianProcessOracle(SKLearnOracle):
 
         """
 
-        # prepare the dataset for training and validation
-        training, validation = dataset.split(
-            **(split_kwargs if split_kwargs else {}))
-
         # build the model class and assign hyper parameters
-        model = GaussianProcessRegressor(**kwargs)
+        model = GaussianProcessRegressor(**model_kwargs)
 
         # sample the entire dataset without transformations
         # note this requires the dataset to be loaded in memory all at once
@@ -207,20 +192,13 @@ class GaussianProcessOracle(SKLearnOracle):
         # convert samples into the expected format of the oracle
         x = self.dataset_to_oracle_x(x)
         y = self.dataset_to_oracle_y(y)
-        validation_x = self.dataset_to_oracle_x(validation.x)
-        validation_y = self.dataset_to_oracle_y(validation.y)
 
         # fit the random forest model to the dataset
         model.fit(x.reshape((x.shape[0], np.prod(x.shape[1:]))),
                   y.reshape((y.shape[0],)))
 
-        # evaluate the validation rank correlation of the model
-        rank_correlation = stats.spearmanr(
-            model.predict(validation_x), validation_y[:, 0])[0]
-
-        # return the trained model and rank correlation
-        return dict(model=model,
-                    rank_correlation=rank_correlation)
+        # return the trained model
+        return model
 
     def protected_predict(self, x):
         """Score function to be implemented by oracle subclasses, where x is
@@ -244,6 +222,6 @@ class GaussianProcessOracle(SKLearnOracle):
         """
 
         # call the model's predict function to generate predictions
-        return self.model["model"].predict(
-            x.reshape((x.shape[0], np.prod(
+        return self.params["model"].predict(x.reshape((
+            x.shape[0], np.prod(
                 x.shape[1:]))))[:, np.newaxis].astype(np.float32)

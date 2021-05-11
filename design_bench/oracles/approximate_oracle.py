@@ -1,6 +1,9 @@
 from design_bench.oracles.oracle_builder import OracleBuilder
 from design_bench.datasets.dataset_builder import DatasetBuilder
 from design_bench.disk_resource import DiskResource
+from scipy import stats
+import numpy as np
+import pickle as pkl
 import abc
 import zipfile
 
@@ -67,6 +70,14 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
     """
 
+    # parameters used for creating a validation set
+    default_split_kwargs = dict(val_fraction=0.1, subset=None,
+                                shard_size=5000, to_disk=False,
+                                disk_target=None, is_absolute=None)
+
+    # parameters used for building the model
+    default_model_kwargs = dict()
+
     @abc.abstractmethod
     def save_model_to_zip(self, model, zip_archive):
         """a function that serializes a machine learning model and stores
@@ -110,14 +121,18 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def protected_fit(self, dataset, **kwargs):
-        """a function that accepts a set of design values 'x' and prediction
-        values 'y' and fits an approximate oracle to serve as the ground
-        truth function f(x) in a model-based optimization problem
+    def protected_fit(self, training, validation, model_kwargs=None):
+        """a function that accepts a training dataset and a validation dataset
+        containing design values 'x' and prediction values 'y' in a model-based
+        optimization problem and fits an approximate model
 
         Arguments:
 
-        dataset: DatasetBuilder
+        training: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class which has
+            a set of design values 'x' and prediction values 'y', and defines
+            batching and sampling methods for those attributes
+        validation: DatasetBuilder
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
@@ -132,11 +147,11 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         raise NotImplementedError
 
-    def fit(self, dataset, max_samples=None,
-            min_percentile=0.0, max_percentile=100.0, **kwargs):
-        """a function that accepts a set of design values 'x' and prediction
-        values 'y' and fits an approximate oracle to serve as the ground
-        truth function f(x) in a model-based optimization problem
+    def fit(self, dataset, split_kwargs=None, model_kwargs=None,
+            max_samples=None, min_percentile=0.0, max_percentile=100.0):
+        """a function that accepts a dataset implemented via the DatasetBuilder
+        containing design values 'x' and prediction values 'y' in a model-based
+        optimization problem and fits an approximate model
 
         Arguments:
 
@@ -174,22 +189,42 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
                           min_percentile=min_percentile,
                           max_percentile=max_percentile)
 
-        # fit a specific model to the newly subsampled dataset
-        model = self.protected_fit(dataset, **kwargs)
+        # load parameters for creating a training and validation set
+        final_split_kwargs = self.default_split_kwargs.copy()
+        if split_kwargs is not None:
+            final_split_kwargs.update(split_kwargs)
 
-        # revert the subsampling statistics to their original state
+        # prepare the dataset for training and validation
+        training, validation = dataset.split(**final_split_kwargs)
+
+        # load parameters for fitting a model
+        final_model_kwargs = self.default_model_kwargs.copy()
+        if model_kwargs is not None:
+            final_model_kwargs.update(model_kwargs)
+
+        # fit a specific model to the newly subsampled dataset
+        model = self.protected_fit(training, validation,
+                                   model_kwargs=final_model_kwargs)
+
+        # evaluate validation rank correlation of model
+        rank_correlation = stats.spearmanr(
+            model.predict(validation.x)[:, 0],
+            self.dataset_to_oracle_y(validation.y)[:, 0])[0]
+
+        # revert subsampling statistics to original state
         dataset.subsample(max_samples=dataset_size,
                           min_percentile=dataset_min_percentile,
                           max_percentile=dataset_max_percentile)
 
-        # return the final model
-        return model
+        # return the final model and its training parameters
+        return dict(model=model, rank_correlation=rank_correlation,
+                    split_kwargs=split_kwargs, model_kwargs=model_kwargs)
 
-    def __init__(self, dataset: DatasetBuilder, fit=None,
+    def __init__(self, dataset: DatasetBuilder, noise_std=0.0,
                  disk_target=None, is_absolute=False, is_batched=True,
                  internal_batch_size=32, internal_measurements=1,
-                 noise_std=0.0, expect_normalized_y=False,
-                 expect_normalized_x=False, expect_logits=None, **kwargs):
+                 expect_normalized_y=False, expect_normalized_x=False,
+                 expect_logits=None, fit=None, **fit_kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -200,6 +235,10 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
+        noise_std: float
+            the standard deviation of gaussian noise added to the prediction
+            values 'y' coming out of the ground truth score function f(x)
+            in order to make the optimization problem difficult
         disk_target: str
             a path to a zip file that would contain a serialized model, and is
             useful when there are multiple versions of the same model
@@ -218,10 +257,6 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             an integer representing the number of independent measurements of
             the prediction made by the oracle, which are subsequently
             averaged, and is useful when the oracle is stochastic
-        noise_std: float
-            the standard deviation of gaussian noise added to the prediction
-            values 'y' coming out of the ground truth score function f(x)
-            in order to make the optimization problem difficult
         expect_normalized_y: bool
             a boolean indicator that specifies whether the inputs to the
             oracle score function are expected to be normalized
@@ -231,6 +266,9 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         expect_logits: bool
             a boolean that specifies whether the oracle score function
             is expecting logits when the dataset is discrete
+        fit: bool
+            a boolean that specifies whether the oracle should be re-fit to
+            the dataset; only fits the model when not available if None
 
         """
 
@@ -239,24 +277,29 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             dataset, is_batched=is_batched,
             internal_batch_size=internal_batch_size,
             internal_measurements=internal_measurements,
-            noise_std=noise_std,
             expect_normalized_y=expect_normalized_y,
             expect_normalized_x=expect_normalized_x,
-            expect_logits=expect_logits)
+            expect_logits=expect_logits, noise_std=noise_std)
 
         # download the model parameters from s3
         self.resource = self.get_disk_resource(
             dataset, disk_target=disk_target, is_absolute=is_absolute)
+
+        # check if the model is already downloaded
         if (fit is not None and fit) or \
                 (not self.resource.is_downloaded
                  and not self.resource.download(unzip=False)):
+
+            # error if not download and cannot fit model
             if fit is not None and not fit:
                 raise ValueError("model not downloaded or trained")
-            self.save_model(self.resource.disk_target,
-                            self.fit(dataset, **kwargs))
 
-        # load the model from disk once its downloaded
-        self.model = self.load_model(self.resource.disk_target)
+            # otherwise build the model
+            self.save_params(self.resource.disk_target,
+                             self.fit(dataset, **fit_kwargs))
+
+        # load the params from disk once its downloaded
+        self.params = self.load_params(self.resource.disk_target)
 
     def get_disk_resource(self, dataset,
                           disk_target=None, is_absolute=False):
@@ -287,14 +330,14 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         """
 
         default = f"{dataset.name}/{self.name}.zip"
-        return DiskResource(
-            disk_target if disk_target is not None else default,
-            is_absolute=is_absolute,
-            download_method=None if disk_target is not None else "direct",
-            download_target=None if disk_target is not None else
-            f"https://design-bench.s3-us-west-1.amazonaws.com/{default}")
+        return DiskResource(disk_target if disk_target else default,
+                            is_absolute=is_absolute,
+                            download_method=None if disk_target else "direct",
+                            download_target=None if disk_target else
+                            f"https://design-bench.s3-"
+                            f"us-west-1.amazonaws.com/{default}")
 
-    def save_model(self, file, model):
+    def save_params(self, file, params):
         """a function that serializes a machine learning model and stores
         that model in a compressed zip file using the python ZipFile interface
         for sharing and future loading by an ApproximateOracle
@@ -304,16 +347,29 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         file: str
             a path to a zip file that would contain a serialized model, and is
             useful when there are multiple versions of the same model
-        model: Any
+        params: Any
             any format of of machine learning model that will be stored
             in the self.model attribute for later use
 
         """
 
-        with zipfile.ZipFile(file, mode="w") as file:
-            self.save_model_to_zip(model, file)
+        # open a zip archive that will contain a model
+        with zipfile.ZipFile(file, mode="w") as zip_archive:
+            self.save_model_to_zip(params["model"], zip_archive)
 
-    def load_model(self, file):
+            # write the validation rank correlation to the zip file
+            with zip_archive.open('rank_correlation.npy', "w") as file:
+                file.write(params["rank_correlation"].dumps())
+
+            # write the validation parameters to the zip file
+            with zip_archive.open('split_kwargs.pkl', "w") as file:
+                file.write(pkl.dumps(params["split_kwargs"]))
+
+            # write the model parameters to the zip file
+            with zip_archive.open('model_kwargs.pkl', "w") as file:
+                file.write(pkl.dumps(params["model_kwargs"]))
+
+    def load_params(self, file):
         """a function that loads components of a serialized model from a zip
         given zip file using the python ZipFile interface and returns an
         instance of the model
@@ -326,11 +382,28 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         Returns:
 
-        model: Any
+        params: Any
             any format of of machine learning model that will be stored
             in the self.model attribute for later use
 
         """
 
-        with zipfile.ZipFile(file, mode="r") as file:
-            return self.load_model_from_zip(file)
+        # open a zip archive that contains a model
+        with zipfile.ZipFile(file, mode="r") as zip_archive:
+            model = self.load_model_from_zip(zip_archive)
+
+            # read the validation rank correlation from the zip file
+            with zip_archive.open('rank_correlation.npy', "r") as file:
+                rank_correlation = np.loads(file.read())
+
+            # read the validation parameters from the zip file
+            with zip_archive.open('split_kwargs.pkl', "r") as file:
+                split_kwargs = pkl.loads(file.read())
+
+            # read the model parameters from the zip file
+            with zip_archive.open('model_kwargs.pkl', "r") as file:
+                model_kwargs = pkl.loads(file.read())
+
+        # return the final model and its training parameters
+        return dict(model=model, rank_correlation=rank_correlation,
+                    split_kwargs=split_kwargs, model_kwargs=model_kwargs)
