@@ -13,10 +13,17 @@ register('GFP-GP-v0',
 
          # keyword arguments for building GP oracle
          oracle_kwargs=dict(noise_std=0.0,
-                            max_samples=1000,
+                            max_samples=2000,
                             max_percentile=100,
                             min_percentile=50,
-                            kernel=ProteinKernel()))
+                            kernel=ProteinKernel(),
+                            split_kwargs=dict(
+                                val_fraction=0.5,
+                                subset=None,
+                                shard_size=5000,
+                                to_disk=True,
+                                disk_target="gfp/split",
+                                is_absolute=False)))
 
 
 register('GFP-FullyConnected-v0',

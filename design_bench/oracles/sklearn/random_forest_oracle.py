@@ -1,6 +1,7 @@
 from design_bench.oracles.sklearn.sklearn_oracle import SKLearnOracle
 from design_bench.datasets.discrete_dataset import DiscreteDataset
 from sklearn.ensemble import RandomForestRegressor
+from scipy import stats
 import numpy as np
 import pickle as pkl
 
@@ -137,7 +138,11 @@ class RandomForestOracle(SKLearnOracle):
         """
 
         with zip_archive.open('random_forest.pkl', "w") as file:
-            return pkl.dump(model, file)  # save the model using pickle
+            pkl.dump(model, file)  # save the model using pickle
+
+        # write the validation rank correlation to the zip file
+        with zip_archive.open('rank_correlation.npy', "w") as file:
+            file.write(model["rank_correlation"].dumps())
 
     def load_model_from_zip(self, zip_archive):
         """a function that loads components of a serialized model from a zip
@@ -158,10 +163,15 @@ class RandomForestOracle(SKLearnOracle):
 
         """
 
-        with zip_archive.open('random_forest.pkl', "r") as file:
-            return pkl.load(file)  # load the random forest using pickle
+        # read the validation rank correlation from the zip file
+        with zip_archive.open('rank_correlation.npy', "r") as file:
+            rank_correlation = np.loads(file.read())
 
-    def protected_fit(self, dataset, **kwargs):
+        with zip_archive.open('random_forest.pkl', "r") as file:
+            return dict(model=pkl.load(file),
+                        rank_correlation=rank_correlation)
+
+    def protected_fit(self, dataset, split_kwargs=None, **kwargs):
         """a function that accepts a set of design values 'x' and prediction
         values 'y' and fits an approximate oracle to serve as the ground
         truth function f(x) in a model-based optimization problem
@@ -181,6 +191,10 @@ class RandomForestOracle(SKLearnOracle):
 
         """
 
+        # prepare the dataset for training and validation
+        training, validation = dataset.split(
+            **(split_kwargs if split_kwargs else {}))
+
         # build the model class and assign hyper parameters
         model = RandomForestRegressor(**kwargs)
 
@@ -192,13 +206,20 @@ class RandomForestOracle(SKLearnOracle):
         # convert samples into the expected format of the oracle
         x = self.dataset_to_oracle_x(x)
         y = self.dataset_to_oracle_y(y)
+        validation_x = self.dataset_to_oracle_x(validation.x)
+        validation_y = self.dataset_to_oracle_y(validation.y)
 
         # fit the random forest model to the dataset
         model.fit(x.reshape((x.shape[0], np.prod(x.shape[1:]))),
                   y.reshape((y.shape[0],)))
 
-        # cleanup the dataset and return the trained model
-        return model
+        # evaluate the validation rank correlation of the model
+        rank_correlation = stats.spearmanr(
+            model.predict(validation_x)[:, 0], validation_y[:, 0])[0]
+
+        # return the trained model and rank correlation
+        return dict(model=model,
+                    rank_correlation=rank_correlation)
 
     def protected_predict(self, x):
         """Score function to be implemented by oracle subclasses, where x is
@@ -222,5 +243,6 @@ class RandomForestOracle(SKLearnOracle):
         """
 
         # call the model's predict function to generate predictions
-        return self.model.predict(x.reshape((x.shape[0], np.prod(
-            x.shape[1:]))))[:, np.newaxis].astype(np.float32)
+        return self.model["model"].predict(
+            x.reshape((x.shape[0], np.prod(
+                x.shape[1:]))))[:, np.newaxis].astype(np.float32)
