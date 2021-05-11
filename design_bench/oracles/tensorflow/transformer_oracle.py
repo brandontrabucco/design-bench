@@ -254,8 +254,7 @@ class TransformerOracle(TensorflowOracle):
         for i in range(num_blocks):
 
             # apply a multi-head attention mechanism
-            h = layers.MultiHeadAttention(num_heads,
-                                          attention_size,
+            h = layers.MultiHeadAttention(num_heads, attention_size,
                                           value_dim=attention_size)(x, x)
 
             # update the activations using a normalized residual

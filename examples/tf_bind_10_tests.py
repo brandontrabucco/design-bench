@@ -10,7 +10,7 @@ from design_bench.oracles.tensorflow import ResNetOracle
 if __name__ == "__main__":
 
     model = LSTMOracle(TFBind10Dataset(),
-                       file="test3",
+                       disk_target="test3",
                        is_absolute=True,
                        learning_rate=0.001,
                        batch_size=2048)

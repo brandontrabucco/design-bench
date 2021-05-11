@@ -7,6 +7,7 @@ import os
 import math
 
 
+# order is important due to BLOSUM matrix in ProteinKernel
 AA = ['a', 'r', 'n', 'd', 'c', 'q', 'e', 'g', 'h',
       'i', 'l', 'k', 'm', 'f', 'p', 's', 't', 'w', 'y', 'v']
 AA_IDX = {AA[i]: i for i in range(len(AA))}

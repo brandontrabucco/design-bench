@@ -186,7 +186,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         return model
 
     def __init__(self, dataset: DatasetBuilder, fit=None,
-                 file=None, is_absolute=False, is_batched=True,
+                 disk_target=None, is_absolute=False, is_batched=True,
                  internal_batch_size=32, internal_measurements=1,
                  noise_std=0.0, expect_normalized_y=False,
                  expect_normalized_x=False, expect_logits=None, **kwargs):
@@ -200,7 +200,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
-        file: str
+        disk_target: str
             a path to a zip file that would contain a serialized model, and is
             useful when there are multiple versions of the same model
         is_absolute: bool
@@ -246,7 +246,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         # download the model parameters from s3
         self.resource = self.get_disk_resource(
-            dataset, file=file, is_absolute=is_absolute)
+            dataset, disk_target=disk_target, is_absolute=is_absolute)
         if (fit is not None and fit) or \
                 (not self.resource.is_downloaded
                  and not self.resource.download(unzip=False)):
@@ -258,7 +258,8 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         # load the model from disk once its downloaded
         self.model = self.load_model(self.resource.disk_target)
 
-    def get_disk_resource(self, dataset, file=None, is_absolute=False):
+    def get_disk_resource(self, dataset,
+                          disk_target=None, is_absolute=False):
         """a function that returns a zip file containing all the files and
         meta data required to re-build an oracle model such as a neural
         network or random forest regression model
@@ -279,17 +280,18 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         Returns:
 
         model_resource: DiskResource
-            a DiskResource instance containing the expected download link of the
-            model and the target location on disk where the model is
+            a DiskResource instance containing the expected download link of
+            the model and the target location on disk where the model is
             expected to be located or downloaded to
 
         """
 
         default = f"{dataset.name}/{self.name}.zip"
         return DiskResource(
-            file if file is not None else default, is_absolute=is_absolute,
-            download_method=None if file is not None else "direct",
-            download_target=None if file is not None else
+            disk_target if disk_target is not None else default,
+            is_absolute=is_absolute,
+            download_method=None if disk_target is not None else "direct",
+            download_target=None if disk_target is not None else
             f"https://design-bench.s3-us-west-1.amazonaws.com/{default}")
 
     def save_model(self, file, model):
