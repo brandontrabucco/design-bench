@@ -2,10 +2,14 @@ from design_bench.oracles.tensorflow.tensorflow_oracle import TensorflowOracle
 from design_bench.datasets.discrete_dataset import DiscreteDataset
 import tensorflow as tf
 import tensorflow.keras as keras
-import tensorflow.keras.layers as layers
 import tempfile
 import math
 import numpy as np
+import shutil
+
+
+import transformers
+from transformers import TFBertForSequenceClassification as TFBert
 
 
 class TransformerOracle(TensorflowOracle):
@@ -71,10 +75,11 @@ class TransformerOracle(TensorflowOracle):
     """
 
     name = "tensorflow_transformer"
-    default_model_kwargs = dict(hidden_size=512, feed_forward_size=2048,
-                                activation='relu', num_heads=8, num_blocks=4,
-                                epochs=25, shuffle_buffer=5000,
-                                learning_rate=0.0001, decay_rate=0.95)
+    default_model_kwargs = dict(hidden_size=256, feed_forward_size=256,
+                                activation='relu', num_heads=8,
+                                num_blocks=4, epochs=20, pad_token_id=0,
+                                shuffle_buffer=5000, learning_rate=0.0001,
+                                warm_up_steps=4000, dropout_rate=0.1)
 
     def __init__(self, dataset, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
@@ -141,13 +146,15 @@ class TransformerOracle(TensorflowOracle):
 
         """
 
-        # extract the bytes of an h5 serialized model
-        with tempfile.NamedTemporaryFile() as file:
-            model.save(file.name, save_format='h5')
-            model_bytes = file.read()
+        # extract the bytes of the hugging face save path as a zip
+        with tempfile.TemporaryDirectory() as directory:
+            with tempfile.NamedTemporaryFile(suffix=".zip") as archive:
+                model.save_pretrained(directory)
+                shutil.make_archive(archive.name[:-4], 'zip', directory)
+                model_bytes = archive.read()
 
         # write the h5 bytes ot the zip file
-        with zip_archive.open('transformer.h5', "w") as file:
+        with zip_archive.open('transformer.zip', "w") as file:
             file.write(model_bytes)  # save model bytes in the h5 format
 
     def load_model_from_zip(self, zip_archive):
@@ -170,13 +177,15 @@ class TransformerOracle(TensorflowOracle):
         """
 
         # read the h5 bytes from the zip file
-        with zip_archive.open('transformer.h5', "r") as file:
+        with zip_archive.open('transformer.zip', "r") as file:
             model_bytes = file.read()  # read model bytes in the h5 format
 
-        # load the model using a temporary file as a buffer
-        with tempfile.NamedTemporaryFile() as file:
-            file.write(model_bytes)
-            return keras.models.load_model(file.name)
+        # load the bytes of the hugging face save path from a zip
+        with tempfile.TemporaryDirectory() as directory:
+            with tempfile.NamedTemporaryFile(suffix=".zip") as archive:
+                archive.write(model_bytes)
+                shutil.unpack_archive(archive.name, directory)
+                return TFBert.from_pretrained(directory)
 
     def protected_fit(self, training, validation, model_kwargs=None):
         """a function that accepts a training dataset and a validation dataset
@@ -207,98 +216,74 @@ class TransformerOracle(TensorflowOracle):
 
         # these parameters control the neural network architecture
         hidden_size = model_kwargs["hidden_size"]
+        num_heads = model_kwargs["num_heads"]
+        dropout_rate = model_kwargs["dropout_rate"]
         feed_forward_size = model_kwargs["feed_forward_size"]
         activation = model_kwargs["activation"]
         num_blocks = model_kwargs["num_blocks"]
-        num_heads = model_kwargs["num_heads"]
 
         # these parameters control the model training
         epochs = model_kwargs["epochs"]
         shuffle_buffer = model_kwargs["shuffle_buffer"]
         learning_rate = model_kwargs["learning_rate"]
-        decay_rate = model_kwargs["decay_rate"]
 
-        # calculate the dimensionality within each attention block
-        attention_size = hidden_size // num_heads
-
-        # prepare the dataset for training and validation
-        validation_x = self.dataset_to_oracle_x(validation.x)
-        validation_y = self.dataset_to_oracle_y(validation.y)
-
-        # obtain the expected shape of inputs to the model
-        input_shape = training.input_shape
-        if isinstance(training, DiscreteDataset) and training.is_logits:
-            input_shape = input_shape[:-1]
-
-        # the input layer of a keras model
-        x = input_layer = keras.Input(shape=input_shape)
-
-        # build a model with an input layer and optional embedding
-        if isinstance(training, DiscreteDataset):
-            x = layers.Embedding(training.num_classes, hidden_size)(x)
-        else:
-            x = layers.Dense(hidden_size,
-                             activation=None, use_bias=False)(x)
-
-        # the exponent of a positional embedding
-        inverse_frequency = 1.0 / (10000.0 ** (tf.range(
-            0.0, hidden_size, 2.0) / hidden_size))[tf.newaxis]
-
-        # calculate a positional embedding to break symmetry
-        pos = tf.range(0.0, tf.shape(x)[1], 1.0)[:, tf.newaxis]
-        positional_embedding = tf.concat([
-            tf.math.sin(pos * inverse_frequency),
-            tf.math.cos(pos * inverse_frequency)], axis=1)[tf.newaxis]
-
-        # add the positional encoding
-        x = layers.Add()([x, positional_embedding])
-        x = layers.LayerNormalization()(x)
-
-        # add several residual blocks to the model
-        for i in range(num_blocks):
-
-            # apply a multi-head attention mechanism
-            h = layers.MultiHeadAttention(num_heads, attention_size,
-                                          value_dim=attention_size)(x, x)
-
-            # update the activations using a normalized residual
-            x = layers.Add()([x, h])
-            x = layers.LayerNormalization()(x)
-
-            # apply a two layer point-wise fully connected network
-            h = layers.Dense(feed_forward_size, activation=None)(x)
-            h = layers.Activation(activation)(h)
-            h = layers.Dense(hidden_size, activation=None)(h)
-
-            # update the activations using a normalized residual
-            x = layers.Add()([x, h])
-            x = layers.LayerNormalization()(x)
-
-        # pool the final activations by taking the first element
-        x = layers.Lambda(lambda t: t[:, 0],
-                          output_shape=(hidden_size,))(x)
-
-        # fully connected layer to regress to y values
-        output_layer = layers.Dense(1)(x)
-        model = keras.Model(inputs=input_layer, outputs=output_layer)
+        # build the hugging face model from a configuration
+        model = TFBert(transformers.BertConfig(
+            vocab_size=training.num_classes,
+            num_labels=1,
+            hidden_size=hidden_size,
+            num_hidden_layers=num_blocks,
+            num_attention_heads=num_heads,
+            intermediate_size=feed_forward_size,
+            hidden_act=activation,
+            hidden_dropout_prob=dropout_rate,
+            attention_probs_dropout_prob=dropout_rate,
+            max_position_embeddings=self.dataset.input_shape[0],
+            type_vocab_size=2,
+            initializer_range=0.02,
+            layer_norm_eps=1e-12,
+            pad_token_id=model_kwargs["pad_token_id"],
+            gradient_checkpointing=False,
+            position_embedding_type='absolute',
+            use_cache=True))
 
         # estimate the number of training steps per epoch
-        steps_per_epoch = int(math.ceil(
-            training.dataset_size / self.internal_batch_size))
+        steps = int(math.ceil(training.dataset_size
+                              / self.internal_batch_size))
 
-        # assign the optimizer and loss function
-        lr = keras.optimizers.schedules.ExponentialDecay(
-            learning_rate, steps_per_epoch, decay_rate)
-        optimizer = keras.optimizers.Adam(
-            learning_rate=lr, beta_1=0.9, beta_2=0.98, epsilon=1e-09)
-        model.compile(optimizer=optimizer, loss='mse')
+        # compile the tensorflow model for training
+        lr = keras.experimental.CosineDecay(
+            learning_rate, steps * epochs, alpha=0.0)
+        optimizer = keras.optimizers.Adam(learning_rate=lr)
+        model.compile(optimizer=optimizer,
+                      loss=tf.keras.losses.MeanSquaredError())
+
+        # an input key for the huggingface transformer api
+        input_key = "input_ids" if isinstance(
+            training, DiscreteDataset) else "inputs_embeds"
+
+        # create a tensorflow dataset generator for training
+        training = self.create_tensorflow_dataset(
+            training, batch_size=self.internal_batch_size,
+            shuffle_buffer=shuffle_buffer, repeat=epochs)
+
+        # create a tensorflow dataset generator for validation
+        validation = self.create_tensorflow_dataset(
+            validation, batch_size=self.internal_batch_size,
+            shuffle_buffer=self.internal_batch_size, repeat=1)
+
+        # convert to the huggingface transformer input format
+        training = training.map(
+            lambda x, y: ({input_key: x}, y),
+            num_parallel_calls=tf.data.AUTOTUNE)
+
+        validation = validation.map(
+            lambda x, y: ({input_key: x}, y),
+            num_parallel_calls=tf.data.AUTOTUNE)
 
         # fit the model to a tensorflow dataset
-        model.fit(self.create_tensorflow_dataset(
-            training, batch_size=self.internal_batch_size,
-            shuffle_buffer=shuffle_buffer, repeat=epochs),
-            steps_per_epoch=steps_per_epoch, epochs=epochs,
-            validation_data=(validation_x, validation_y))
+        model.fit(training, steps_per_epoch=steps,
+                  epochs=epochs, validation_data=validation)
 
         # return the trained model and rank correlation
         return model
@@ -327,6 +312,9 @@ class TransformerOracle(TensorflowOracle):
 
         """
 
+        input_key = "input_ids" if isinstance(
+            self.dataset, DiscreteDataset) else "inputs_embeds"
+
         # call the model's predict function to generate predictions
-        return (model if model else
-                self.params["model"]).predict(x).astype(np.float32)
+        return (model if model else self.params["model"])\
+            .predict({input_key: x})[0].astype(np.float32)
