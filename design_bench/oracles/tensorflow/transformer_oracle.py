@@ -77,7 +77,7 @@ class TransformerOracle(TensorflowOracle):
     name = "tensorflow_transformer"
     default_model_kwargs = dict(hidden_size=256, feed_forward_size=256,
                                 activation='relu', num_heads=8,
-                                num_blocks=4, epochs=20, pad_token_id=0,
+                                num_blocks=4, epochs=20,
                                 shuffle_buffer=5000, learning_rate=0.0001,
                                 warm_up_steps=4000, dropout_rate=0.1)
 
@@ -242,7 +242,6 @@ class TransformerOracle(TensorflowOracle):
             type_vocab_size=2,
             initializer_range=0.02,
             layer_norm_eps=1e-12,
-            pad_token_id=model_kwargs["pad_token_id"],
             gradient_checkpointing=False,
             position_embedding_type='absolute',
             use_cache=True))
