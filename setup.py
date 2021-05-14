@@ -7,9 +7,9 @@ with open(F, 'r') as readme:
     LONG_DESCRIPTION = readme.read()
 
 
-INSTALL_REQUIRES = ['numpy', 'pandas', 'requests', 'scikit-learn',
-                    'tape_proteins', 'keras', 'tensorflow>=2.2']
-EXTRA_REQUIRES = ['gym[mujoco]', 'morphing-agents']
+INSTALL_REQUIRES = ['numpy', 'pandas', 'requests',
+                    'scikit-learn', 'tensorflow==2.4.1', 'transformers']
+EXTRA_REQUIRES = ['gym[mujoco]']
 
 
 CLASSIFIERS = [
@@ -23,8 +23,6 @@ CLASSIFIERS = [
     'Topic :: Software Development :: Libraries :: Python Modules',
     'License :: OSI Approved :: MIT License',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.5',
-    'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8']
 

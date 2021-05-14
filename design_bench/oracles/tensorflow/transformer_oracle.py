@@ -239,12 +239,9 @@ class TransformerOracle(TensorflowOracle):
             hidden_dropout_prob=dropout_rate,
             attention_probs_dropout_prob=dropout_rate,
             max_position_embeddings=self.dataset.input_shape[0],
-            type_vocab_size=2,
             initializer_range=0.02,
             layer_norm_eps=1e-12,
-            gradient_checkpointing=False,
-            position_embedding_type='absolute',
-            use_cache=True))
+            position_embedding_type='absolute'))
 
         # estimate the number of training steps per epoch
         steps = int(math.ceil(training.dataset_size

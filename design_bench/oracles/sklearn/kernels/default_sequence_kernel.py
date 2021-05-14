@@ -18,7 +18,10 @@ class DefaultSequenceKernel(GenericKernelMixin, Kernel):
 
     """
 
-    def __init__(self, size, diagonal=1.0, off_diagonal=0.1):
+    def __init__(self, size=None, diagonal=1.0, off_diagonal=0.1):
+        self.size = size
+        self.diagonal = diagonal
+        self.off_diagonal = off_diagonal
         self.kernel_matrix = np.full((size, size), off_diagonal)
         np.fill_diagonal(self.kernel_matrix, diagonal)
 

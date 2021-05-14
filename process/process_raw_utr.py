@@ -45,7 +45,7 @@ if __name__ == "__main__":
     encoder = OrdinalEncoder(dtype=np.int32)
     encoder.fit(x.reshape((-1, 1)))
 
-    # encode a dataset of peptide sequences into categorical features
+    # encode a dataset of nucleic acid sequences into categorical features
     x = encoder.transform(x.reshape((-1, 1))).reshape(x.shape)
 
     # extract the ribosome loading score for each polypeptide
