@@ -969,8 +969,7 @@ register('HopperController-FullyConnected-v0',
              min_percentile=0,
 
              # parameters used for building the model
-             model_kwargs=dict(embedding_size=64,
-                               hidden_size=512,
+             model_kwargs=dict(hidden_size=512,
                                activation='relu',
                                num_layers=2,
                                epochs=20,
@@ -1067,8 +1066,7 @@ register('Superconductor-FullyConnected-v0',
              min_percentile=0,
 
              # parameters used for building the model
-             model_kwargs=dict(embedding_size=64,
-                               hidden_size=512,
+             model_kwargs=dict(hidden_size=512,
                                activation='relu',
                                num_layers=2,
                                epochs=5,
