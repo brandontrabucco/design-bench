@@ -398,8 +398,7 @@ class QuadraticDataset(ContinuousDataset):
 
 # register the new dataset with design_bench
 design_bench.register(
-    'Quadratic-FullyConnected-v0', 
-    QuadraticDataset,
+    'Quadratic-FullyConnected-v0', QuadraticDataset,
     'design_bench.oracles.tensorflow:FullyConnectedOracle',
 
     # keyword arguments for building the dataset
