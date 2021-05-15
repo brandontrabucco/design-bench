@@ -346,8 +346,11 @@ oracle = TransformerOracle(
     # parameters for the oracle class
     disk_target="new_model.zip",
     is_absolute=True,
-    noise_std=0.1,
     fit=True,
+    noise_std=0.0,
+    max_samples=None,
+    max_percentile=100,
+    min_percentile=0,
     
     # parameters for the transformer architecture
     model_kwargs=dict(hidden_size=64,
