@@ -101,6 +101,18 @@ original_x = task.denormalize_x(task.x)
 # normalize the outputs to have zero mean and unit variance
 task.map_normalize_y()
 original_y = task.denormalize_y(task.y)
+
+# remove the normalization applied to the outputs
+task.map_denormalize_y()
+normalized_y = task.normalize_y(task.y)
+
+# remove the normalization applied to the inputs
+task.map_denormalize_x()
+normalized_x = task.normalize_x(task.x)
+
+# convert x back to integers
+task.map_to_integers()
+continuous_x = task.to_logits(task.x)
  ```
  
 Each task provides access to the model-based optimization dataset used to learn the oracle (where applicable) as well as the oracle itself, which includes metadata for how it was trained (where applicable). These provide fine-grain control over the data distribution for model-based optimization.
@@ -125,3 +137,157 @@ print(oracle.params["rank_correlation"],
        oracle.params["model_kwargs"],
        oracle.params["split_kwargs"])
  ```
+
+## Dataset API
+
+Datasets provide a model-based optimization algorithm with information about the black-box function, and are used in design bench to fit approximate oracle models when an exact oracle is not available. All datasets inherit from the DatasetBuilder class defined in *design_bench.datasets.dataset_builder* and have several useful attributes.
+
+```python
+from design_bench.datasets.discrete import GFPDataset
+dataset = GFPDataset()
+
+# print statistics about the dataset
+print(dataset.dataset_size)
+print(dataset.dataset_min_percentile)
+print(dataset.dataset_min_output)
+print(dataset.dataset_max_percentile)
+print(dataset.dataset_max_output)
+
+# print metadata about the inputs
+print(dataset.input_shape)
+print(dataset.input_size)
+print(dataset.input_dtype)
+
+# print metadata about the outputs
+print(dataset.output_shape)
+print(dataset.output_size)
+print(dataset.output_dtype)
+
+# names of inputs and outputs (useful for labeling axes of plots)
+print(dataset.name)
+print(dataset.x_name)
+print(dataset.y_name)
+```
+
+All datasets implement methods for modifying the format and distribution of the dataset, including normalization, subsampling, relabelling the outputs, and (for discrete datasets) converting from discrete inputs to real-valued inputs.
+
+```python
+from design_bench.datasets.discrete import GFPDataset
+dataset = GFPDataset()
+
+# convert x to logits of a categorical probability distribution
+dataset.map_to_logits()
+discrete_x = dataset.to_integers(dataset.x)
+
+# normalize the inputs to have zero mean and unit variance
+dataset.map_normalize_x()
+original_x = dataset.denormalize_x(dataset.x)
+
+# normalize the outputs to have zero mean and unit variance
+dataset.map_normalize_y()
+original_y = dataset.denormalize_y(dataset.y)
+
+# remove the normalization applied to the outputs
+dataset.map_denormalize_y()
+normalized_y = dataset.normalize_y(dataset.y)
+
+# remove the normalization applied to the inputs
+dataset.map_denormalize_x()
+normalized_x = dataset.normalize_x(dataset.x)
+
+# convert x back to integers
+dataset.map_to_integers()
+continuous_x = dataset.to_logits(dataset.x)
+
+# modify the distribution of the dataset
+dataset.subsample(max_samples=10000, 
+                   min_percentile=10,
+                   max_percentile=90)
+
+# change the outputs as a function of their old values
+dataset.relabel(lambda x, y: y ** 2 - 2.0 * y)
+```
+
+If you would like to define your own dataset for use with design-bench, you can directly instantiate a continuous dataset or a discrete dataset depending on the input format you are using.
+
+```python
+from design_bench.datasets.discrete_dataset import DiscreteDataset
+from design_bench.datasets.continuous_dataset import ContinuousDataset
+import numpy as np
+
+# create dummy inputs and outputs for model-based optimization
+x = np.random.randint(500, size=(5000, 43))
+y = np.random.uniform(size=(5000, 1))
+
+# create a discrete dataset for those inputs and outputs
+dataset = DiscreteDataset(x, y)
+
+# create dummy inputs and outputs for model-based optimization
+x = np.random.uniform(size=(5000, 871))
+y = np.random.uniform(size=(5000, 1))
+
+# create a continuous dataset for those inputs and outputs
+dataset = ContinuousDataset(x, y)
+```
+
+In the event that you are using a dataset that is saved to a set of sharded numpy files (ending in .npy), you may also create dataset by providing a list of shard files representing using the DiskResource class defined in design_bench.disk_reource.
+
+```python
+from design_bench.datasets.discrete_dataset import DiscreteDataset
+from design_bench.datasets.continuous_dataset import ContinuousDataset
+from design_bench.disk_resource import DiskResource
+import numpy as np
+import os
+
+# create dummy inputs and outputs for model-based optimization
+x = np.random.randint(500, size=(5000, 43))
+y = np.random.uniform(size=(5000, 1))
+
+# save the dataset to a set of shard files
+os.makedirs("new_dataset/")
+np.save("new_dataset/shard-x-0.npy", x[:3000])
+np.save("new_dataset/shard-x-1.npy", x[3000:])
+np.save("new_dataset/shard-y-0.npy", y[:3000])
+np.save("new_dataset/shard-y-1.npy", y[3000:])
+
+# list the disk resource for each shard
+x = [DiskResource("new_dataset/shard-x-0.npy"), 
+      DiskResource("new_dataset/shard-x-1.npy")]
+y = [DiskResource("new_dataset/shard-y-0.npy"), 
+      DiskResource("new_dataset/shard-y-1.npy")]
+
+# create a discrete dataset for those inputs and outputs
+dataset = DiscreteDataset(x, y)
+
+# create dummy inputs and outputs for model-based optimization
+x = np.random.uniform(size=(5000, 871))
+y = np.random.uniform(size=(5000, 1))
+
+# save the dataset to a set of shard files
+os.makedirs("new_dataset/", exist_ok=True)
+np.save("new_dataset/shard-x-0.npy", x[:3000])
+np.save("new_dataset/shard-x-1.npy", x[3000:])
+np.save("new_dataset/shard-y-0.npy", y[:3000])
+np.save("new_dataset/shard-y-1.npy", y[3000:])
+
+# list the disk resource for each shard
+x = [DiskResource("new_dataset/shard-x-0.npy"), 
+      DiskResource("new_dataset/shard-x-1.npy")]
+y = [DiskResource("new_dataset/shard-y-0.npy"), 
+      DiskResource("new_dataset/shard-y-1.npy")]
+
+# create a continuous dataset for those inputs and outputs
+dataset = ContinuousDataset(x, y)
+```
+
+## Oracle API
+
+Design-Bench tasks share a common interface specified in **design_bench/task.py**, which exposes a set of input designs **task.x** and a set of output predictions **task.y**. In addition, the performance of a new set of input designs (such as those output from a model-based optimization algorithm) can be found using **y = task.predict(x)**.
+
+## Defining New MBO Tasks
+
+Design-Bench tasks share a common interface specified in **design_bench/task.py**, which exposes a set of input designs **task.x** and a set of output predictions **task.y**. In addition, the performance of a new set of input designs (such as those output from a model-based optimization algorithm) can be found using **y = task.predict(x)**.
+
+## Contributing
+
+Design-Bench tasks share a common interface specified in **design_bench/task.py**, which exposes a set of input designs **task.x** and a set of output predictions **task.y**. In addition, the performance of a new set of input designs (such as those output from a model-based optimization algorithm) can be found using **y = task.predict(x)**.
