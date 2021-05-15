@@ -285,7 +285,7 @@ dataset = ContinuousDataset(x, y)
 
 ## Oracle API
 
-Oracles provide a way of measuring the performance of candidate solutions to a model-based optimization problem, found by a model-based optimization algorithm, without having to perform additional real-world experiments. To this end, oracle implement a prediction function **oracle.predict(x)** that takes a set of designs and makes a prediction about their performance. The goal of model-based optimization is to maximize this prediction, using the given dataset of function evaluations. 
+Oracles provide a way of measuring the performance of candidate solutions to a model-based optimization problem, found by a model-based optimization algorithm, without having to perform additional real-world experiments. To this end, oracle implement a prediction function **oracle.predict(x)** that takes a set of designs and makes a prediction about their performance. The goal of model-based optimization is to maximize the predictions of the oracle. 
 
 ```python
 from design_bench.datasets.discrete import GFPDataset
@@ -301,6 +301,9 @@ def optimize(x0, y0):
 # evaluate the performance of the solution x_star
 x_star = optimize(dataset.x, dataset.y)
 y_star = oracle.predict(x_star)
+
+# how many times the oracle has been queried
+print(oracle.num_evaluations)
 ```
 
 Oracles define a set of expectations about the format of their inputs, and automatically manage the appropriate format conversion when their accompanying dataset does not match the expected input format of the oracle.
@@ -330,7 +333,7 @@ x_star = dataset.normalize_x(dataset.to_logits(x_star))
 assert np.allclose(y_star, oracle.predict(x_star))
 ```
 
-In order to handle when an exact ground truth is unknown or not tractable to evaluate, Design-Bench provides a set of approximate oracles including a Gaussian Process, Random Forest, and several deep neural network architectures specialized to particular data modalities. These approximate oracles may have the following additional arguments.
+In order to handle when an exact ground truth is unknown or not tractable to evaluate, Design-Bench provides a set of approximate oracles including a Gaussian Process, Random Forest, and several deep neural network architectures specialized to particular data modalities. These approximate oracles may have the following parameters.
 
 ```python
 from design_bench.datasets.discrete import GFPDataset
