@@ -169,7 +169,7 @@ print(dataset.x_name)
 print(dataset.y_name)
 ```
 
-All datasets implement methods for modifying the format and distribution of the dataset, including normalization, subsampling, relabelling the outputs, and (for discrete datasets) converting discrete inputs to real-valued.
+All datasets implement methods for modifying the format and distribution of the dataset, including normalization, subsampling, relabelling the outputs, and (for discrete datasets) converting discrete inputs to real-valued. There are also special methods for splitting the dataset into a training and validation set.
 
 ```python
 from design_bench.datasets.discrete import GFPDataset
@@ -206,9 +206,12 @@ dataset.subsample(max_samples=10000,
 
 # change the outputs as a function of their old values
 dataset.relabel(lambda x, y: y ** 2 - 2.0 * y)
+
+# split the dataset into a validation set
+training, validation = dataset.split(val_fraction=0.1)
 ```
 
-If you would like to define your own dataset for use with design-bench, you can directly instantiate a continuous dataset or a discrete dataset depending on the input format you are using.
+If you would like to define your own dataset for use with design-bench, you can directly instantiate a continuous dataset or a discrete dataset depending on the input format you are using. The DiscreteDataset class and ContinuousDataset are built with this in mind, and accept both two numpy arrays containing inputs *x* outputs *y*.
 
 ```python
 from design_bench.datasets.discrete_dataset import DiscreteDataset
@@ -230,7 +233,7 @@ y = np.random.uniform(size=(5000, 1))
 dataset = ContinuousDataset(x, y)
 ```
 
-In the event that you are using a dataset that is saved to a set of sharded numpy files (ending in .npy), you may also create dataset by providing a list of shard files representing using the DiskResource class.
+In the event that you are using a dataset that is saved to a set of sharded numpy files (ending in .npy), you may also create dataset by providing a list of shard files representing using the DiskResource class. The DiscreteDataset class and ContinuousDataset will accept two lists of sharded inputs *x* and outputs *y* represented by DiskResource objects.
 
 ```python
 from design_bench.datasets.discrete_dataset import DiscreteDataset
