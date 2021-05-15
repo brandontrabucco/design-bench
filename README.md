@@ -114,14 +114,14 @@ dataset = task.dataset
 
 # modify the distribution of the task dataset
 dataset.subsample(max_samples=10000, 
-                  min_percentile=10,
-                  max_percentile=90)
+                   min_percentile=10,
+                   max_percentile=90)
 
 # an instance of the OracleBuilder class from design_bench.oracles.oracle_builder
 oracle = task.oracle
 
 # check how the model was fit
 print(oracle.params["rank_correlation"],
-      oracle.params["model_kwargs"],
-      oracle.params["split_kwargs"])
+       oracle.params["model_kwargs"],
+       oracle.params["split_kwargs"])
  ```
