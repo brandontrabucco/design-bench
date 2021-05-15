@@ -41,7 +41,7 @@ NAS Bench 101 | :heavy_check_mark: |  |  |  |  |  |
 
 Combinations of datasets and oracles that are not available for download from our server are automatically trained on your machine on task creation. This currently only affects approximate oracles on TF Bind 10 and NAS Bench 101. Below we provide the preferred oracle for each task, as well as meta data such as the number of data points measured.
 
-Task Name | Dataset | Oracle | Dataset Size | Rank Correlation
+Task Name | Dataset | Oracle | Dataset Size | Spearman's ρ
 --------- | ------- | ------ | ------------ | ----------------
 TFBind8-Exact-v0 | TF Bind 8 | Exact | 65792 | 
 GFP-Transformer-v0 | GFP | Transformer | 56086 | 0.8497
