@@ -56,22 +56,21 @@ NASBench-Exact-v0 | NAS Bench 101 | Exact | 1293208 |
 
 Design-Bench tasks share a common interface specified in **design_bench/task.py**, which exposes a set of input designs **task.x** and a set of output predictions **task.y**. In addition, the performance of a new set of input designs (such as those output from a model-based optimization algorithm) can be found using **y = task.predict(x)**.
 
-```
+```python
 import design_bench
 task = design_bench.make('TFBind8-Exact-v0')
 
-# gather designs and predictions from the task dataset
-x = task.x
-y = task.y
+def optimize(x0, y0):
+    return x0  # solve a model-based optimization problem
 
 # solve for the best input x_star and evaluate it
-x_star = optimizer(x, y)
+x_star = optimize(task.x, task.y)
 y_star = task.predict(x_star)
 ```
 
  Many datasets of interest to practitioners are too large to load in memory all at once, and so the task interface defines an several iterables that load samples from the dataset incrementally.
  
- ```
+ ```python
 import design_bench
 task = design_bench.make('TFBind8-Exact-v0')
 
