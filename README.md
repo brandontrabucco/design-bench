@@ -285,12 +285,157 @@ dataset = ContinuousDataset(x, y)
 
 ## Oracle API
 
-Design-Bench tasks share a common interface specified in **design_bench/task.py**, which exposes a set of input designs **task.x** and a set of output predictions **task.y**. In addition, the performance of a new set of input designs (such as those output from a model-based optimization algorithm) can be found using **y = task.predict(x)**.
+Oracles provide a way of measuring the performance of candidate solutions to a model-based optimization problem, found by a model-based optimization algorithm, without having to perform additional real-world experiments. To this end, oracle implement a prediction function **oracle.predict(x)** that takes a set of designs and makes a prediction about their performance. The goal of model-based optimization is to maximize this prediction, using the given dataset of function evaluations. 
+
+```python
+from design_bench.datasets.discrete import GFPDataset
+from design_bench.oracles.tensorflow import TransformerOracle
+
+# create a dataset and a noisy oracle
+dataset = GFPDataset()
+oracle = TransformerOracle(dataset, noise_std=0.1)
+
+def optimize(x0, y0):
+    return x0  # solve a model-based optimization problem
+
+# evaluate the performance of the solution x_star
+x_star = optimize(dataset.x, dataset.y)
+y_star = oracle.predict(x_star)
+```
+
+Oracles define a set of expectations about the format of their inputs, and automatically manage the appropriate format conversion when their accompanying dataset does not match the expected input format of the oracle.
+
+```python
+from design_bench.datasets.discrete import GFPDataset
+from design_bench.oracles.tensorflow import TransformerOracle
+import numpy as np
+
+# create a dataset and transformer oracle
+dataset = GFPDataset()
+oracle = TransformerOracle(dataset)
+
+def optimize(x0, y0):
+    return x0  # solve a model-based optimization problem
+
+# evaluate the performance of the solution x_star
+x_star = optimize(dataset.x, dataset.y)
+y_star = oracle.predict(x_star)
+
+# perturb the input format of the dataset
+dataset.map_to_logits()
+dataset.map_normalize_x()
+
+# check that the prediction is approximately the same
+x_star = dataset.normalize_x(dataset.to_logits(x_star))
+assert np.allclose(y_star, oracle.predict(x_star))
+```
+
+In order to handle when an exact ground truth is unknown or not tractable to evaluate, Design-Bench provides a set of approximate oracles including a Gaussian Process, Random Forest, and several deep neural network architectures specialized to particular data modalities. In addition to the standard oracle arguments and methods, these approximate oracles have the following additional functionality.
+
+```python
+from design_bench.datasets.discrete import GFPDataset
+from design_bench.oracles.tensorflow import TransformerOracle
+
+# create a transformer oracle
+oracle = TransformerOracle(
+    GFPDataset(), 
+    
+    # parameters for the oracle class
+    disk_target="new_model.zip",
+    is_absolute=True,
+    noise_std=0.1,
+    fit=True,
+    
+    # parameters for the transformer architecture
+    model_kwargs=dict(hidden_size=64,
+                      feed_forward_size=256,
+                      activation='relu',
+                      num_heads=2,
+                      num_blocks=4,
+                      epochs=20,
+                      shuffle_buffer=60000,
+                      learning_rate=0.0001,
+                      dropout_rate=0.1),
+    
+    # parameters for building the validation set
+    split_kwargs=dict(val_fraction=0.1,
+                      subset=None,
+                      shard_size=5000,
+                      to_disk=True,
+                      disk_target="gfp/split",
+                      is_absolute=False))
+
+# print attributes of the approximate oracle
+print(oracle.params["rank_correlation"])
+print(oracle.resource.is_downloaded)
+print(oracle.resource.disk_target)
+```
 
 ## Defining New MBO Tasks
 
-Design-Bench tasks share a common interface specified in **design_bench/task.py**, which exposes a set of input designs **task.x** and a set of output predictions **task.y**. In addition, the performance of a new set of input designs (such as those output from a model-based optimization algorithm) can be found using **y = task.predict(x)**.
+New model-based optimization tasks are simple to create and register with design-bench. By subclassing either DiscreteDataset or ContinuousDataset, and providing either a pair of numpy arrays containing inputs and outputs, or a pair of lists of DiskResource shards containing inputs and outputs, you can define your own model-based optimization dataset class. Once a custom dataset class is created, you can register it as a model-based optimization task by choosing an appropriate oracle type (in this case a fully connected neural network), and making a call to the register function. After doing so, subsequent calls to **design_bench.make** can find your newly registered model-based optimization task.
 
-## Contributing
+```python
+from design_bench import register
+from design_bench.datasets.continuous_dataset import ContinuousDataset
+import design_bench as db
+import numpy as np
 
-Design-Bench tasks share a common interface specified in **design_bench/task.py**, which exposes a set of input designs **task.x** and a set of output predictions **task.y**. In addition, the performance of a new set of input designs (such as those output from a model-based optimization algorithm) can be found using **y = task.predict(x)**.
+# define a custom dataset subclass of ContinuousDataset
+class QuadraticDataset(ContinuousDataset):
+
+    def __init__(self, **kwargs):
+        x = np.random.normal(0.0, 1.0, (5000, 7))
+        super(QuadraticDataset, self).__init__(
+            x, (x ** 2).sum(keepdims=True), **kwargs)
+
+# register the new dataset with design_bench
+register('Quadratic-FullyConnected-v0', QuadraticDataset,
+         'design_bench.oracles.tensorflow:FullyConnectedOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             max_percentile=80,
+             min_percentile=0),
+
+         # keyword arguments for training FullyConnected oracle
+         oracle_kwargs=dict(
+             noise_std=0.0,
+             max_samples=None,
+             max_percentile=100,
+             min_percentile=0,
+
+             # parameters used for building the model
+             model_kwargs=dict(hidden_size=512,
+                               activation='relu',
+                               num_layers=2,
+                               epochs=5,
+                               shuffle_buffer=5000,
+                               learning_rate=0.001),
+
+             # parameters used for building the validation set
+             split_kwargs=dict(val_fraction=0.1,
+                               subset=None,
+                               shard_size=5000,
+                               to_disk=True,
+                               disk_target="quadratic/split",
+                               is_absolute=True)))
+                 
+# build the new task (and train a model)         
+task = db.make("Quadratic-FullyConnected-v0")
+```
+
+## Citation
+
+Thanks for using our benchmark, and please cite our paper!
+
+```
+@misc{
+trabucco2021designbench,
+title={Design-Bench: Benchmarks for Data-Driven Offline Model-Based Optimization},
+author={Brandon Trabucco and Aviral Kumar and Xinyang Geng and Sergey Levine},
+year={2021},
+url={https://openreview.net/forum?id=cQzf26aA3vM}
+}
+```
