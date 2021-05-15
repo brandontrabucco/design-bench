@@ -233,7 +233,7 @@ y = np.random.uniform(size=(5000, 1))
 dataset = ContinuousDataset(x, y)
 ```
 
-In the event that you are using a dataset that is saved to a set of sharded numpy files (ending in .npy), you may also create dataset by providing a list of shard files representing using the DiskResource class. The DiscreteDataset class and ContinuousDataset will accept two lists of sharded inputs *x* and outputs *y* represented by DiskResource objects.
+In the event that you are using a dataset that is saved to a set of sharded numpy files (ending in .npy), you may also create dataset by providing a list of shard files representing using the DiskResource class. The DiscreteDataset class and ContinuousDataset accept two lists of sharded inputs *x* and outputs *y* represented by DiskResource objects.
 
 ```python
 from design_bench.datasets.discrete_dataset import DiscreteDataset
