@@ -169,7 +169,7 @@ print(dataset.x_name)
 print(dataset.y_name)
 ```
 
-All datasets implement methods for modifying the format and distribution of the dataset, including normalization, subsampling, relabelling the outputs, and (for discrete datasets) converting from discrete inputs to real-valued inputs.
+All datasets implement methods for modifying the format and distribution of the dataset, including normalization, subsampling, relabelling the outputs, and (for discrete datasets) converting discrete inputs to real-valued.
 
 ```python
 from design_bench.datasets.discrete import GFPDataset
@@ -201,8 +201,8 @@ continuous_x = dataset.to_logits(dataset.x)
 
 # modify the distribution of the dataset
 dataset.subsample(max_samples=10000, 
-                   min_percentile=10,
-                   max_percentile=90)
+                  min_percentile=10,
+                  max_percentile=90)
 
 # change the outputs as a function of their old values
 dataset.relabel(lambda x, y: y ** 2 - 2.0 * y)
@@ -230,7 +230,7 @@ y = np.random.uniform(size=(5000, 1))
 dataset = ContinuousDataset(x, y)
 ```
 
-In the event that you are using a dataset that is saved to a set of sharded numpy files (ending in .npy), you may also create dataset by providing a list of shard files representing using the DiskResource class defined in design_bench.disk_reource.
+In the event that you are using a dataset that is saved to a set of sharded numpy files (ending in .npy), you may also create dataset by providing a list of shard files representing using the DiskResource class.
 
 ```python
 from design_bench.datasets.discrete_dataset import DiscreteDataset
@@ -252,9 +252,9 @@ np.save("new_dataset/shard-y-1.npy", y[3000:])
 
 # list the disk resource for each shard
 x = [DiskResource("new_dataset/shard-x-0.npy"), 
-      DiskResource("new_dataset/shard-x-1.npy")]
+     DiskResource("new_dataset/shard-x-1.npy")]
 y = [DiskResource("new_dataset/shard-y-0.npy"), 
-      DiskResource("new_dataset/shard-y-1.npy")]
+     DiskResource("new_dataset/shard-y-1.npy")]
 
 # create a discrete dataset for those inputs and outputs
 dataset = DiscreteDataset(x, y)
@@ -272,9 +272,9 @@ np.save("new_dataset/shard-y-1.npy", y[3000:])
 
 # list the disk resource for each shard
 x = [DiskResource("new_dataset/shard-x-0.npy"), 
-      DiskResource("new_dataset/shard-x-1.npy")]
+     DiskResource("new_dataset/shard-x-1.npy")]
 y = [DiskResource("new_dataset/shard-y-0.npy"), 
-      DiskResource("new_dataset/shard-y-1.npy")]
+     DiskResource("new_dataset/shard-y-1.npy")]
 
 # create a continuous dataset for those inputs and outputs
 dataset = ContinuousDataset(x, y)
