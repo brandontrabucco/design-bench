@@ -353,23 +353,25 @@ oracle = TransformerOracle(
     min_percentile=0,
     
     # parameters for the transformer architecture
-    model_kwargs=dict(hidden_size=64,
-                      feed_forward_size=256,
-                      activation='relu',
-                      num_heads=2,
-                      num_blocks=4,
-                      epochs=20,
-                      shuffle_buffer=60000,
-                      learning_rate=0.0001,
-                      dropout_rate=0.1),
+    model_kwargs=dict(
+        hidden_size=64,
+        feed_forward_size=256,
+        activation='relu',
+        num_heads=2,
+        num_blocks=4,
+        epochs=20,
+        shuffle_buffer=60000,
+        learning_rate=0.0001,
+        dropout_rate=0.1),
     
     # parameters for building the validation set
-    split_kwargs=dict(val_fraction=0.1,
-                      subset=None,
-                      shard_size=5000,
-                      to_disk=True,
-                      disk_target="gfp/split",
-                      is_absolute=False))
+    split_kwargs=dict(
+        val_fraction=0.1,
+        subset=None,
+        shard_size=5000,
+        to_disk=True,
+        disk_target="gfp/split",
+        is_absolute=False))
 
 # print attributes of the approximate oracle
 print(oracle.params["rank_correlation"])
@@ -382,9 +384,8 @@ print(oracle.resource.disk_target)
 New model-based optimization tasks are simple to create and register with design-bench. By subclassing either DiscreteDataset or ContinuousDataset, and providing either a pair of numpy arrays containing inputs and outputs, or a pair of lists of DiskResource shards containing inputs and outputs, you can define your own model-based optimization dataset class. Once a custom dataset class is created, you can register it as a model-based optimization task by choosing an appropriate oracle type, and making a call to the register function. After doing so, subsequent calls to **design_bench.make** can find your newly registered model-based optimization task.
 
 ```python
-from design_bench import register
 from design_bench.datasets.continuous_dataset import ContinuousDataset
-import design_bench as db
+import design_bench
 import numpy as np
 
 # define a custom dataset subclass of ContinuousDataset
@@ -396,40 +397,44 @@ class QuadraticDataset(ContinuousDataset):
             x, (x ** 2).sum(keepdims=True), **kwargs)
 
 # register the new dataset with design_bench
-register('Quadratic-FullyConnected-v0', QuadraticDataset,
-         'design_bench.oracles.tensorflow:FullyConnectedOracle',
+design_bench.register(
+    'Quadratic-FullyConnected-v0', 
+    QuadraticDataset,
+    'design_bench.oracles.tensorflow:FullyConnectedOracle',
 
-         # keyword arguments for building the dataset
-         dataset_kwargs=dict(
-             max_samples=None,
-             max_percentile=80,
-             min_percentile=0),
+    # keyword arguments for building the dataset
+    dataset_kwargs=dict(
+        max_samples=None,
+        max_percentile=80,
+        min_percentile=0),
 
-         # keyword arguments for training FullyConnected oracle
-         oracle_kwargs=dict(
-             noise_std=0.0,
-             max_samples=None,
-             max_percentile=100,
-             min_percentile=0,
+    # keyword arguments for training FullyConnected oracle
+    oracle_kwargs=dict(
+        noise_std=0.0,
+        max_samples=None,
+        max_percentile=100,
+        min_percentile=0,
 
-             # parameters used for building the model
-             model_kwargs=dict(hidden_size=512,
-                               activation='relu',
-                               num_layers=2,
-                               epochs=5,
-                               shuffle_buffer=5000,
-                               learning_rate=0.001),
+        # parameters used for building the model
+        model_kwargs=dict(
+            hidden_size=512,
+            activation='relu',
+            num_layers=2,
+            epochs=5,
+            shuffle_buffer=5000,
+            learning_rate=0.001),
 
-             # parameters used for building the validation set
-             split_kwargs=dict(val_fraction=0.1,
-                               subset=None,
-                               shard_size=5000,
-                               to_disk=True,
-                               disk_target="quadratic/split",
-                               is_absolute=True)))
+        # parameters used for building the validation set
+        split_kwargs=dict(
+            val_fraction=0.1,
+            subset=None,
+            shard_size=5000,
+            to_disk=True,
+            disk_target="quadratic/split",
+            is_absolute=True)))
                  
 # build the new task (and train a model)         
-task = db.make("Quadratic-FullyConnected-v0")
+task = design_bench.make("Quadratic-FullyConnected-v0")
 ```
 
 ## Citation
