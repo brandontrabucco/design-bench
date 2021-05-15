@@ -68,7 +68,7 @@ x_star = optimize(task.x, task.y)
 y_star = task.predict(x_star)
 ```
 
- Many datasets of interest to practitioners are too large to load in memory all at once, and so the task interface defines an several iterables that load samples from the dataset incrementally.
+Many datasets of interest to practitioners are too large to load in memory all at once, and so the task interface defines an several iterables that load samples from the dataset incrementally.
  
  ```python
 import design_bench
@@ -82,4 +82,46 @@ for x, y in task.iterate_batches(32):
     
 for x, y in task.iterate_samples():
     pass  # train a model here
+ ```
+ 
+Certain optimization algorithms require a particular input format, and so tasks support normalization of both **task.x** and **task.y**, as well as conversion of **task.x** from discrete tokens to the logits of a categorical probability distribution---needed when optimizing **x** with gradients.
+ 
+ ```python
+import design_bench
+task = design_bench.make('TFBind8-Exact-v0')
+
+# convert x to logits of a categorical probability distribution
+task.map_to_logits()
+discrete_x = task.to_integers(task.x)
+
+# normalize the inputs to have zero mean and unit variance
+task.map_normalize_x()
+original_x = task.denormalize_x(task.x)
+
+# normalize the outputs to have zero mean and unit variance
+task.map_normalize_y()
+original_y = task.denormalize_y(task.y)
+ ```
+ 
+Each task provides access to the model-based optimization dataset used to learn the oracle (where applicable) as well as the oracle itself, which includes metadata for how it was trained (where applicable). These provide fine-grain control over the data distribution for model-based optimization.
+ 
+ ```python
+import design_bench
+task = design_bench.make('GFP-GP-v0')
+
+# an instance of the DatasetBuilder class from design_bench.datasets.dataset_builder
+dataset = task.dataset
+
+# modify the distribution of the task dataset
+dataset.subsample(max_samples=10000, 
+                  min_percentile=10,
+                  max_percentile=90)
+
+# an instance of the OracleBuilder class from design_bench.oracles.oracle_builder
+oracle = task.oracle
+
+# check how the model was fit
+print(oracle.params["rank_correlation"],
+      oracle.params["model_kwargs"],
+      oracle.params["split_kwargs"])
  ```
