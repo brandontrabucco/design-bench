@@ -1,8 +1,8 @@
 # Design-Bench
 
-Design-Bench is a **benchmarking framework** for design problems that involve designing an input that maximizes a black-box function. This type of optimization is used across scientific and engineering disciplines in ways such as designing proteins and DNA sequences with particular functions, chemical formulas and molecule substructures, the morphology and controllers of robots, and many more applications. 
+Design-Bench is a **benchmarking framework** for solving automatic design problems that involve choosing an input that maximizes a black-box function. This type of optimization is used across scientific and engineering disciplines in ways such as designing proteins and DNA sequences with particular functions, chemical formulas and molecule substructures, the morphology and controllers of robots, and many more applications. 
 
-These applications have significant potential to accelerate research in scientific fields, and so we develop this benchmark with the goals of standardizing how to report performance and promoting the development of new approaches to model-based optimization.
+These applications have significant potential to accelerate research in biochemistry, chemical engineering, materials science, robotics and many other disciplines. We hope this framework serves as a robust platform to drive these applications and widespread excitement for model-based optimization.
 
 ## Offline Model-Based Optimization
 
@@ -84,7 +84,7 @@ for x, y in task.iterate_samples():
     pass  # train a model here
  ```
  
-Certain optimization algorithms require a particular input format, and so tasks support normalization of both **task.x** and **task.y**, as well as conversion of **task.x** from discrete tokens to the logits of a categorical probability distribution---needed when optimizing **x** with gradients.
+Certain optimization algorithms require a particular input format, and so tasks support normalization of both **task.x** and **task.y**, as well as conversion of **task.x** from discrete tokens to the logits of a categorical probability distribution---needed when optimizing **x** with a gradient-based model-based optimization algorithm.
  
  ```python
 import design_bench
