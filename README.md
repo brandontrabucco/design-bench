@@ -330,7 +330,7 @@ x_star = dataset.normalize_x(dataset.to_logits(x_star))
 assert np.allclose(y_star, oracle.predict(x_star))
 ```
 
-In order to handle when an exact ground truth is unknown or not tractable to evaluate, Design-Bench provides a set of approximate oracles including a Gaussian Process, Random Forest, and several deep neural network architectures specialized to particular data modalities. In addition to the standard oracle arguments and methods, these approximate oracles have the following additional functionality.
+In order to handle when an exact ground truth is unknown or not tractable to evaluate, Design-Bench provides a set of approximate oracles including a Gaussian Process, Random Forest, and several deep neural network architectures specialized to particular data modalities. These approximate oracles may have the following additional arguments.
 
 ```python
 from design_bench.datasets.discrete import GFPDataset
@@ -373,7 +373,7 @@ print(oracle.resource.disk_target)
 
 ## Defining New MBO Tasks
 
-New model-based optimization tasks are simple to create and register with design-bench. By subclassing either DiscreteDataset or ContinuousDataset, and providing either a pair of numpy arrays containing inputs and outputs, or a pair of lists of DiskResource shards containing inputs and outputs, you can define your own model-based optimization dataset class. Once a custom dataset class is created, you can register it as a model-based optimization task by choosing an appropriate oracle type (in this case a fully connected neural network), and making a call to the register function. After doing so, subsequent calls to **design_bench.make** can find your newly registered model-based optimization task.
+New model-based optimization tasks are simple to create and register with design-bench. By subclassing either DiscreteDataset or ContinuousDataset, and providing either a pair of numpy arrays containing inputs and outputs, or a pair of lists of DiskResource shards containing inputs and outputs, you can define your own model-based optimization dataset class. Once a custom dataset class is created, you can register it as a model-based optimization task by choosing an appropriate oracle type, and making a call to the register function. After doing so, subsequent calls to **design_bench.make** can find your newly registered model-based optimization task.
 
 ```python
 from design_bench import register
