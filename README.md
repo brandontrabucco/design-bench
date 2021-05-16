@@ -125,9 +125,7 @@ task = design_bench.make('GFP-GP-v0')
 dataset = task.dataset
 
 # modify the distribution of the task dataset
-dataset.subsample(max_samples=10000, 
-                   min_percentile=10,
-                   max_percentile=90)
+dataset.subsample(max_samples=10000, min_percentile=10, max_percentile=90)
 
 # an instance of the OracleBuilder class from design_bench.oracles.oracle_builder
 oracle = task.oracle
@@ -140,37 +138,12 @@ print(oracle.params["rank_correlation"],
 
 ## Dataset API
 
-Datasets provide a model-based optimization algorithm with information about the black-box function, and are used in design bench to fit approximate oracle models when an exact oracle is not available. All datasets inherit from the DatasetBuilder class defined in *design_bench.datasets.dataset_builder* and have several useful attributes.
-
-```python
-from design_bench.datasets.discrete import GFPDataset
-dataset = GFPDataset()
-
-# print statistics about the dataset
-print(dataset.dataset_size)
-print(dataset.dataset_min_percentile)
-print(dataset.dataset_min_output)
-print(dataset.dataset_max_percentile)
-print(dataset.dataset_max_output)
-
-# print metadata about the inputs
-print(dataset.input_shape)
-print(dataset.input_size)
-print(dataset.input_dtype)
-
-# print metadata about the outputs
-print(dataset.output_shape)
-print(dataset.output_size)
-print(dataset.output_dtype)
-
-# names of inputs and outputs (useful for labeling axes of plots)
-print(dataset.name)
-print(dataset.x_name)
-print(dataset.y_name)
-```
+Datasets provide a model-based optimization algorithm with information about the black-box function, and are used in design bench to fit approximate oracle models when an exact oracle is not available. All datasets inherit from the DatasetBuilder class defined in *design_bench.datasets.dataset_builder*.
 
 All datasets implement methods for modifying the format and distribution of the dataset, including normalization, subsampling, relabelling the outputs, and (for discrete datasets) converting discrete inputs to real-valued. There are also special methods for splitting the dataset into a training and validation set.
 
+<details>
+<summary>Display code snippet</summary>
 ```python
 from design_bench.datasets.discrete import GFPDataset
 dataset = GFPDataset()
@@ -200,9 +173,7 @@ dataset.map_to_integers()
 continuous_x = dataset.to_logits(dataset.x)
 
 # modify the distribution of the dataset
-dataset.subsample(max_samples=10000, 
-                  min_percentile=10,
-                  max_percentile=90)
+dataset.subsample(max_samples=10000, min_percentile=10, max_percentile=90)
 
 # change the outputs as a function of their old values
 dataset.relabel(lambda x, y: y ** 2 - 2.0 * y)
@@ -210,9 +181,12 @@ dataset.relabel(lambda x, y: y ** 2 - 2.0 * y)
 # split the dataset into a validation set
 training, validation = dataset.split(val_fraction=0.1)
 ```
+</details>
 
 If you would like to define your own dataset for use with design-bench, you can directly instantiate a continuous dataset or a discrete dataset depending on the input format you are using. The DiscreteDataset class and ContinuousDataset are built with this in mind, and accept both two numpy arrays containing inputs *x* outputs *y*.
 
+<details>
+<summary>Display code snippet</summary>
 ```python
 from design_bench.datasets.discrete_dataset import DiscreteDataset
 from design_bench.datasets.continuous_dataset import ContinuousDataset
@@ -232,61 +206,60 @@ y = np.random.uniform(size=(5000, 1))
 # create a continuous dataset for those inputs and outputs
 dataset = ContinuousDataset(x, y)
 ```
+</details>
 
 In the event that you are using a dataset that is saved to a set of sharded numpy files (ending in .npy), you may also create dataset by providing a list of shard files representing using the DiskResource class. The DiscreteDataset class and ContinuousDataset accept two lists of sharded inputs *x* and outputs *y* represented by DiskResource objects.
 
+<details>
+<summary>Display code snippet</summary>
 ```python
+from design_bench.disk_resource import DiskResource
 from design_bench.datasets.discrete_dataset import DiscreteDataset
 from design_bench.datasets.continuous_dataset import ContinuousDataset
-from design_bench.disk_resource import DiskResource
-import numpy as np
 import os
-
-# create dummy inputs and outputs for model-based optimization
-x = np.random.randint(500, size=(5000, 43))
-y = np.random.uniform(size=(5000, 1))
-
-# save the dataset to a set of shard files
-os.makedirs("new_dataset/")
-np.save("new_dataset/shard-x-0.npy", x[:3000])
-np.save("new_dataset/shard-x-1.npy", x[3000:])
-np.save("new_dataset/shard-y-0.npy", y[:3000])
-np.save("new_dataset/shard-y-1.npy", y[3000:])
+import numpy as np
 
 # list the disk resource for each shard
+os.makedirs("new_dataset/")
 x = [DiskResource("new_dataset/shard-x-0.npy"), 
      DiskResource("new_dataset/shard-x-1.npy")]
 y = [DiskResource("new_dataset/shard-y-0.npy"), 
      DiskResource("new_dataset/shard-y-1.npy")]
+
+# create dummy inputs and outputs for model-based optimization
+xs = np.random.randint(500, size=(5000, 43))
+ys = np.random.uniform(size=(5000, 1))
+
+# save the dataset to a set of shard files
+np.save("new_dataset/shard-x-0.npy", xs[:3000])
+np.save("new_dataset/shard-x-1.npy", xs[3000:])
+np.save("new_dataset/shard-y-0.npy", ys[:3000])
+np.save("new_dataset/shard-y-1.npy", ys[3000:])
 
 # create a discrete dataset for those inputs and outputs
 dataset = DiscreteDataset(x, y)
 
 # create dummy inputs and outputs for model-based optimization
-x = np.random.uniform(size=(5000, 871))
-y = np.random.uniform(size=(5000, 1))
+xs = np.random.uniform(size=(5000, 871))
+ys = np.random.uniform(size=(5000, 1))
 
 # save the dataset to a set of shard files
-os.makedirs("new_dataset/", exist_ok=True)
-np.save("new_dataset/shard-x-0.npy", x[:3000])
-np.save("new_dataset/shard-x-1.npy", x[3000:])
-np.save("new_dataset/shard-y-0.npy", y[:3000])
-np.save("new_dataset/shard-y-1.npy", y[3000:])
-
-# list the disk resource for each shard
-x = [DiskResource("new_dataset/shard-x-0.npy"), 
-     DiskResource("new_dataset/shard-x-1.npy")]
-y = [DiskResource("new_dataset/shard-y-0.npy"), 
-     DiskResource("new_dataset/shard-y-1.npy")]
+np.save("new_dataset/shard-x-0.npy", xs[:3000])
+np.save("new_dataset/shard-x-1.npy", xs[3000:])
+np.save("new_dataset/shard-y-0.npy", ys[:3000])
+np.save("new_dataset/shard-y-1.npy", ys[3000:])
 
 # create a continuous dataset for those inputs and outputs
 dataset = ContinuousDataset(x, y)
 ```
+</details>
 
 ## Oracle API
 
 Oracles provide a way of measuring the performance of candidate solutions to a model-based optimization problem, found by a model-based optimization algorithm, without having to perform additional real-world experiments. To this end, oracle implement a prediction function **oracle.predict(x)** that takes a set of designs and makes a prediction about their performance. The goal of model-based optimization is to maximize the predictions of the oracle. 
 
+<details>
+<summary>Display code snippet</summary>
 ```python
 from design_bench.datasets.discrete import GFPDataset
 from design_bench.oracles.tensorflow import TransformerOracle
@@ -295,55 +268,50 @@ from design_bench.oracles.tensorflow import TransformerOracle
 dataset = GFPDataset()
 oracle = TransformerOracle(dataset, noise_std=0.1)
 
-def optimize(x0, y0):
+def solve_optimization_problem(x0, y0):
     return x0  # solve a model-based optimization problem
 
 # evaluate the performance of the solution x_star
-x_star = optimize(dataset.x, dataset.y)
+x_star = solve_optimization_problem(dataset.x, dataset.y)
 y_star = oracle.predict(x_star)
-
-# how many times the oracle has been queried
-print(oracle.num_evaluations)
 ```
-
-Oracles define a set of expectations about the format of their inputs, and automatically manage the appropriate format conversion when their accompanying dataset does not match the expected input format of the oracle.
-
-```python
-from design_bench.datasets.discrete import GFPDataset
-from design_bench.oracles.tensorflow import TransformerOracle
-import numpy as np
-
-# create a dataset and transformer oracle
-dataset = GFPDataset()
-oracle = TransformerOracle(dataset)
-
-def optimize(x0, y0):
-    return x0  # solve a model-based optimization problem
-
-# evaluate the performance of the solution x_star
-x_star = optimize(dataset.x, dataset.y)
-y_star = oracle.predict(x_star)
-
-# perturb the input format of the dataset
-dataset.map_to_logits()
-dataset.map_normalize_x()
-
-# check that the prediction is approximately the same
-x_star = dataset.normalize_x(dataset.to_logits(x_star))
-assert np.allclose(y_star, oracle.predict(x_star))
-```
+</details>
 
 In order to handle when an exact ground truth is unknown or not tractable to evaluate, Design-Bench provides a set of approximate oracles including a Gaussian Process, Random Forest, and several deep neural network architectures specialized to particular data modalities. These approximate oracles may have the following parameters.
 
+<details>
+<summary>Display code snippet</summary>
 ```python
 from design_bench.datasets.discrete import GFPDataset
 from design_bench.oracles.tensorflow import TransformerOracle
 
-# create a transformer oracle
-oracle = TransformerOracle(
-    GFPDataset(), 
+# parameters for the transformer architecture
+model_kwargs=dict(
+    hidden_size=64,
+    feed_forward_size=256,
+    activation='relu',
+    num_heads=2,
+    num_blocks=4,
+    epochs=20,
+    shuffle_buffer=60000,
+    learning_rate=0.0001,
+    dropout_rate=0.1)
+
+# parameters for building the validation set
+split_kwargs=dict(
+    val_fraction=0.1,
+    subset=None,
+    shard_size=5000,
+    to_disk=True,
+    disk_target="gfp/split",
+    is_absolute=False)
     
-    # parameters for the oracle class
+# create a transformer oracle for the GFP dataset
+dataset = GFPDataset()
+oracle = TransformerOracle(
+    dataset, 
+    
+    # parameters for ApproximateOracle subclasses
     disk_target="new_model.zip",
     is_absolute=True,
     fit=True,
@@ -351,38 +319,24 @@ oracle = TransformerOracle(
     max_samples=None,
     max_percentile=100,
     min_percentile=0,
-    
-    # parameters for the transformer architecture
-    model_kwargs=dict(
-        hidden_size=64,
-        feed_forward_size=256,
-        activation='relu',
-        num_heads=2,
-        num_blocks=4,
-        epochs=20,
-        shuffle_buffer=60000,
-        learning_rate=0.0001,
-        dropout_rate=0.1),
-    
-    # parameters for building the validation set
-    split_kwargs=dict(
-        val_fraction=0.1,
-        subset=None,
-        shard_size=5000,
-        to_disk=True,
-        disk_target="gfp/split",
-        is_absolute=False))
+    model_kwargs=model_kwargs,
+    split_kwargs=split_kwargs)
 
-# print attributes of the approximate oracle
-print(oracle.params["rank_correlation"])
-print(oracle.resource.is_downloaded)
-print(oracle.resource.disk_target)
+def solve_optimization_problem(x0, y0):
+    return x0  # solve a model-based optimization problem
+
+# evaluate the performance of the solution x_star
+x_star = solve_optimization_problem(dataset.x, dataset.y)
+y_star = oracle.predict(x_star)
 ```
+</details>
 
 ## Defining New MBO Tasks
 
 New model-based optimization tasks are simple to create and register with design-bench. By subclassing either DiscreteDataset or ContinuousDataset, and providing either a pair of numpy arrays containing inputs and outputs, or a pair of lists of DiskResource shards containing inputs and outputs, you can define your own model-based optimization dataset class. Once a custom dataset class is created, you can register it as a model-based optimization task by choosing an appropriate oracle type, and making a call to the register function. After doing so, subsequent calls to **design_bench.make** can find your newly registered model-based optimization task.
 
+<details>
+<summary>Display code snippet</summary>
 ```python
 from design_bench.datasets.continuous_dataset import ContinuousDataset
 import design_bench
@@ -392,49 +346,64 @@ import numpy as np
 class QuadraticDataset(ContinuousDataset):
 
     def __init__(self, **kwargs):
+    
+        # define a set of inputs and outputs of a quadratic function
         x = np.random.normal(0.0, 1.0, (5000, 7))
-        super(QuadraticDataset, self).__init__(
-            x, (x ** 2).sum(keepdims=True), **kwargs)
+        y = (x ** 2).sum(keepdims=True)
+        
+        # pass inputs and outputs to the base class
+        super(QuadraticDataset, self).__init__(x, y, **kwargs)
+
+# parameters used for building the validation set
+split_kwargs=dict(
+    val_fraction=0.1,
+    subset=None,
+    shard_size=5000,
+    to_disk=True,
+    disk_target="quadratic/split",
+    is_absolute=True)
+
+# parameters used for building the model
+model_kwargs=dict(
+    hidden_size=512,
+    activation='relu',
+    num_layers=2,
+    epochs=5,
+    shuffle_buffer=5000,
+    learning_rate=0.001)
+
+# keyword arguments for building the dataset
+dataset_kwargs=dict(
+    max_samples=None,
+    max_percentile=80,
+    min_percentile=0)
+
+# keyword arguments for training FullyConnected oracle
+oracle_kwargs=dict(
+    noise_std=0.0,
+    max_samples=None,
+    max_percentile=100,
+    min_percentile=0,
+    split_kwargs=split_kwargs,
+    model_kwargs=model_kwargs)
 
 # register the new dataset with design_bench
 design_bench.register(
     'Quadratic-FullyConnected-v0', QuadraticDataset,
     'design_bench.oracles.tensorflow:FullyConnectedOracle',
-
-    # keyword arguments for building the dataset
-    dataset_kwargs=dict(
-        max_samples=None,
-        max_percentile=80,
-        min_percentile=0),
-
-    # keyword arguments for training FullyConnected oracle
-    oracle_kwargs=dict(
-        noise_std=0.0,
-        max_samples=None,
-        max_percentile=100,
-        min_percentile=0,
-
-        # parameters used for building the model
-        model_kwargs=dict(
-            hidden_size=512,
-            activation='relu',
-            num_layers=2,
-            epochs=5,
-            shuffle_buffer=5000,
-            learning_rate=0.001),
-
-        # parameters used for building the validation set
-        split_kwargs=dict(
-            val_fraction=0.1,
-            subset=None,
-            shard_size=5000,
-            to_disk=True,
-            disk_target="quadratic/split",
-            is_absolute=True)))
+    dataset_kwargs=dataset_kwargs, oracle_kwargs=oracle_kwargs)
                  
 # build the new task (and train a model)         
 task = design_bench.make("Quadratic-FullyConnected-v0")
+
+def solve_optimization_problem(x0, y0):
+    return x0  # solve a model-based optimization problem
+
+# evaluate the performance of the solution x_star
+x_star = solve_optimization_problem(task.x, task.y)
+y_star = task.predict(x_star)
 ```
+</details>
 
 ## Citation
 
@@ -442,10 +411,10 @@ Thanks for using our benchmark, and please cite our paper!
 
 ```
 @misc{
-trabucco2021designbench,
-title={Design-Bench: Benchmarks for Data-Driven Offline Model-Based Optimization},
-author={Brandon Trabucco and Aviral Kumar and Xinyang Geng and Sergey Levine},
-year={2021},
-url={https://openreview.net/forum?id=cQzf26aA3vM}
+    trabucco2021designbench,
+    title={Design-Bench: Benchmarks for Data-Driven Offline Model-Based Optimization},
+    author={Brandon Trabucco and Aviral Kumar and Xinyang Geng and Sergey Levine},
+    year={2021},
+    url={https://openreview.net/forum?id=cQzf26aA3vM}
 }
 ```
