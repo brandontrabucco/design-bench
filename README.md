@@ -50,7 +50,7 @@ UTR-Transformer-v0 | UTR | Transformer | 560000 | 0.6425
 HopperController-Exact-v0 | Hopper Controller | Exact | 3200 | 
 Superconductor-FullyConnected-v0 | Superconductor | Fully Connected | 21263 | 0.9210
 AntMorphology-Exact-v0 | Ant Morphology | Exact | 12300 | 
-DKittyMorphology-Exact-v0 | DKittyMorphology | Exact | 9546 | 
+DKittyMorphology-Exact-v0 | D'Kitty Morphology | Exact | 9546 | 
 
 ## Task API
 
