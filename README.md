@@ -320,12 +320,12 @@ split_kwargs=dict(
 dataset = GFPDataset()
 oracle = TransformerOracle(
     dataset, 
+    noise_std=0.0,
     
     # parameters for ApproximateOracle subclasses
     disk_target="new_model.zip",
     is_absolute=True,
     fit=True,
-    noise_std=0.0,
     max_samples=None,
     max_percentile=100,
     min_percentile=0,
