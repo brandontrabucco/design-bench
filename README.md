@@ -36,8 +36,6 @@ ChEMBL |  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heav
 UTR |  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark:
 HopperController | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |  |  | 
 Superconductor |  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |  |  | 
-TF Bind 10 | :heavy_check_mark: |  |  |  |  |  | 
-NAS Bench 101 | :heavy_check_mark: |  |  |  |  |  | 
 
 Combinations of datasets and oracles that are not available for download from our server are automatically trained on your machine on task creation. This currently only affects approximate oracles on TF Bind 10 and NAS Bench 101. Below we provide the preferred oracle for each task, as well as meta data such as the number of data points measured.
 
@@ -49,8 +47,6 @@ ChEMBL-ResNet-v0 | ChEMBL | ResNet | 40516 | 0.3208
 UTR-Transformer-v0 | UTR | Transformer | 560000 | 0.6425
 HopperController-Exact-v0 | Hopper Controller | Exact | 3200 | 
 Superconductor-FullyConnected-v0 | Superconductor | Fully Connected | 21263 | 0.9210
-TFBind10-Exact-v0 | TF Bind 10 | Exact | 8321066 | 
-NASBench-Exact-v0 | NAS Bench 101 | Exact | 1293208 | 
 
 ## Task API
 
@@ -143,7 +139,9 @@ Datasets provide a model-based optimization algorithm with information about the
 All datasets implement methods for modifying the format and distribution of the dataset, including normalization, subsampling, relabelling the outputs, and (for discrete datasets) converting discrete inputs to real-valued. There are also special methods for splitting the dataset into a training and validation set.
 
 <details>
+
 <summary>Display code snippet</summary>
+
 ```python
 from design_bench.datasets.discrete import GFPDataset
 dataset = GFPDataset()
@@ -181,12 +179,15 @@ dataset.relabel(lambda x, y: y ** 2 - 2.0 * y)
 # split the dataset into a validation set
 training, validation = dataset.split(val_fraction=0.1)
 ```
+
 </details>
 
 If you would like to define your own dataset for use with design-bench, you can directly instantiate a continuous dataset or a discrete dataset depending on the input format you are using. The DiscreteDataset class and ContinuousDataset are built with this in mind, and accept both two numpy arrays containing inputs *x* outputs *y*.
 
 <details>
+
 <summary>Display code snippet</summary>
+
 ```python
 from design_bench.datasets.discrete_dataset import DiscreteDataset
 from design_bench.datasets.continuous_dataset import ContinuousDataset
@@ -206,12 +207,15 @@ y = np.random.uniform(size=(5000, 1))
 # create a continuous dataset for those inputs and outputs
 dataset = ContinuousDataset(x, y)
 ```
+
 </details>
 
 In the event that you are using a dataset that is saved to a set of sharded numpy files (ending in .npy), you may also create dataset by providing a list of shard files representing using the DiskResource class. The DiscreteDataset class and ContinuousDataset accept two lists of sharded inputs *x* and outputs *y* represented by DiskResource objects.
 
 <details>
+
 <summary>Display code snippet</summary>
+
 ```python
 from design_bench.disk_resource import DiskResource
 from design_bench.datasets.discrete_dataset import DiscreteDataset
@@ -252,6 +256,7 @@ np.save("new_dataset/shard-y-1.npy", ys[3000:])
 # create a continuous dataset for those inputs and outputs
 dataset = ContinuousDataset(x, y)
 ```
+
 </details>
 
 ## Oracle API
@@ -259,7 +264,9 @@ dataset = ContinuousDataset(x, y)
 Oracles provide a way of measuring the performance of candidate solutions to a model-based optimization problem, found by a model-based optimization algorithm, without having to perform additional real-world experiments. To this end, oracle implement a prediction function **oracle.predict(x)** that takes a set of designs and makes a prediction about their performance. The goal of model-based optimization is to maximize the predictions of the oracle. 
 
 <details>
+
 <summary>Display code snippet</summary>
+
 ```python
 from design_bench.datasets.discrete import GFPDataset
 from design_bench.oracles.tensorflow import TransformerOracle
@@ -275,12 +282,15 @@ def solve_optimization_problem(x0, y0):
 x_star = solve_optimization_problem(dataset.x, dataset.y)
 y_star = oracle.predict(x_star)
 ```
+
 </details>
 
 In order to handle when an exact ground truth is unknown or not tractable to evaluate, Design-Bench provides a set of approximate oracles including a Gaussian Process, Random Forest, and several deep neural network architectures specialized to particular data modalities. These approximate oracles may have the following parameters.
 
 <details>
+
 <summary>Display code snippet</summary>
+
 ```python
 from design_bench.datasets.discrete import GFPDataset
 from design_bench.oracles.tensorflow import TransformerOracle
@@ -329,6 +339,7 @@ def solve_optimization_problem(x0, y0):
 x_star = solve_optimization_problem(dataset.x, dataset.y)
 y_star = oracle.predict(x_star)
 ```
+
 </details>
 
 ## Defining New MBO Tasks
@@ -336,7 +347,9 @@ y_star = oracle.predict(x_star)
 New model-based optimization tasks are simple to create and register with design-bench. By subclassing either DiscreteDataset or ContinuousDataset, and providing either a pair of numpy arrays containing inputs and outputs, or a pair of lists of DiskResource shards containing inputs and outputs, you can define your own model-based optimization dataset class. Once a custom dataset class is created, you can register it as a model-based optimization task by choosing an appropriate oracle type, and making a call to the register function. After doing so, subsequent calls to **design_bench.make** can find your newly registered model-based optimization task.
 
 <details>
+
 <summary>Display code snippet</summary>
+
 ```python
 from design_bench.datasets.continuous_dataset import ContinuousDataset
 import design_bench
@@ -403,6 +416,7 @@ def solve_optimization_problem(x0, y0):
 x_star = solve_optimization_problem(task.x, task.y)
 y_star = task.predict(x_star)
 ```
+
 </details>
 
 ## Citation
