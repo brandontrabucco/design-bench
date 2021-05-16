@@ -39,7 +39,7 @@ Superconductor |  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark:
 Ant Morphology | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |  |  | 
 D'Kitty Morphology | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |  |  | 
 
-Combinations of datasets and oracles that are not available for download from our server are automatically trained on your machine on task creation. This currently only affects approximate oracles on TF Bind 10 and NAS Bench 101. Below we provide the preferred oracle for each task, as well as meta data such as the number of data points measured.
+Combinations of datasets and oracles that are not available for download from our server are automatically trained on your machine on task creation. This currently only affects approximate oracles on user-defined MBO tasks. Below we provide the preferred oracle for each task, as well as meta data such as the number of data points measured.
 
 Task Name | Dataset | Oracle | Dataset Size | Spearman's ρ
 --------- | ------- | ------ | ------------ | ----------------
