@@ -34,8 +34,10 @@ TF Bind 8 | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heav
 GFP |  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark:
 ChEMBL |  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark:
 UTR |  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark:
-HopperController | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |  |  | 
+Hopper Controller | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |  |  | 
 Superconductor |  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |  |  | 
+Ant Morphology | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |  |  | 
+D'Kitty Morphology | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |  |  | 
 
 Combinations of datasets and oracles that are not available for download from our server are automatically trained on your machine on task creation. This currently only affects approximate oracles on TF Bind 10 and NAS Bench 101. Below we provide the preferred oracle for each task, as well as meta data such as the number of data points measured.
 
@@ -47,6 +49,8 @@ ChEMBL-ResNet-v0 | ChEMBL | ResNet | 40516 | 0.3208
 UTR-Transformer-v0 | UTR | Transformer | 560000 | 0.6425
 HopperController-Exact-v0 | Hopper Controller | Exact | 3200 | 
 Superconductor-FullyConnected-v0 | Superconductor | Fully Connected | 21263 | 0.9210
+AntMorphology-Exact-v0 | Ant Morphology | Exact | 12300 | 
+DKittyMorphology-Exact-v0 | DKittyMorphology | Exact | 9546 | 
 
 ## Task API
 
@@ -56,11 +60,11 @@ Design-Bench tasks share a common interface specified in **design_bench/task.py*
 import design_bench
 task = design_bench.make('TFBind8-Exact-v0')
 
-def optimize(x0, y0):
+def solve_optimization_problem(x0, y0):
     return x0  # solve a model-based optimization problem
 
 # solve for the best input x_star and evaluate it
-x_star = optimize(task.x, task.y)
+x_star = solve_optimization_problem(task.x, task.y)
 y_star = task.predict(x_star)
 ```
 
