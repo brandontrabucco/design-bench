@@ -16,6 +16,7 @@ Design-Bench can be installed with the complete set of benchmarks via our pip pa
 
 ```bash
 pip install design-bench[all]
+pip install morphing-agents==1.4
 ```
 
 Alternatively, if you do not have MuJoCo, you may opt for a minimal install.
