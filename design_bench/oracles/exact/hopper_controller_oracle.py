@@ -150,8 +150,7 @@ class HopperControllerOracle(ExactOracle):
         # return the sum of rewards for a single trajectory
         return path_returns.astype(np.float32)
 
-    def __init__(self, dataset: ContinuousDataset,
-                 noise_std=0.0, internal_measurements=1):
+    def __init__(self, dataset: ContinuousDataset, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -180,7 +179,6 @@ class HopperControllerOracle(ExactOracle):
 
         # initialize the oracle using the super class
         super(HopperControllerOracle, self).__init__(
-            dataset, noise_std=noise_std, internal_batch_size=1,
-            is_batched=False, internal_measurements=internal_measurements,
+            dataset, internal_batch_size=1, is_batched=False,
             expect_normalized_y=False,
-            expect_normalized_x=False, expect_logits=None)
+            expect_normalized_x=False, expect_logits=None, **kwargs)

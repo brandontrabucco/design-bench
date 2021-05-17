@@ -1080,3 +1080,227 @@ register('Superconductor-FullyConnected-v0',
                                to_disk=True,
                                disk_target="superconductor/split",
                                is_absolute=False)))
+
+
+register('AntMorphology-Exact-v0',
+         'design_bench.datasets.continuous:AntMorphologyDataset',
+         'design_bench.oracles.exact:AntMorphologyOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             max_percentile=20,
+             min_percentile=0),
+
+         # keyword arguments for building the exact oracle
+         oracle_kwargs=dict(
+             noise_std=0.0))
+
+
+register('AntMorphology-GP-v0',
+         'design_bench.datasets.continuous:AntMorphologyDataset',
+         'design_bench.oracles.sklearn:GaussianProcessOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             max_percentile=20,
+             min_percentile=0),
+
+         # keyword arguments for building GP oracle
+         oracle_kwargs=dict(
+             noise_std=0.0,
+             max_samples=2000,
+             max_percentile=100,
+             min_percentile=0,
+
+             # parameters used for building the model
+             model_kwargs=dict(kernel=ConstantKernel(
+                 constant_value=1.0, constant_value_bounds=(0.0, 10.0)) *
+                 RBF(length_scale=0.5, length_scale_bounds=(0.0, 10.0)) +
+                 RBF(length_scale=2.0, length_scale_bounds=(0.0, 10.0))),
+
+             # parameters used for building the validation set
+             split_kwargs=dict(val_fraction=0.5,
+                               subset=None,
+                               shard_size=5000,
+                               to_disk=True,
+                               disk_target="ant_morphology/split",
+                               is_absolute=False)))
+
+
+register('AntMorphology-RandomForest-v0',
+         'design_bench.datasets.continuous:AntMorphologyDataset',
+         'design_bench.oracles.sklearn:RandomForestOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             max_percentile=20,
+             min_percentile=0),
+
+         # keyword arguments for building RandomForest oracle
+         oracle_kwargs=dict(
+             noise_std=0.0,
+             max_samples=2000,
+             max_percentile=100,
+             min_percentile=0,
+
+             # parameters used for building the model
+             model_kwargs=dict(n_estimators=100,
+                               max_depth=10,
+                               max_features="auto"),
+
+             # parameters used for building the validation set
+             split_kwargs=dict(val_fraction=0.5,
+                               subset=None,
+                               shard_size=5000,
+                               to_disk=True,
+                               disk_target="ant_morphology/split",
+                               is_absolute=False)))
+
+
+register('AntMorphology-FullyConnected-v0',
+         'design_bench.datasets.continuous:AntMorphologyDataset',
+         'design_bench.oracles.tensorflow:FullyConnectedOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             max_percentile=20,
+             min_percentile=0),
+
+         # keyword arguments for training FullyConnected oracle
+         oracle_kwargs=dict(
+             noise_std=0.0,
+             max_samples=None,
+             max_percentile=100,
+             min_percentile=0,
+
+             # parameters used for building the model
+             model_kwargs=dict(hidden_size=512,
+                               activation='relu',
+                               num_layers=2,
+                               epochs=5,
+                               shuffle_buffer=5000,
+                               learning_rate=0.001),
+
+             # parameters used for building the validation set
+             split_kwargs=dict(val_fraction=0.1,
+                               subset=None,
+                               shard_size=5000,
+                               to_disk=True,
+                               disk_target="ant_morphology/split",
+                               is_absolute=False)))
+
+
+register('DKittyMorphology-Exact-v0',
+         'design_bench.datasets.continuous:DKittyMorphologyDataset',
+         'design_bench.oracles.exact:DKittyMorphologyOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             max_percentile=20,
+             min_percentile=0),
+
+         # keyword arguments for building the exact oracle
+         oracle_kwargs=dict(
+             noise_std=0.0))
+
+
+register('DKittyMorphology-GP-v0',
+         'design_bench.datasets.continuous:DKittyMorphologyDataset',
+         'design_bench.oracles.sklearn:GaussianProcessOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             max_percentile=20,
+             min_percentile=0),
+
+         # keyword arguments for building GP oracle
+         oracle_kwargs=dict(
+             noise_std=0.0,
+             max_samples=2000,
+             max_percentile=100,
+             min_percentile=0,
+
+             # parameters used for building the model
+             model_kwargs=dict(kernel=ConstantKernel(
+                 constant_value=1.0, constant_value_bounds=(0.0, 10.0)) *
+                 RBF(length_scale=0.5, length_scale_bounds=(0.0, 10.0)) +
+                 RBF(length_scale=2.0, length_scale_bounds=(0.0, 10.0))),
+
+             # parameters used for building the validation set
+             split_kwargs=dict(val_fraction=0.5,
+                               subset=None,
+                               shard_size=5000,
+                               to_disk=True,
+                               disk_target="dkitty_morphology/split",
+                               is_absolute=False)))
+
+
+register('DKittyMorphology-RandomForest-v0',
+         'design_bench.datasets.continuous:DKittyMorphologyDataset',
+         'design_bench.oracles.sklearn:RandomForestOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             max_percentile=20,
+             min_percentile=0),
+
+         # keyword arguments for building RandomForest oracle
+         oracle_kwargs=dict(
+             noise_std=0.0,
+             max_samples=2000,
+             max_percentile=100,
+             min_percentile=0,
+
+             # parameters used for building the model
+             model_kwargs=dict(n_estimators=100,
+                               max_depth=10,
+                               max_features="auto"),
+
+             # parameters used for building the validation set
+             split_kwargs=dict(val_fraction=0.5,
+                               subset=None,
+                               shard_size=5000,
+                               to_disk=True,
+                               disk_target="dkitty_morphology/split",
+                               is_absolute=False)))
+
+
+register('DKittyMorphology-FullyConnected-v0',
+         'design_bench.datasets.continuous:DKittyMorphologyDataset',
+         'design_bench.oracles.tensorflow:FullyConnectedOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             max_percentile=20,
+             min_percentile=0),
+
+         # keyword arguments for training FullyConnected oracle
+         oracle_kwargs=dict(
+             noise_std=0.0,
+             max_samples=None,
+             max_percentile=100,
+             min_percentile=0,
+
+             # parameters used for building the model
+             model_kwargs=dict(hidden_size=512,
+                               activation='relu',
+                               num_layers=2,
+                               epochs=5,
+                               shuffle_buffer=5000,
+                               learning_rate=0.001),
+
+             # parameters used for building the validation set
+             split_kwargs=dict(val_fraction=0.1,
+                               subset=None,
+                               shard_size=5000,
+                               to_disk=True,
+                               disk_target="dkitty_morphology/split",
+                               is_absolute=False)))

@@ -1,2 +1,4 @@
 from .hopper_controller_dataset import HopperControllerDataset
 from .superconductor_dataset import SuperconductorDataset
+from .ant_morphology_dataset import AntMorphologyDataset
+from .dkitty_morphology_dataset import DKittyMorphologyDataset

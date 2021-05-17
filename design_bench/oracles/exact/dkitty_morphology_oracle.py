@@ -1,10 +1,16 @@
+from morphing_agents.mujoco.dkitty.env import MorphingDKittyEnv
+from morphing_agents.mujoco.dkitty.elements import LEG
+from morphing_agents.mujoco.dkitty.elements import LEG_LOWER_BOUND
+from morphing_agents.mujoco.dkitty.elements import LEG_UPPER_BOUND
 from design_bench.oracles.exact_oracle import ExactOracle
-from design_bench.datasets.discrete_dataset import DiscreteDataset
-from design_bench.datasets.discrete.tf_bind_8_dataset import TFBind8Dataset
+from design_bench.datasets.continuous_dataset import ContinuousDataset
+from design_bench.datasets.continuous import DKittyMorphologyDataset
+from design_bench.disk_resource import DiskResource
 import numpy as np
+import pickle as pkl
 
 
-class TFBind8Oracle(ExactOracle):
+class DKittyMorphologyOracle(ExactOracle):
     """An abstract class for managing the ground truth score functions f(x)
     for model-based optimization problems, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
@@ -61,7 +67,7 @@ class TFBind8Oracle(ExactOracle):
 
     """
 
-    name = "exact_enrichment_score"
+    name = "exact_average_return"
 
     @classmethod
     def supported_datasets(cls):
@@ -71,7 +77,7 @@ class TFBind8Oracle(ExactOracle):
 
         """
 
-        return {TFBind8Dataset}
+        return {DKittyMorphologyDataset}
 
     @classmethod
     def fully_characterized(cls):
@@ -81,7 +87,7 @@ class TFBind8Oracle(ExactOracle):
 
         """
 
-        return True
+        return False
 
     @classmethod
     def is_simulated(cls):
@@ -91,7 +97,7 @@ class TFBind8Oracle(ExactOracle):
 
         """
 
-        return False
+        return True
 
     def protected_predict(self, x):
         """Score function to be implemented by oracle subclasses, where x is
@@ -114,12 +120,32 @@ class TFBind8Oracle(ExactOracle):
 
         """
 
-        x_key = tuple(x.tolist())
-        return self.sequence_to_score[x_key].astype(np.float32) \
-            if x_key in self.sequence_to_score else np.full(
-            [1], self.dataset.dataset_min_output, dtype=np.float32)
+        # create a policy forward pass in numpy
+        def mlp_policy(h):
+            h = np.maximum(0.0, h @ self.policy[0] + self.policy[1])
+            h = np.maximum(0.0, h @ self.policy[2] + self.policy[3])
+            return np.tanh(np.split(
+                h @ self.policy[4] + self.policy[5], 2)[0])
 
-    def __init__(self, dataset: DiscreteDataset, **kwargs):
+        # convert vectors to morphologies
+        env = MorphingDKittyEnv(expose_design=False, fixed_design=[
+            LEG(*np.clip(np.array(xi), LEG_LOWER_BOUND,
+                         LEG_UPPER_BOUND)) for xi in np.split(x, 4)])
+
+        # do many rollouts using a pretrained agent
+        obs = env.reset()
+        sum_of_rewards = np.zeros([1], dtype=np.float32)
+        for t in range(self.rollout_horizon):
+            obs, rew, done, info = env.step(mlp_policy(obs))
+            sum_of_rewards += rew.astype(np.float32)
+            if done:
+                break
+
+        # we average here so as to reduce randomness
+        return sum_of_rewards
+
+    def __init__(self, dataset: ContinuousDataset,
+                 rollout_horizon=100, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -134,19 +160,31 @@ class TFBind8Oracle(ExactOracle):
             the standard deviation of gaussian noise added to the prediction
             values 'y' coming out of the ground truth score function f(x)
             in order to make the optimization problem difficult
+        internal_measurements: int
+            an integer representing the number of independent measurements of
+            the prediction made by the oracle, which are subsequently
+            averaged, and is useful when the oracle is stochastic
 
         """
 
-        # dictionary containing every point in the search space
-        self.sequence_to_score = dict()
-        dataset._disable_transform = True
-        for x, y in dataset.iterate_samples():
-            self.sequence_to_score[tuple(x.tolist())] = y
-        dataset._disable_transform = False
+        # the number of transitions per trajectory to sample
+        self.rollout_horizon = rollout_horizon
+
+        # ensure the trained policy has been downloaded
+        policy = "dkitty_morphology/dkitty_oracle.pkl"
+        policy = DiskResource(
+            policy, is_absolute=False, download_method="direct",
+            download_target=f"https://design-bench."
+                            f"s3-us-west-1.amazonaws.com/{policy}")
+        if not policy.is_downloaded and not policy.download():
+            raise ValueError("unable to download trained policy for ant")
+
+        # load the weights of the policy
+        with open(policy.disk_target, "rb") as f:
+            self.policy = pkl.load(f)
 
         # initialize the oracle using the super class
-        super(TFBind8Oracle, self).__init__(
-            dataset, is_batched=False,
-            internal_batch_size=1, internal_measurements=1,
-            expect_normalized_y=dataset.is_normalized_y,
-            expect_normalized_x=False, expect_logits=False, **kwargs)
+        super(DKittyMorphologyOracle, self).__init__(
+            dataset, internal_batch_size=1, is_batched=False,
+            expect_normalized_y=False,
+            expect_normalized_x=False, expect_logits=None, **kwargs)

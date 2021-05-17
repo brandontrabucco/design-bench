@@ -119,7 +119,7 @@ class TFBind10Oracle(ExactOracle):
             if x_key in self.sequence_to_score else np.full(
             [1], self.dataset.dataset_min_output, dtype=np.float32)
 
-    def __init__(self, dataset: DiscreteDataset, noise_std=0.0):
+    def __init__(self, dataset: DiscreteDataset, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -146,7 +146,7 @@ class TFBind10Oracle(ExactOracle):
 
         # initialize the oracle using the super class
         super(TFBind10Oracle, self).__init__(
-            dataset, noise_std=noise_std, is_batched=False,
+            dataset, is_batched=False,
             internal_batch_size=1, internal_measurements=1,
             expect_normalized_y=dataset.is_normalized_y,
-            expect_normalized_x=False, expect_logits=False)
+            expect_normalized_x=False, expect_logits=False, **kwargs)
