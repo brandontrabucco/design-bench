@@ -8,7 +8,7 @@ with open(F, 'r') as readme:
 
 
 INSTALL_REQUIRES = ['numpy', 'pandas', 'requests',
-                    'scikit-learn', 'tensorflow==2.4.1', 'transformers']
+                    'scikit-learn', 'tensorflow==2.5.0', 'transformers']
 EXTRA_REQUIRES = ['gym[mujoco]']
 
 
