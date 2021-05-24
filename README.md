@@ -27,18 +27,18 @@ pip install design-bench
 
 ## Available Tasks
 
-In the below table, we list the supported datasets and objective functions for model-based optimization, where a :heavy_check_mark: indicates that a particular combination has been tested and is available for download from our server.
+In the below table, we list the supported datasets and objective functions for model-based optimization, where a ✅ indicates that a particular combination has been tested and is available for download from our server.
 
 Dataset \ Oracle | Exact | Gaussian Process | Random Forest | Fully Connected | LSTM | ResNet | Transformer
 ---------------- | ----- | ---------------- | ------------- | --------------- | ---- | --- | -----------
-TF Bind 8 | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark:
-GFP |  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark:
-ChEMBL |  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark:
-UTR |  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark:
-Hopper Controller | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |  |  | 
-Superconductor |  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |  |  | 
-Ant Morphology | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |  |  | 
-D'Kitty Morphology | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |  |  | 
+TF Bind 8 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅
+GFP |  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅
+ChEMBL |  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅
+UTR |  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅
+Hopper Controller | ✅ | ✅ | ✅ | ✅ |  |  | 
+Superconductor |  | ✅ | ✅ | ✅ |  |  | 
+Ant Morphology | ✅ | ✅ | ✅ | ✅ |  |  | 
+D'Kitty Morphology | ✅ | ✅ | ✅ | ✅ |  |  | 
 
 Combinations of datasets and oracles that are not available for download from our server are automatically trained on your machine on task creation. This currently only affects approximate oracles on user-defined MBO tasks. Below we provide the preferred oracle for each task, as well as meta data such as the number of data points measured.
 
