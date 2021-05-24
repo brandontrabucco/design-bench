@@ -111,6 +111,10 @@ class DiscreteDataset(DatasetBuilder):
         a value that indicates whether the design values contained in the
         model-based optimization dataset have already been converted to
         logits and need not be converted again
+    num_classes: int
+        an integer representing the number of classes in the distribution
+        that the integer data points are sampled from which cannot be None
+        and must also be greater than 1
 
     Public Methods:
 

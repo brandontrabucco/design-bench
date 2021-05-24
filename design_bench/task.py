@@ -1,4 +1,5 @@
 from design_bench.datasets.dataset_builder import DatasetBuilder
+from design_bench.datasets.discrete_dataset import DiscreteDataset
 from design_bench.oracles.oracle_builder import OracleBuilder
 from design_bench.oracles.approximate_oracle import ApproximateOracle
 from design_bench.disk_resource import DiskResource
@@ -27,6 +28,11 @@ class Task(object):
     max_x { y = f(x) }
 
     Public Attributes:
+
+    is_discrete: bool
+        An attribute that specifies whether the task dataset is discrete or
+        continuous determined by whether the dataset instance task.dataset
+        inherits from DiscreteDataset or ContinuousDataset
 
     dataset_name: str
         An attribute that specifies the name of a model-based optimization
@@ -100,6 +106,10 @@ class Task(object):
         a value that indicates whether the design values contained in the
         model-based optimization dataset have already been converted to
         logits and need not be converted again
+    num_classes: int
+        an integer representing the number of classes in the distribution
+        that the integer data points are sampled from which cannot be None
+        and must also be greater than 1
 
     Public Methods:
 
@@ -300,6 +310,16 @@ class Task(object):
                             is_absolute=True, disk_target=name)
 
     @property
+    def is_discrete(self):
+        """Attribute that specifies whether the task dataset is discrete or
+        continuous determined by whether the dataset instance task.dataset
+        inherits from DiscreteDataset or ContinuousDataset
+
+        """
+
+        return isinstance(self.dataset, DiscreteDataset)
+
+    @property
     def oracle_name(self):
         """Attribute that specifies the name of a machine learning model used
         as the ground truth score function for a model-based optimization
@@ -485,6 +505,18 @@ class Task(object):
         if not hasattr(self.dataset, "is_logits"):
             raise ValueError("only supported on discrete datasets")
         return self.dataset.is_logits
+
+    @property
+    def num_classes(self):
+        """an integer representing the number of classes in the distribution
+        that the integer data points are sampled from which cannot be None
+        and must also be greater than 1
+
+        """
+
+        if not hasattr(self.dataset, "num_classes"):
+            raise ValueError("only supported on discrete datasets")
+        return self.dataset.num_classes
 
     def iterate_batches(self, batch_size, return_x=True,
                         return_y=True, drop_remainder=False):
