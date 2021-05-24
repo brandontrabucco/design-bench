@@ -9,7 +9,7 @@ with open(F, 'r') as readme:
 
 setup(name='design-bench',
       packages=find_packages(include=['design_bench']),
-      version='2.0',
+      version='2.0.1',
       license='MIT',
       description='Design-Bench: Benchmarks for '
                   'Data-Driven Offline Model-Based Optimization',
