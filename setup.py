@@ -7,7 +7,7 @@ with open(F, 'r') as readme:
     LONG_DESCRIPTION = readme.read()
 
 
-setup(name='design-bench', version='2.0.3', license='MIT',
+setup(name='design-bench', version='2.0.4', license='MIT',
       packages=find_packages(include=['design_bench', 'design_bench.*']),
       description='Design-Bench: Benchmarks for '
                   'Data-Driven Offline Model-Based Optimization',

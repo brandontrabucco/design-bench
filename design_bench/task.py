@@ -290,7 +290,13 @@ class Task(object):
         # this naturally handles when the shard is already downloaded
         if relabel and len(new_shards) > 0 and all([
                 f.is_downloaded or f.download() for f in new_shards]):
+
+            # assign the y shards to the downloaded files and re sample
+            # the dataset if sub sampling is being used
             dataset.y_shards = new_shards
+            dataset.subsample(max_samples=dataset.dataset_size,
+                              max_percentile=dataset.dataset_max_percentile,
+                              min_percentile=dataset.dataset_min_percentile)
 
         elif relabel:
 
