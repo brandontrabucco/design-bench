@@ -136,16 +136,16 @@ class NASBenchOracle(ExactOracle):
 
         """
 
-        # dictionary containing every point in the search space
-        self.sequence_to_score = dict()
-        dataset._disable_transform = True
-        for x, y in dataset.iterate_samples():
-            self.sequence_to_score[tuple(x.tolist())] = y
-        dataset._disable_transform = False
-
         # initialize the oracle using the super class
         super(NASBenchOracle, self).__init__(
             dataset, is_batched=False,
             internal_batch_size=1, internal_measurements=1,
             expect_normalized_y=False,
             expect_normalized_x=False, expect_logits=False, **kwargs)
+
+        # dictionary containing every point in the search space
+        self.sequence_to_score = dict()
+        self.internal_dataset._disable_transform = True
+        for x, y in self.internal_dataset.iterate_samples():
+            self.sequence_to_score[tuple(x.tolist())] = y
+        self.internal_dataset._disable_transform = False
