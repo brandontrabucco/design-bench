@@ -17,10 +17,13 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
     Public Attributes:
 
-    dataset: DatasetBuilder
-        an instance of a subclass of the DatasetBuilder class which has
-        a set of design values 'x' and prediction values 'y', and defines
-        batching and sampling methods for those attributes
+    external_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which points to
+        the mutable task dataset for a model-based optimization problem
+
+    internal_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which has frozen
+        statistics and is used for training the oracle
 
     is_batched: bool
         a boolean variable that indicates whether the evaluation function
@@ -147,8 +150,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         raise NotImplementedError
 
-    def fit(self, dataset, split_kwargs=None, model_kwargs=None,
-            max_samples=None, min_percentile=0.0, max_percentile=100.0):
+    def fit(self, dataset, split_kwargs=None, model_kwargs=None):
         """a function that accepts a dataset implemented via the DatasetBuilder
         containing design values 'x' and prediction values 'y' in a model-based
         optimization problem and fits an approximate model
@@ -165,16 +167,6 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         model_kwargs: dict
             a dictionary of keyword arguments that parameterize the
             architecture and learning algorithm of the model
-        max_samples: int
-            the maximum number of samples to include in the visible dataset;
-            if more than this number of samples would be present, samples
-            are randomly removed from the visible dataset
-        max_percentile: float
-            the percentile between 0 and 100 of prediction values 'y' above
-            which are hidden from access by members outside the class
-        min_percentile: float
-            the percentile between 0 and 100 of prediction values 'y' below
-            which are hidden from access by members outside the class
 
         Returns:
 
@@ -183,17 +175,6 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             in the self.model attribute for later use
 
         """
-
-        # record the original dataset statistics so that
-        # they can be reinstated after fitting the approximate oracle
-        dataset_size = dataset.dataset_size
-        dataset_min_percentile = dataset.dataset_min_percentile
-        dataset_max_percentile = dataset.dataset_max_percentile
-
-        # temporarily subsample the dataset for fitting a model
-        dataset.subsample(max_samples=max_samples,
-                          min_percentile=min_percentile,
-                          max_percentile=max_percentile)
 
         # load parameters for creating a training and validation set
         final_split_kwargs = self.default_split_kwargs.copy()
@@ -214,24 +195,18 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
         # evaluate validation rank correlation of model
         rank_correlation = stats.spearmanr(
-            self.predict(validation.x, model=model)[:, 0],
-            self.dataset_to_oracle_y(validation.y)[:, 0])[0]
-
-        # revert subsampling statistics to original state
-        dataset.subsample(max_samples=dataset_size,
-                          min_percentile=dataset_min_percentile,
-                          max_percentile=dataset_max_percentile)
+            self.predict(validation.x, dataset=validation, model=model)[:, 0],
+            self.dataset_to_oracle_y(
+                validation.y, dataset=validation)[:, 0])[0]
 
         # return the final model and its training parameters
         return dict(model=model, rank_correlation=rank_correlation,
                     split_kwargs=final_split_kwargs,
                     model_kwargs=final_model_kwargs)
 
-    def __init__(self, dataset: DatasetBuilder, noise_std=0.0,
-                 disk_target=None, is_absolute=False, is_batched=True,
-                 internal_batch_size=32, internal_measurements=1,
-                 expect_normalized_y=False, expect_normalized_x=False,
-                 expect_logits=None, fit=None, **fit_kwargs):
+    def __init__(self, dataset: DatasetBuilder,
+                 disk_target=None, is_absolute=False, fit=None,
+                 split_kwargs=None, model_kwargs=None, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -242,16 +217,21 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
-        noise_std: float
-            the standard deviation of gaussian noise added to the prediction
-            values 'y' coming out of the ground truth score function f(x)
-            in order to make the optimization problem difficult
         disk_target: str
             a path to a zip file that would contain a serialized model, and is
             useful when there are multiple versions of the same model
         is_absolute: bool
             a boolean that indicates whether the provided disk_target path is
             an absolute path or relative to the data folder
+        fit: bool
+            a boolean that specifies whether the oracle should be re-fit to
+            the dataset; only fits the model when not available if None
+        split_kwargs: dict
+            a dictionary of keyword arguments that will be passed to
+            dataset.split when constructing a vaidation set
+        model_kwargs: dict
+            a dictionary of keyword arguments that parameterize the
+            architecture and learning algorithm of the model
         is_batched: bool
             a boolean variable that indicates whether the evaluation function
             implemented for a particular oracle is batched, which effects
@@ -264,6 +244,10 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             an integer representing the number of independent measurements of
             the prediction made by the oracle, which are subsequently
             averaged, and is useful when the oracle is stochastic
+        noise_std: float
+            the standard deviation of gaussian noise added to the prediction
+            values 'y' coming out of the ground truth score function f(x)
+            in order to make the optimization problem difficult
         expect_normalized_y: bool
             a boolean indicator that specifies whether the inputs to the
             oracle score function are expected to be normalized
@@ -273,20 +257,21 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
         expect_logits: bool
             a boolean that specifies whether the oracle score function
             is expecting logits when the dataset is discrete
-        fit: bool
-            a boolean that specifies whether the oracle should be re-fit to
-            the dataset; only fits the model when not available if None
+        max_samples: int
+            the maximum number of samples to include in the visible dataset;
+            if more than this number of samples would be present, samples
+            are randomly removed from the visible dataset
+        max_percentile: float
+            the percentile between 0 and 100 of prediction values 'y' above
+            which are hidden from access by members outside the class
+        min_percentile: float
+            the percentile between 0 and 100 of prediction values 'y' below
+            which are hidden from access by members outside the class
 
         """
 
         # initialize the oracle using the super class
-        super(ApproximateOracle, self).__init__(
-            dataset, is_batched=is_batched,
-            internal_batch_size=internal_batch_size,
-            internal_measurements=internal_measurements,
-            expect_normalized_y=expect_normalized_y,
-            expect_normalized_x=expect_normalized_x,
-            expect_logits=expect_logits, noise_std=noise_std)
+        super(ApproximateOracle, self).__init__(dataset, **kwargs)
 
         # download the model parameters from s3
         self.resource = self.get_disk_resource(
@@ -303,7 +288,9 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
 
             # otherwise build the model
             self.save_params(self.resource.disk_target,
-                             self.fit(dataset, **fit_kwargs))
+                             self.fit(self.internal_dataset,
+                                      split_kwargs=split_kwargs,
+                                      model_kwargs=model_kwargs))
 
         # load the params from disk once its downloaded
         self.params = self.load_params(self.resource.disk_target)

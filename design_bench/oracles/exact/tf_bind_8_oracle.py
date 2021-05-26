@@ -13,10 +13,13 @@ class TFBind8Oracle(ExactOracle):
 
     Public Attributes:
 
-    dataset: DatasetBuilder
-        an instance of a subclass of the DatasetBuilder class which has
-        a set of design values 'x' and prediction values 'y', and defines
-        batching and sampling methods for those attributes
+    external_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which points to
+        the mutable task dataset for a model-based optimization problem
+
+    internal_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which has frozen
+        statistics and is used for training the oracle
 
     is_batched: bool
         a boolean variable that indicates whether the evaluation function
@@ -117,7 +120,7 @@ class TFBind8Oracle(ExactOracle):
         x_key = tuple(x.tolist())
         return self.sequence_to_score[x_key].astype(np.float32) \
             if x_key in self.sequence_to_score else np.full(
-            [1], self.dataset.dataset_min_output, dtype=np.float32)
+            [1], self.internal_dataset.dataset_min_output, dtype=np.float32)
 
     def __init__(self, dataset: DiscreteDataset, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
@@ -130,10 +133,6 @@ class TFBind8Oracle(ExactOracle):
             an instance of a subclass of the DatasetBuilder class which has
             a set of design values 'x' and prediction values 'y', and defines
             batching and sampling methods for those attributes
-        noise_std: float
-            the standard deviation of gaussian noise added to the prediction
-            values 'y' coming out of the ground truth score function f(x)
-            in order to make the optimization problem difficult
 
         """
 
@@ -148,5 +147,5 @@ class TFBind8Oracle(ExactOracle):
         super(TFBind8Oracle, self).__init__(
             dataset, is_batched=False,
             internal_batch_size=1, internal_measurements=1,
-            expect_normalized_y=dataset.is_normalized_y,
+            expect_normalized_y=False,
             expect_normalized_x=False, expect_logits=False, **kwargs)

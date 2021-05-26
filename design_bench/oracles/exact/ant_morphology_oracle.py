@@ -19,10 +19,13 @@ class AntMorphologyOracle(ExactOracle):
 
     Public Attributes:
 
-    dataset: DatasetBuilder
-        an instance of a subclass of the DatasetBuilder class which has
-        a set of design values 'x' and prediction values 'y', and defines
-        batching and sampling methods for those attributes
+    external_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which points to
+        the mutable task dataset for a model-based optimization problem
+
+    internal_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which has frozen
+        statistics and is used for training the oracle
 
     is_batched: bool
         a boolean variable that indicates whether the evaluation function

@@ -14,10 +14,13 @@ class OracleBuilder(abc.ABC):
 
     Public Attributes:
 
-    dataset: DatasetBuilder
-        an instance of a subclass of the DatasetBuilder class which has
-        a set of design values 'x' and prediction values 'y', and defines
-        batching and sampling methods for those attributes
+    external_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which points to
+        the mutable task dataset for a model-based optimization problem
+
+    internal_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which has frozen
+        statistics and is used for training the oracle
 
     is_batched: bool
         a boolean variable that indicates whether the evaluation function
@@ -141,7 +144,8 @@ class OracleBuilder(abc.ABC):
     def __init__(self, dataset: DatasetBuilder, is_batched=True,
                  internal_batch_size=None, internal_measurements=1,
                  noise_std=0.0, expect_normalized_y=False,
-                 expect_normalized_x=False, expect_logits=None):
+                 expect_normalized_x=False, expect_logits=None,
+                 max_samples=None, min_percentile=0.0, max_percentile=100.0):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -177,6 +181,16 @@ class OracleBuilder(abc.ABC):
         expect_logits: bool
             a boolean that specifies whether the oracle score function
             is expecting logits when the dataset is discrete
+        max_samples: int
+            the maximum number of samples to include in the visible dataset;
+            if more than this number of samples would be present, samples
+            are randomly removed from the visible dataset
+        max_percentile: float
+            the percentile between 0 and 100 of prediction values 'y' above
+            which are hidden from access by members outside the class
+        min_percentile: float
+            the percentile between 0 and 100 of prediction values 'y' below
+            which are hidden from access by members outside the class
 
         """
 
@@ -191,7 +205,22 @@ class OracleBuilder(abc.ABC):
             raise ValueError("the given dataset is not compatible")
 
         # keep the dataset in case it is needed for normalization
-        self.dataset = dataset
+        self.external_dataset = dataset
+
+        # return a new version of the dataset
+        self.internal_dataset = dataset.rebuild_dataset(
+            dataset.x_shards, dataset.y_shards, dataset.dataset_visible_mask)
+
+        # draw statistics from a fixed distribution
+        # this is necessary because self.dataset is mutable
+        self.internal_dataset.subsample(max_samples=max_samples,
+                                        min_percentile=min_percentile,
+                                        max_percentile=max_percentile)
+
+        # ensure the statistics dataset has frozen statistics
+        self.internal_dataset.update_x_statistics()
+        self.internal_dataset.update_y_statistics()
+        self.internal_dataset.freeze_statistics = True
 
         # attributes that describe the input format
         self.expect_normalized_y = expect_normalized_y
@@ -205,9 +234,9 @@ class OracleBuilder(abc.ABC):
 
         # attributes that describe model predictions
         self.noise_std = noise_std
-        self.num_evaluations = self.dataset.dataset_size
+        self.num_evaluations = self.external_dataset.dataset_size
 
-    def dataset_to_oracle_x(self, x_batch):
+    def dataset_to_oracle_x(self, x_batch, dataset=None):
         """Helper function for converting from designs contained in the
         dataset format into a format the oracle is expecting to process,
         such as from integers to logits of a categorical distribution
@@ -218,6 +247,9 @@ class OracleBuilder(abc.ABC):
             a batch of design values 'x' that will be given as input to the
             oracle model in order to obtain a prediction value 'y' for
             each 'x' which is then returned
+        dataset: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class representing
+            the source of the batch, defaults to be self.external_dataset
 
         Returns:
 
@@ -228,33 +260,33 @@ class OracleBuilder(abc.ABC):
 
         """
 
+        # the default source is self.external_dataset
+        if dataset is None:
+            dataset = self.external_dataset
+
+        # handle when the dataset is normalized and the normalization
+        # statistics expected by the oracle are different
+        if dataset.is_normalized_x:
+            x_batch = dataset.denormalize_x(x_batch)
+
+        # handle when the inputs are currently encoded as logits
+        # and the oracle may use a different set of conversion parameters
+        if isinstance(dataset, DiscreteDataset) and dataset.is_logits:
+            x_batch = dataset.to_integers(x_batch)
+
         # handle when the oracle expects logits but the dataset
         # is currently encoded as integers
-        if isinstance(self.dataset, DiscreteDataset) and \
-                self.expect_logits and not self.dataset.is_logits:
-            x_batch = self.dataset.to_logits(x_batch)
+        if isinstance(dataset, DiscreteDataset) and self.expect_logits:
+            x_batch = self.internal_dataset.to_logits(x_batch)
 
         # handle when the oracle expects normalized designs but
-        # the dataset is currently not normalized
-        if self.expect_normalized_x and \
-                not self.dataset.is_normalized_x:
-            x_batch = self.dataset.normalize_x(x_batch)
-
-        # handle when the oracle expects denormalized designs but
-        # the dataset is currently normalized
-        if not self.expect_normalized_x and \
-                self.dataset.is_normalized_x:
-            x_batch = self.dataset.denormalize_x(x_batch)
-
-        # handle when the oracle expects integers but the dataset
-        # is currently encoded as logits
-        if isinstance(self.dataset, DiscreteDataset) and \
-                not self.expect_logits and self.dataset.is_logits:
-            x_batch = self.dataset.to_integers(x_batch)
+        # the dataset is not currently normalized
+        if self.expect_normalized_x:
+            x_batch = self.internal_dataset.normalize_x(x_batch)
 
         return x_batch
 
-    def dataset_to_oracle_y(self, y_batch):
+    def dataset_to_oracle_y(self, y_batch, dataset=None):
         """Helper function for converting from predictions contained in the
         dataset format into a format the oracle is expecting to process,
         such as from normalized to denormalized predictions
@@ -265,6 +297,9 @@ class OracleBuilder(abc.ABC):
             a batch of prediction values 'y' that are from the dataset and
             will be processed into a format expected by the oracle score
             function, which is useful when training the oracle
+        dataset: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class representing
+            the source of the batch, defaults to be self.external_dataset
 
         Returns:
 
@@ -275,21 +310,23 @@ class OracleBuilder(abc.ABC):
 
         """
 
-        # handle when the oracle expects normalized predictions but
-        # the dataset is currently not normalized
-        if self.expect_normalized_y and \
-                not self.dataset.is_normalized_y:
-            y_batch = self.dataset.normalize_y(y_batch)
+        # the default source is self.external_dataset
+        if dataset is None:
+            dataset = self.external_dataset
 
-        # handle when the oracle expects denormalized predictions but
-        # the dataset is currently normalized
-        if not self.expect_normalized_y and \
-                self.dataset.is_normalized_y:
-            y_batch = self.dataset.denormalize_y(y_batch)
+        # handle when the dataset is normalized and the normalization
+        # statistics expected by the oracle are different
+        if dataset.is_normalized_y:
+            y_batch = dataset.denormalize_y(y_batch)
+
+        # handle when the oracle expects normalized predictions but
+        # the dataset is not currently normalized
+        if self.expect_normalized_y:
+            y_batch = self.internal_dataset.normalize_y(y_batch)
 
         return y_batch
 
-    def oracle_to_dataset_x(self, x_batch):
+    def oracle_to_dataset_x(self, x_batch, dataset=None):
         """Helper function for converting from designs in the format of the
         oracle into the design format the dataset contains, such as
         from categorical logits to integers
@@ -300,6 +337,9 @@ class OracleBuilder(abc.ABC):
             a batch of design values 'x' that have been converted from
             the format of designs contained in the dataset to the
             format expected by the oracle score function
+        dataset: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class representing
+            the destination of the batch, defaults to be self.external_dataset
 
         Returns:
 
@@ -310,33 +350,33 @@ class OracleBuilder(abc.ABC):
 
         """
 
-        # handle when the dataset is currently integers but the oracle
-        # is currently expecting logits
-        if isinstance(self.dataset, DiscreteDataset) and \
-                not self.expect_logits and self.dataset.is_logits:
-            x_batch = self.dataset.to_logits(x_batch)
+        # the default source is self.external_dataset
+        if dataset is None:
+            dataset = self.external_dataset
 
-        # handle when the dataset is currently normalized but
-        # the oracle does not expect normalized
-        if self.expect_normalized_x and \
-                not self.dataset.is_normalized_x:
-            x_batch = self.dataset.denormalize_x(x_batch)
+        # handle when the dataset is normalized and the normalization
+        # statistics expected by the oracle are different
+        if self.expect_normalized_x:
+            x_batch = self.internal_dataset.denormalize_x(x_batch)
 
-        # handle when the dataset is currently denormalized but
-        # the oracle expects normalized
-        if not self.expect_normalized_x and \
-                self.dataset.is_normalized_x:
-            x_batch = self.dataset.normalize_x(x_batch)
+        # handle when the inputs are currently encoded as logits
+        # and the oracle may use a different set of conversion parameters
+        if isinstance(dataset, DiscreteDataset) and self.expect_logits:
+            x_batch = self.internal_dataset.to_integers(x_batch)
 
-        # handle when the dataset is currently logits but the oracle
-        # is currently expecting integers
-        if isinstance(self.dataset, DiscreteDataset) and \
-                self.expect_logits and not self.dataset.is_logits:
-            x_batch = self.dataset.to_integers(x_batch)
+        # handle when the oracle expects logits but the dataset
+        # is currently encoded as integers
+        if isinstance(dataset, DiscreteDataset) and dataset.is_logits:
+            x_batch = dataset.to_logits(x_batch)
+
+        # handle when the oracle expects normalized designs but
+        # the dataset is not currently normalized
+        if dataset.is_normalized_x:
+            x_batch = dataset.normalize_x(x_batch)
 
         return x_batch
 
-    def oracle_to_dataset_y(self, y_batch):
+    def oracle_to_dataset_y(self, y_batch, dataset=None):
         """Helper function for converting from predictions in the
         format of the oracle into a format the dataset contains,
         such as from normalized to denormalized predictions
@@ -347,6 +387,9 @@ class OracleBuilder(abc.ABC):
             a batch of prediction values 'y' that have been converted from
             the format of predictions contained in the dataset to the
             format expected by the oracle score function
+        dataset: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class representing
+            the destination of the batch, defaults to be self.external_dataset
 
         Returns:
 
@@ -357,21 +400,23 @@ class OracleBuilder(abc.ABC):
 
         """
 
-        # handle when the dataset is currently normalized but
-        # the oracle does not expect normalized
-        if self.expect_normalized_y and \
-                not self.dataset.is_normalized_y:
-            y_batch = self.dataset.denormalize_y(y_batch)
+        # the default source is self.dataset
+        if dataset is None:
+            dataset = self.external_dataset
 
-        # handle when the dataset is currently denormalized but
-        # the oracle expects normalized
-        if not self.expect_normalized_y and \
-                self.dataset.is_normalized_y:
-            y_batch = self.dataset.normalize_y(y_batch)
+        # handle when the oracle expects normalized predictions but
+        # the dataset is not currently normalized
+        if self.expect_normalized_y:
+            y_batch = self.internal_dataset.denormalize_y(y_batch)
+
+        # handle when the dataset is normalized and the normalization
+        # statistics expected by the oracle are different
+        if dataset.is_normalized_y:
+            y_batch = dataset.normalize_y(y_batch)
 
         return y_batch
 
-    def predict(self, x_batch, **kwargs):
+    def predict(self, x_batch, dataset=None, **kwargs):
         """a function that accepts a batch of design values 'x' as input and
         for each design computes a prediction value 'y' which corresponds
         to the score in a model-based optimization problem
@@ -382,6 +427,9 @@ class OracleBuilder(abc.ABC):
             a batch of design values 'x' that will be given as input to the
             oracle model in order to obtain a prediction value 'y' for
             each 'x' which is then returned
+        dataset: DatasetBuilder
+            an instance of a subclass of the DatasetBuilder class representing
+            the source of the batch, defaults to be self.external_dataset
 
         Returns:
 
@@ -409,7 +457,7 @@ class OracleBuilder(abc.ABC):
             x_sliced = x_batch[read_position:read_position + batch_size]
 
             # convert from the dataset format to the oracle format
-            x_sliced = self.dataset_to_oracle_x(x_sliced)
+            x_sliced = self.dataset_to_oracle_x(x_sliced, dataset=dataset)
 
             # if the inner score function is not batched squeeze the
             # outermost batch dimension of one
@@ -433,7 +481,7 @@ class OracleBuilder(abc.ABC):
                     0.0, 1.0, y_sliced.shape).astype(y_sliced.dtype)
 
             # convert from the oracle format to the dataset format
-            y_sliced = self.oracle_to_dataset_y(y_sliced)
+            y_sliced = self.oracle_to_dataset_y(y_sliced, dataset=dataset)
 
             # store the new prediction in a list
             y_batch.append(y_sliced)

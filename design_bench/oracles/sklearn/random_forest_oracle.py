@@ -14,10 +14,13 @@ class RandomForestOracle(SKLearnOracle):
 
     Public Attributes:
 
-    dataset: DatasetBuilder
-        an instance of a subclass of the DatasetBuilder class which has
-        a set of design values 'x' and prediction values 'y', and defines
-        batching and sampling methods for those attributes
+    external_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which points to
+        the mutable task dataset for a model-based optimization problem
+
+    internal_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which has frozen
+        statistics and is used for training the oracle
 
     is_batched: bool
         a boolean variable that indicates whether the evaluation function
@@ -192,8 +195,8 @@ class RandomForestOracle(SKLearnOracle):
         y = training.y
 
         # convert samples into the expected format of the oracle
-        x = self.dataset_to_oracle_x(x)
-        y = self.dataset_to_oracle_y(y)
+        x = self.dataset_to_oracle_x(x, dataset=training)
+        y = self.dataset_to_oracle_y(y, dataset=training)
 
         # fit the random forest model to the dataset
         model.fit(x.reshape((x.shape[0], np.prod(x.shape[1:]))),

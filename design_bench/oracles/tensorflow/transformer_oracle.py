@@ -21,10 +21,13 @@ class TransformerOracle(TensorflowOracle):
 
     Public Attributes:
 
-    dataset: DatasetBuilder
-        an instance of a subclass of the DatasetBuilder class which has
-        a set of design values 'x' and prediction values 'y', and defines
-        batching and sampling methods for those attributes
+    external_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which points to
+        the mutable task dataset for a model-based optimization problem
+
+    internal_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which has frozen
+        statistics and is used for training the oracle
 
     is_batched: bool
         a boolean variable that indicates whether the evaluation function
@@ -238,7 +241,7 @@ class TransformerOracle(TensorflowOracle):
             hidden_act=activation,
             hidden_dropout_prob=dropout_rate,
             attention_probs_dropout_prob=dropout_rate,
-            max_position_embeddings=self.dataset.input_shape[0],
+            max_position_embeddings=training.input_shape[0],
             initializer_range=0.02,
             layer_norm_eps=1e-12,
             position_embedding_type='absolute'))
@@ -271,11 +274,11 @@ class TransformerOracle(TensorflowOracle):
         # convert to the huggingface transformer input format
         training = training.map(
             lambda x, y: ({input_key: x}, y),
-            num_parallel_calls=tf.data.AUTOTUNE)
+            num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
         validation = validation.map(
             lambda x, y: ({input_key: x}, y),
-            num_parallel_calls=tf.data.AUTOTUNE)
+            num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
         # fit the model to a tensorflow dataset
         model.fit(training, steps_per_epoch=steps,
@@ -309,7 +312,7 @@ class TransformerOracle(TensorflowOracle):
         """
 
         input_key = "input_ids" if isinstance(
-            self.dataset, DiscreteDataset) else "inputs_embeds"
+            self.internal_dataset, DiscreteDataset) else "inputs_embeds"
 
         # call the model's predict function to generate predictions
         return (model if model else self.params["model"])\

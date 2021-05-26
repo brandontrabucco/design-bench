@@ -15,10 +15,13 @@ class TensorflowOracle(ApproximateOracle, abc.ABC):
 
     Public Attributes:
 
-    dataset: DatasetBuilder
-        an instance of a subclass of the DatasetBuilder class which has
-        a set of design values 'x' and prediction values 'y', and defines
-        batching and sampling methods for those attributes
+    external_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which points to
+        the mutable task dataset for a model-based optimization problem
+
+    internal_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which has frozen
+        statistics and is used for training the oracle
 
     is_batched: bool
         a boolean variable that indicates whether the evaluation function
@@ -105,8 +108,8 @@ class TensorflowOracle(ApproximateOracle, abc.ABC):
 
         # map from dataset format to oracle format using numpy
         def dataset_to_oracle_numpy(x, y):
-            return self.dataset_to_oracle_x(x), \
-                   self.dataset_to_oracle_y(y)
+            return self.dataset_to_oracle_x(x, dataset=dataset), \
+                   self.dataset_to_oracle_y(y, dataset=dataset)
 
         # map from dataset format to oracle format using tensorflow
         def dataset_to_oracle_tensorflow(x, y):

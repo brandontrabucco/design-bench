@@ -16,10 +16,13 @@ class FullyConnectedOracle(TensorflowOracle):
 
     Public Attributes:
 
-    dataset: DatasetBuilder
-        an instance of a subclass of the DatasetBuilder class which has
-        a set of design values 'x' and prediction values 'y', and defines
-        batching and sampling methods for those attributes
+    external_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which points to
+        the mutable task dataset for a model-based optimization problem
+
+    internal_dataset: DatasetBuilder
+        an instance of a subclass of the DatasetBuilder class which has frozen
+        statistics and is used for training the oracle
 
     is_batched: bool
         a boolean variable that indicates whether the evaluation function
@@ -212,8 +215,10 @@ class FullyConnectedOracle(TensorflowOracle):
         learning_rate = model_kwargs["learning_rate"]
 
         # prepare the dataset for training and validation
-        validation_x = self.dataset_to_oracle_x(validation.x)
-        validation_y = self.dataset_to_oracle_y(validation.y)
+        validation_x = self.dataset_to_oracle_x(validation.x,
+                                                dataset=validation)
+        validation_y = self.dataset_to_oracle_y(validation.y,
+                                                dataset=validation)
 
         # obtain the expected shape of inputs to the model
         input_shape = training.input_shape
