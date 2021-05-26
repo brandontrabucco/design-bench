@@ -15,7 +15,7 @@ The goal of model-based optimization is to find an input **x** that maximizes an
 Design-Bench can be installed with the complete set of benchmarks via our pip package.
 
 ```bash
-pip install design-bench[all]
+pip install design-bench[all]>=2.0.5
 pip install morphing-agents==1.4
 ```
 
