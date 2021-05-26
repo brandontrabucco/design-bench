@@ -52,7 +52,7 @@ register('GFP-RandomForest-v0',
 
              # parameters used for building the model
              model_kwargs=dict(n_estimators=100,
-                               max_depth=10,
+                               max_depth=100,
                                max_features="auto"),
 
              # parameters used for building the validation set
@@ -270,7 +270,7 @@ register('TFBind8-RandomForest-v0',
 
              # parameters used for building the model
              model_kwargs=dict(n_estimators=100,
-                               max_depth=10,
+                               max_depth=100,
                                max_features="auto"),
 
              # parameters used for building the validation set
@@ -506,7 +506,7 @@ register('UTR-RandomForest-v0',
 
              # parameters used for building the model
              model_kwargs=dict(n_estimators=100,
-                               max_depth=10,
+                               max_depth=100,
                                max_features="auto"),
 
              # parameters used for building the validation set
@@ -712,7 +712,7 @@ register('ChEMBL-RandomForest-v0',
 
              # parameters used for building the model
              model_kwargs=dict(n_estimators=100,
-                               max_depth=10,
+                               max_depth=100,
                                max_features="auto"),
 
              # parameters used for building the validation set
@@ -939,7 +939,7 @@ register('HopperController-RandomForest-v0',
 
              # parameters used for building the model
              model_kwargs=dict(n_estimators=100,
-                               max_depth=10,
+                               max_depth=100,
                                max_features="auto"),
 
              # parameters used for building the validation set
@@ -1036,7 +1036,7 @@ register('Superconductor-RandomForest-v0',
 
              # parameters used for building the model
              model_kwargs=dict(n_estimators=100,
-                               max_depth=10,
+                               max_depth=100,
                                max_features="auto"),
 
              # parameters used for building the validation set
@@ -1148,7 +1148,7 @@ register('AntMorphology-RandomForest-v0',
 
              # parameters used for building the model
              model_kwargs=dict(n_estimators=100,
-                               max_depth=10,
+                               max_depth=100,
                                max_features="auto"),
 
              # parameters used for building the validation set
@@ -1260,7 +1260,7 @@ register('DKittyMorphology-RandomForest-v0',
 
              # parameters used for building the model
              model_kwargs=dict(n_estimators=100,
-                               max_depth=10,
+                               max_depth=100,
                                max_features="auto"),
 
              # parameters used for building the validation set
