@@ -142,7 +142,7 @@ class OracleBuilder(abc.ABC):
         raise NotImplementedError
 
     def __init__(self, dataset: DatasetBuilder, is_batched=True,
-                 internal_batch_size=None, internal_measurements=1,
+                 internal_batch_size=32, internal_measurements=1,
                  noise_std=0.0, expect_normalized_y=False,
                  expect_normalized_x=False, expect_logits=None,
                  max_samples=None, min_percentile=0.0, max_percentile=100.0):
