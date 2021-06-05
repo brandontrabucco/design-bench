@@ -4,8 +4,23 @@ from design_bench.oracles.sklearn.kernels import DefaultSequenceKernel
 from sklearn.gaussian_process.kernels import ConstantKernel, RBF
 
 
+register('ToyDiscrete-Exact-v0',
+         'design_bench.datasets.discrete.toy_discrete_dataset:ToyDiscreteDataset',
+         'design_bench.oracles.exact:ToyDiscreteOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             max_percentile=40,
+             min_percentile=0),
+
+         # keyword arguments for building the exact oracle
+         oracle_kwargs=dict(
+             noise_std=0.0))
+
+
 register('GFP-GP-v0',
-         'design_bench.datasets.discrete:GFPDataset',
+         'design_bench.datasets.discrete.gfp_dataset:GFPDataset',
          'design_bench.oracles.sklearn:GaussianProcessOracle',
 
          # keyword arguments for building the dataset
@@ -34,7 +49,7 @@ register('GFP-GP-v0',
 
 
 register('GFP-RandomForest-v0',
-         'design_bench.datasets.discrete:GFPDataset',
+         'design_bench.datasets.discrete.gfp_dataset:GFPDataset',
          'design_bench.oracles.sklearn:RandomForestOracle',
 
          # keyword arguments for building the dataset
@@ -65,7 +80,7 @@ register('GFP-RandomForest-v0',
 
 
 register('GFP-FullyConnected-v0',
-         'design_bench.datasets.discrete:GFPDataset',
+         'design_bench.datasets.discrete.gfp_dataset:GFPDataset',
          'design_bench.oracles.tensorflow:FullyConnectedOracle',
 
          # keyword arguments for building the dataset
@@ -100,7 +115,7 @@ register('GFP-FullyConnected-v0',
 
 
 register('GFP-LSTM-v0',
-         'design_bench.datasets.discrete:GFPDataset',
+         'design_bench.datasets.discrete.gfp_dataset:GFPDataset',
          'design_bench.oracles.tensorflow:LSTMOracle',
 
          # keyword arguments for building the dataset
@@ -133,7 +148,7 @@ register('GFP-LSTM-v0',
 
 
 register('GFP-ResNet-v0',
-         'design_bench.datasets.discrete:GFPDataset',
+         'design_bench.datasets.discrete.gfp_dataset:GFPDataset',
          'design_bench.oracles.tensorflow:ResNetOracle',
 
          # keyword arguments for building the dataset
@@ -168,7 +183,7 @@ register('GFP-ResNet-v0',
 
 
 register('GFP-Transformer-v0',
-         'design_bench.datasets.discrete:GFPDataset',
+         'design_bench.datasets.discrete.gfp_dataset:GFPDataset',
          'design_bench.oracles.tensorflow:TransformerOracle',
 
          # keyword arguments for building the dataset
@@ -206,7 +221,7 @@ register('GFP-Transformer-v0',
 
 
 register('TFBind8-Exact-v0',
-         'design_bench.datasets.discrete:TFBind8Dataset',
+         'design_bench.datasets.discrete.tf_bind_8_dataset:TFBind8Dataset',
          'design_bench.oracles.exact:TFBind8Oracle',
 
          # keyword arguments for building the dataset
@@ -221,7 +236,7 @@ register('TFBind8-Exact-v0',
 
 
 register('TFBind8-GP-v0',
-         'design_bench.datasets.discrete:TFBind8Dataset',
+         'design_bench.datasets.discrete.tf_bind_8_dataset:TFBind8Dataset',
          'design_bench.oracles.sklearn:GaussianProcessOracle',
 
          # keyword arguments for building the dataset
@@ -251,7 +266,7 @@ register('TFBind8-GP-v0',
 
 
 register('TFBind8-RandomForest-v0',
-         'design_bench.datasets.discrete:TFBind8Dataset',
+         'design_bench.datasets.discrete.tf_bind_8_dataset:TFBind8Dataset',
          'design_bench.oracles.sklearn:RandomForestOracle',
 
          # keyword arguments for building the dataset
@@ -283,7 +298,7 @@ register('TFBind8-RandomForest-v0',
 
 
 register('TFBind8-FullyConnected-v0',
-         'design_bench.datasets.discrete:TFBind8Dataset',
+         'design_bench.datasets.discrete.tf_bind_8_dataset:TFBind8Dataset',
          'design_bench.oracles.tensorflow:FullyConnectedOracle',
 
          # keyword arguments for building the dataset
@@ -319,7 +334,7 @@ register('TFBind8-FullyConnected-v0',
 
 
 register('TFBind8-LSTM-v0',
-         'design_bench.datasets.discrete:TFBind8Dataset',
+         'design_bench.datasets.discrete.tf_bind_8_dataset:TFBind8Dataset',
          'design_bench.oracles.tensorflow:LSTMOracle',
 
          # keyword arguments for building the dataset
@@ -353,7 +368,7 @@ register('TFBind8-LSTM-v0',
 
 
 register('TFBind8-ResNet-v0',
-         'design_bench.datasets.discrete:TFBind8Dataset',
+         'design_bench.datasets.discrete.tf_bind_8_dataset:TFBind8Dataset',
          'design_bench.oracles.tensorflow:ResNetOracle',
 
          # keyword arguments for building the dataset
@@ -389,7 +404,7 @@ register('TFBind8-ResNet-v0',
 
 
 register('TFBind8-Transformer-v0',
-         'design_bench.datasets.discrete:TFBind8Dataset',
+         'design_bench.datasets.discrete.tf_bind_8_dataset:TFBind8Dataset',
          'design_bench.oracles.tensorflow:TransformerOracle',
 
          # keyword arguments for building the dataset
@@ -428,7 +443,7 @@ register('TFBind8-Transformer-v0',
 
 
 register('TFBind10-Exact-v0',
-         'design_bench.datasets.discrete:TFBind10Dataset',
+         'design_bench.datasets.discrete.tf_bind_10_dataset:TFBind10Dataset',
          'design_bench.oracles.exact:TFBind10Oracle',
 
          # keyword arguments for building the dataset
@@ -444,7 +459,7 @@ register('TFBind10-Exact-v0',
 
 
 register('NASBench-Exact-v0',
-         'design_bench.datasets.discrete:NASBenchDataset',
+         'design_bench.datasets.discrete.nas_bench_dataset:NASBenchDataset',
          'design_bench.oracles.exact:NASBenchOracle',
 
          # keyword arguments for building the dataset
@@ -459,7 +474,7 @@ register('NASBench-Exact-v0',
 
 
 register('UTR-GP-v0',
-         'design_bench.datasets.discrete:UTRDataset',
+         'design_bench.datasets.discrete.utr_dataset:UTRDataset',
          'design_bench.oracles.sklearn:GaussianProcessOracle',
 
          # keyword arguments for building the dataset
@@ -488,7 +503,7 @@ register('UTR-GP-v0',
 
 
 register('UTR-RandomForest-v0',
-         'design_bench.datasets.discrete:UTRDataset',
+         'design_bench.datasets.discrete.utr_dataset:UTRDataset',
          'design_bench.oracles.sklearn:RandomForestOracle',
 
          # keyword arguments for building the dataset
@@ -519,7 +534,7 @@ register('UTR-RandomForest-v0',
 
 
 register('UTR-FullyConnected-v0',
-         'design_bench.datasets.discrete:UTRDataset',
+         'design_bench.datasets.discrete.utr_dataset:UTRDataset',
          'design_bench.oracles.tensorflow:FullyConnectedOracle',
 
          # keyword arguments for building the dataset
@@ -554,7 +569,7 @@ register('UTR-FullyConnected-v0',
 
 
 register('UTR-LSTM-v0',
-         'design_bench.datasets.discrete:UTRDataset',
+         'design_bench.datasets.discrete.utr_dataset:UTRDataset',
          'design_bench.oracles.tensorflow:LSTMOracle',
 
          # keyword arguments for building the dataset
@@ -587,7 +602,7 @@ register('UTR-LSTM-v0',
 
 
 register('UTR-ResNet-v0',
-         'design_bench.datasets.discrete:UTRDataset',
+         'design_bench.datasets.discrete.utr_dataset:UTRDataset',
          'design_bench.oracles.tensorflow:ResNetOracle',
 
          # keyword arguments for building the dataset
@@ -622,7 +637,7 @@ register('UTR-ResNet-v0',
 
 
 register('UTR-Transformer-v0',
-         'design_bench.datasets.discrete:UTRDataset',
+         'design_bench.datasets.discrete.utr_dataset:UTRDataset',
          'design_bench.oracles.tensorflow:TransformerOracle',
 
          # keyword arguments for building the dataset
@@ -660,7 +675,7 @@ register('UTR-Transformer-v0',
 
 
 register('ChEMBL-GP-v0',
-         'design_bench.datasets.discrete:ChEMBLDataset',
+         'design_bench.datasets.discrete.chembl_dataset:ChEMBLDataset',
          'design_bench.oracles.sklearn:GaussianProcessOracle',
 
          # keyword arguments for building the dataset
@@ -692,7 +707,7 @@ register('ChEMBL-GP-v0',
 
 
 register('ChEMBL-RandomForest-v0',
-         'design_bench.datasets.discrete:ChEMBLDataset',
+         'design_bench.datasets.discrete.chembl_dataset:ChEMBLDataset',
          'design_bench.oracles.sklearn:RandomForestOracle',
 
          # keyword arguments for building the dataset
@@ -725,7 +740,7 @@ register('ChEMBL-RandomForest-v0',
 
 
 register('ChEMBL-FullyConnected-v0',
-         'design_bench.datasets.discrete:ChEMBLDataset',
+         'design_bench.datasets.discrete.chembl_dataset:ChEMBLDataset',
          'design_bench.oracles.tensorflow:FullyConnectedOracle',
 
          # keyword arguments for building the dataset
@@ -762,7 +777,7 @@ register('ChEMBL-FullyConnected-v0',
 
 
 register('ChEMBL-LSTM-v0',
-         'design_bench.datasets.discrete:ChEMBLDataset',
+         'design_bench.datasets.discrete.chembl_dataset:ChEMBLDataset',
          'design_bench.oracles.tensorflow:LSTMOracle',
 
          # keyword arguments for building the dataset
@@ -797,7 +812,7 @@ register('ChEMBL-LSTM-v0',
 
 
 register('ChEMBL-ResNet-v0',
-         'design_bench.datasets.discrete:ChEMBLDataset',
+         'design_bench.datasets.discrete.chembl_dataset:ChEMBLDataset',
          'design_bench.oracles.tensorflow:ResNetOracle',
 
          # keyword arguments for building the dataset
@@ -834,7 +849,7 @@ register('ChEMBL-ResNet-v0',
 
 
 register('ChEMBL-Transformer-v0',
-         'design_bench.datasets.discrete:ChEMBLDataset',
+         'design_bench.datasets.discrete.chembl_dataset:ChEMBLDataset',
          'design_bench.oracles.tensorflow:TransformerOracle',
 
          # keyword arguments for building the dataset
@@ -873,8 +888,23 @@ register('ChEMBL-Transformer-v0',
                                is_absolute=False)))
 
 
+register('ToyContinuous-Exact-v0',
+         'design_bench.datasets.continuous.toy_continuous_dataset:ToyContinuousDataset',
+         'design_bench.oracles.exact:ToyContinuousOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             max_percentile=40,
+             min_percentile=0),
+
+         # keyword arguments for building the exact oracle
+         oracle_kwargs=dict(
+             noise_std=0.0))
+
+
 register('HopperController-Exact-v0',
-         'design_bench.datasets.continuous:HopperControllerDataset',
+         'design_bench.datasets.continuous.hopper_controller_dataset:HopperControllerDataset',
          'design_bench.oracles.exact:HopperControllerOracle',
 
          # keyword arguments for building the dataset
@@ -889,7 +919,7 @@ register('HopperController-Exact-v0',
 
 
 register('HopperController-GP-v0',
-         'design_bench.datasets.continuous:HopperControllerDataset',
+         'design_bench.datasets.continuous.hopper_controller_dataset:HopperControllerDataset',
          'design_bench.oracles.sklearn:GaussianProcessOracle',
 
          # keyword arguments for building the dataset
@@ -921,7 +951,7 @@ register('HopperController-GP-v0',
 
 
 register('HopperController-RandomForest-v0',
-         'design_bench.datasets.continuous:HopperControllerDataset',
+         'design_bench.datasets.continuous.hopper_controller_dataset:HopperControllerDataset',
          'design_bench.oracles.sklearn:RandomForestOracle',
 
          # keyword arguments for building the dataset
@@ -952,7 +982,7 @@ register('HopperController-RandomForest-v0',
 
 
 register('HopperController-FullyConnected-v0',
-         'design_bench.datasets.continuous:HopperControllerDataset',
+         'design_bench.datasets.continuous.hopper_controller_dataset:HopperControllerDataset',
          'design_bench.oracles.tensorflow:FullyConnectedOracle',
 
          # keyword arguments for building the dataset
@@ -986,7 +1016,7 @@ register('HopperController-FullyConnected-v0',
 
 
 register('Superconductor-GP-v0',
-         'design_bench.datasets.continuous:SuperconductorDataset',
+         'design_bench.datasets.continuous.superconductor_dataset:SuperconductorDataset',
          'design_bench.oracles.sklearn:GaussianProcessOracle',
 
          # keyword arguments for building the dataset
@@ -1018,7 +1048,7 @@ register('Superconductor-GP-v0',
 
 
 register('Superconductor-RandomForest-v0',
-         'design_bench.datasets.continuous:SuperconductorDataset',
+         'design_bench.datasets.continuous.superconductor_dataset:SuperconductorDataset',
          'design_bench.oracles.sklearn:RandomForestOracle',
 
          # keyword arguments for building the dataset
@@ -1049,7 +1079,7 @@ register('Superconductor-RandomForest-v0',
 
 
 register('Superconductor-FullyConnected-v0',
-         'design_bench.datasets.continuous:SuperconductorDataset',
+         'design_bench.datasets.continuous.superconductor_dataset:SuperconductorDataset',
          'design_bench.oracles.tensorflow:FullyConnectedOracle',
 
          # keyword arguments for building the dataset
@@ -1083,7 +1113,7 @@ register('Superconductor-FullyConnected-v0',
 
 
 register('AntMorphology-Exact-v0',
-         'design_bench.datasets.continuous:AntMorphologyDataset',
+         'design_bench.datasets.continuous.ant_morphology_dataset:AntMorphologyDataset',
          'design_bench.oracles.exact:AntMorphologyOracle',
 
          # keyword arguments for building the dataset
@@ -1098,7 +1128,7 @@ register('AntMorphology-Exact-v0',
 
 
 register('AntMorphology-GP-v0',
-         'design_bench.datasets.continuous:AntMorphologyDataset',
+         'design_bench.datasets.continuous.ant_morphology_dataset:AntMorphologyDataset',
          'design_bench.oracles.sklearn:GaussianProcessOracle',
 
          # keyword arguments for building the dataset
@@ -1130,7 +1160,7 @@ register('AntMorphology-GP-v0',
 
 
 register('AntMorphology-RandomForest-v0',
-         'design_bench.datasets.continuous:AntMorphologyDataset',
+         'design_bench.datasets.continuous.ant_morphology_dataset:AntMorphologyDataset',
          'design_bench.oracles.sklearn:RandomForestOracle',
 
          # keyword arguments for building the dataset
@@ -1161,7 +1191,7 @@ register('AntMorphology-RandomForest-v0',
 
 
 register('AntMorphology-FullyConnected-v0',
-         'design_bench.datasets.continuous:AntMorphologyDataset',
+         'design_bench.datasets.continuous.ant_morphology_dataset:AntMorphologyDataset',
          'design_bench.oracles.tensorflow:FullyConnectedOracle',
 
          # keyword arguments for building the dataset
@@ -1195,7 +1225,7 @@ register('AntMorphology-FullyConnected-v0',
 
 
 register('DKittyMorphology-Exact-v0',
-         'design_bench.datasets.continuous:DKittyMorphologyDataset',
+         'design_bench.datasets.continuous.dkitty_morphology_dataset:DKittyMorphologyDataset',
          'design_bench.oracles.exact:DKittyMorphologyOracle',
 
          # keyword arguments for building the dataset
@@ -1210,7 +1240,7 @@ register('DKittyMorphology-Exact-v0',
 
 
 register('DKittyMorphology-GP-v0',
-         'design_bench.datasets.continuous:DKittyMorphologyDataset',
+         'design_bench.datasets.continuous.dkitty_morphology_dataset:DKittyMorphologyDataset',
          'design_bench.oracles.sklearn:GaussianProcessOracle',
 
          # keyword arguments for building the dataset
@@ -1242,7 +1272,7 @@ register('DKittyMorphology-GP-v0',
 
 
 register('DKittyMorphology-RandomForest-v0',
-         'design_bench.datasets.continuous:DKittyMorphologyDataset',
+         'design_bench.datasets.continuous.dkitty_morphology_dataset:DKittyMorphologyDataset',
          'design_bench.oracles.sklearn:RandomForestOracle',
 
          # keyword arguments for building the dataset
@@ -1273,7 +1303,7 @@ register('DKittyMorphology-RandomForest-v0',
 
 
 register('DKittyMorphology-FullyConnected-v0',
-         'design_bench.datasets.continuous:DKittyMorphologyDataset',
+         'design_bench.datasets.continuous.dkitty_morphology_dataset:DKittyMorphologyDataset',
          'design_bench.oracles.tensorflow:FullyConnectedOracle',
 
          # keyword arguments for building the dataset

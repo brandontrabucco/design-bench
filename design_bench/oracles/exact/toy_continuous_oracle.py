@@ -1,16 +1,11 @@
-from morphing_agents.mujoco.dkitty.env import MorphingDKittyEnv
-from morphing_agents.mujoco.dkitty.elements import LEG
-from morphing_agents.mujoco.dkitty.elements import LEG_LOWER_BOUND
-from morphing_agents.mujoco.dkitty.elements import LEG_UPPER_BOUND
 from design_bench.oracles.exact_oracle import ExactOracle
 from design_bench.datasets.continuous_dataset import ContinuousDataset
-from design_bench.datasets.continuous.dkitty_morphology_dataset import DKittyMorphologyDataset
+from design_bench.datasets.continuous.toy_continuous_dataset import ToyContinuousDataset
 from design_bench.disk_resource import DiskResource
 import numpy as np
-import pickle as pkl
 
 
-class DKittyMorphologyOracle(ExactOracle):
+class ToyContinuousOracle(ExactOracle):
     """An abstract class for managing the ground truth score functions f(x)
     for model-based optimization problems, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
@@ -70,7 +65,7 @@ class DKittyMorphologyOracle(ExactOracle):
 
     """
 
-    name = "exact_average_return"
+    name = "toy_prediction"
 
     @classmethod
     def supported_datasets(cls):
@@ -80,7 +75,7 @@ class DKittyMorphologyOracle(ExactOracle):
 
         """
 
-        return {DKittyMorphologyDataset}
+        return {ToyContinuousDataset}
 
     @classmethod
     def fully_characterized(cls):
@@ -123,32 +118,10 @@ class DKittyMorphologyOracle(ExactOracle):
 
         """
 
-        # create a policy forward pass in numpy
-        def mlp_policy(h):
-            h = np.maximum(0.0, h @ self.policy[0] + self.policy[1])
-            h = np.maximum(0.0, h @ self.policy[2] + self.policy[3])
-            return np.tanh(np.split(
-                h @ self.policy[4] + self.policy[5], 2)[0])
+        return np.square(x -
+                         self.optimum).sum(keepdims=True).astype(np.float32)
 
-        # convert vectors to morphologies
-        env = MorphingDKittyEnv(expose_design=False, fixed_design=[
-            LEG(*np.clip(np.array(xi), LEG_LOWER_BOUND,
-                         LEG_UPPER_BOUND)) for xi in np.split(x, 4)])
-
-        # do many rollouts using a pretrained agent
-        obs = env.reset()
-        sum_of_rewards = np.zeros([1], dtype=np.float32)
-        for t in range(self.rollout_horizon):
-            obs, rew, done, info = env.step(mlp_policy(obs))
-            sum_of_rewards += rew.astype(np.float32)
-            if done:
-                break
-
-        # we average here so as to reduce randomness
-        return sum_of_rewards
-
-    def __init__(self, dataset: ContinuousDataset,
-                 rollout_horizon=100, **kwargs):
+    def __init__(self, dataset: ContinuousDataset, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -170,24 +143,20 @@ class DKittyMorphologyOracle(ExactOracle):
 
         """
 
-        # the number of transitions per trajectory to sample
-        self.rollout_horizon = rollout_horizon
-
-        # ensure the trained policy has been downloaded
-        policy = "dkitty_morphology/dkitty_oracle.pkl"
-        policy = DiskResource(
-            policy, is_absolute=False, download_method="direct",
+        # ensure optimum has been downloaded
+        optimum = "toy_discrete/optimum.npy"
+        optimum = DiskResource(
+            optimum, is_absolute=False, download_method="direct",
             download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/{policy}")
-        if not policy.is_downloaded and not policy.download():
-            raise ValueError("unable to download trained policy for ant")
+                            f"s3-us-west-1.amazonaws.com/{optimum}")
+        if not optimum.is_downloaded and not optimum.download():
+            raise ValueError("unable to download optimum for toy example")
 
-        # load the weights of the policy
-        with open(policy.disk_target, "rb") as f:
-            self.policy = pkl.load(f)
+        # load optimum used to calculate y values
+        self.optimum = np.load(optimum.disk_target)
 
         # initialize the oracle using the super class
-        super(DKittyMorphologyOracle, self).__init__(
+        super(ToyContinuousOracle, self).__init__(
             dataset, internal_batch_size=1, is_batched=False,
             expect_normalized_y=False,
             expect_normalized_x=False, expect_logits=None, **kwargs)

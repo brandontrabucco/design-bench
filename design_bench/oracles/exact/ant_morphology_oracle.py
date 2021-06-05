@@ -4,7 +4,7 @@ from morphing_agents.mujoco.ant.elements import LEG_LOWER_BOUND
 from morphing_agents.mujoco.ant.elements import LEG_UPPER_BOUND
 from design_bench.oracles.exact_oracle import ExactOracle
 from design_bench.datasets.continuous_dataset import ContinuousDataset
-from design_bench.datasets.continuous import AntMorphologyDataset
+from design_bench.datasets.continuous.ant_morphology_dataset import AntMorphologyDataset
 from design_bench.disk_resource import DiskResource
 import numpy as np
 import pickle as pkl
