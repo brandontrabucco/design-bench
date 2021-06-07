@@ -49,7 +49,7 @@ GFP-Transformer-v0 | GFP | Transformer | 56086 | 0.8497
 ChEMBL-ResNet-v0 | ChEMBL | ResNet | 40516 | 0.3208
 UTR-ResNet-v0 | UTR | Transformer | 280000 | 0.8617
 HopperController-Exact-v0 | Hopper Controller | Exact | 3200 | 
-Superconductor-FullyConnected-v0 | Superconductor | Fully Connected | 21263 | 0.9210
+Superconductor-RandomForest-v0 | Superconductor | Random Forest | 21263 | 0.9155
 AntMorphology-Exact-v0 | Ant Morphology | Exact | 25009 | 
 DKittyMorphology-Exact-v0 | D'Kitty Morphology | Exact | 25009 | 
 
