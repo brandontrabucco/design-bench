@@ -486,7 +486,7 @@ register('UTR-GP-v0',
          # keyword arguments for building GP oracle
          oracle_kwargs=dict(
              noise_std=0.0,
-             max_samples=2000,
+             max_samples=5000,
              max_percentile=100,
              min_percentile=0,
 
@@ -494,12 +494,12 @@ register('UTR-GP-v0',
              model_kwargs=dict(kernel=DefaultSequenceKernel(size=4)),
 
              # parameters used for building the validation set
-             split_kwargs=dict(val_fraction=0.5,
+             split_kwargs=dict(val_fraction=0.2,
                                subset=None,
                                shard_size=5000,
-                               to_disk=True,
-                               disk_target="utr/split",
-                               is_absolute=False)))
+                               to_disk=False,
+                               disk_target=None,
+                               is_absolute=None)))
 
 
 register('UTR-RandomForest-v0',
@@ -515,7 +515,7 @@ register('UTR-RandomForest-v0',
          # keyword arguments for building RandomForest oracle
          oracle_kwargs=dict(
              noise_std=0.0,
-             max_samples=2000,
+             max_samples=5000,
              max_percentile=100,
              min_percentile=0,
 
@@ -525,12 +525,12 @@ register('UTR-RandomForest-v0',
                                max_features="auto"),
 
              # parameters used for building the validation set
-             split_kwargs=dict(val_fraction=0.5,
+             split_kwargs=dict(val_fraction=0.2,
                                subset=None,
                                shard_size=5000,
-                               to_disk=True,
-                               disk_target="utr/split",
-                               is_absolute=False)))
+                               to_disk=False,
+                               disk_target=None,
+                               is_absolute=None)))
 
 
 register('UTR-FullyConnected-v0',
@@ -556,16 +556,16 @@ register('UTR-FullyConnected-v0',
                                activation='relu',
                                num_layers=2,
                                epochs=5,
-                               shuffle_buffer=5000,
+                               shuffle_buffer=260000,
                                learning_rate=0.001),
 
              # parameters used for building the validation set
-             split_kwargs=dict(val_fraction=0.1,
+             split_kwargs=dict(val_fraction=0.07142857142,
                                subset=None,
-                               shard_size=5000,
-                               to_disk=True,
-                               disk_target="utr/split",
-                               is_absolute=False)))
+                               shard_size=280000,
+                               to_disk=False,
+                               disk_target=None,
+                               is_absolute=None)))
 
 
 register('UTR-LSTM-v0',
@@ -588,17 +588,17 @@ register('UTR-LSTM-v0',
              # parameters used for building the model
              model_kwargs=dict(hidden_size=64,
                                num_layers=2,
-                               epochs=20,
-                               shuffle_buffer=5000,
+                               epochs=5,
+                               shuffle_buffer=260000,
                                learning_rate=0.001),
 
              # parameters used for building the validation set
-             split_kwargs=dict(val_fraction=0.1,
+             split_kwargs=dict(val_fraction=0.07142857142,
                                subset=None,
-                               shard_size=5000,
-                               to_disk=True,
-                               disk_target="utr/split",
-                               is_absolute=False)))
+                               shard_size=280000,
+                               to_disk=False,
+                               disk_target=None,
+                               is_absolute=None)))
 
 
 register('UTR-ResNet-v0',
@@ -614,26 +614,27 @@ register('UTR-ResNet-v0',
          # keyword arguments for training ResNet oracle
          oracle_kwargs=dict(
              noise_std=0.0,
+             internal_batch_size=128,
              max_samples=None,
              max_percentile=100,
              min_percentile=0,
 
              # parameters used for building the model
-             model_kwargs=dict(hidden_size=64,
+             model_kwargs=dict(hidden_size=120,
                                activation='relu',
-                               kernel_size=3,
-                               num_blocks=4,
-                               epochs=20,
-                               shuffle_buffer=5000,
+                               kernel_size=8,
+                               num_blocks=2,
+                               epochs=5,
+                               shuffle_buffer=260000,
                                learning_rate=0.001),
 
              # parameters used for building the validation set
-             split_kwargs=dict(val_fraction=0.1,
+             split_kwargs=dict(val_fraction=0.07142857142,
                                subset=None,
-                               shard_size=5000,
-                               to_disk=True,
-                               disk_target="utr/split",
-                               is_absolute=False)))
+                               shard_size=280000,
+                               to_disk=False,
+                               disk_target=None,
+                               is_absolute=None)))
 
 
 register('UTR-Transformer-v0',
@@ -649,29 +650,29 @@ register('UTR-Transformer-v0',
          # keyword arguments for training Transformer oracle
          oracle_kwargs=dict(
              noise_std=0.0,
-             internal_batch_size=32,
+             internal_batch_size=128,
              max_samples=None,
              max_percentile=100,
              min_percentile=0,
 
              # parameters used for building the model
-             model_kwargs=dict(hidden_size=64,
+             model_kwargs=dict(hidden_size=256,
                                feed_forward_size=256,
                                activation='relu',
-                               num_heads=2,
-                               num_blocks=4,
-                               epochs=20,
-                               shuffle_buffer=5000,
-                               learning_rate=0.0001,
+                               num_heads=4,
+                               num_blocks=2,
+                               epochs=5,
+                               shuffle_buffer=260000,
+                               learning_rate=0.001,
                                dropout_rate=0.1),
 
              # parameters used for building the validation set
-             split_kwargs=dict(val_fraction=0.1,
+             split_kwargs=dict(val_fraction=0.07142857142,
                                subset=None,
-                               shard_size=5000,
-                               to_disk=True,
-                               disk_target="utr/split",
-                               is_absolute=False)))
+                               shard_size=280000,
+                               to_disk=False,
+                               disk_target=None,
+                               is_absolute=None)))
 
 
 register('ChEMBL-GP-v0',
@@ -1034,17 +1035,17 @@ register('Superconductor-GP-v0',
 
              # parameters used for building the model
              model_kwargs=dict(kernel=ConstantKernel(
-                 constant_value=1.0, constant_value_bounds=(0.0, 10.0)) *
-                 RBF(length_scale=0.5, length_scale_bounds=(0.0, 10.0)) +
-                 RBF(length_scale=2.0, length_scale_bounds=(0.0, 10.0))),
+                 constant_value=1.0, constant_value_bounds=(1e-9, 10.0)) *
+                 RBF(length_scale=0.5, length_scale_bounds=(1e-9, 10.0)) +
+                 RBF(length_scale=2.0, length_scale_bounds=(1e-9, 10.0))),
 
              # parameters used for building the validation set
              split_kwargs=dict(val_fraction=0.5,
                                subset=None,
-                               shard_size=5000,
-                               to_disk=True,
-                               disk_target="superconductor/split",
-                               is_absolute=False)))
+                               shard_size=2000,
+                               to_disk=False,
+                               disk_target=None,
+                               is_absolute=None)))
 
 
 register('Superconductor-RandomForest-v0',

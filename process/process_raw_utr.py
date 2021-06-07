@@ -6,7 +6,6 @@ import numpy as np
 import argparse
 import os
 import math
-import zipfile
 
 
 INVERSE_MAP = dict(a='t', t='a', c='g', g='c')
@@ -21,39 +20,29 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # download the gfp dataset if not already
-    target = os.path.join(DATA_DIR, 'utr.zip')
-    google_drive_download('1pRypiGVYl-kmJZaMhVbuA1PEvqauWBBM',
-                          target)
-    with zipfile.ZipFile(target, 'r') as zip_ref:
-        zip_ref.extractall(os.path.dirname(target))
-    utr_dir = os.path.join(DATA_DIR, 'utr')
+    target = os.path.join(DATA_DIR, 'GSM3130435_egfp_unmod_1.csv')
+    google_drive_download('1cIzolqt6UoNfvvzAIuzB5n7YVctnBjms', target)
 
     # load the static dataset and sort by total reads
-    df = pd.read_csv(os.path.join(utr_dir, 'egfp_unmod_1.csv'))
+    df = pd.read_csv(os.path.join(DATA_DIR, 'GSM3130435_egfp_unmod_1.csv'))
     df.sort_values('total_reads', inplace=True, ascending=False)
 
     # select only the top k most read training examples
     df.reset_index(inplace=True, drop=True)
     df = df.iloc[:args.k_most_read]
 
-    # load the 10 mer sequences from the dataset
-    seq0 = np.array([list(x.lower()) for x in df["utr"].tolist()])
-    seq1 = np.array([[INVERSE_MAP[c] for c in x] for x in seq0])
-    x = np.concatenate([seq0, seq1], axis=0)
+    # load length 50 sequences from the csv file
+    x = [list(x.lower()) for x in df["utr"].tolist()]
 
     # build an integer encoder for the allowed amino acids
     encoder = OrdinalEncoder(dtype=np.int32)
-    encoder.fit(x.reshape((-1, 1)))
-
-    # encode a dataset of nucleic acid sequences into categorical features
-    x = encoder.transform(x.reshape((-1, 1))).reshape(x.shape)
+    x = encoder.fit_transform(x)
 
     # extract the ribosome loading score for each polypeptide
     ribosome_loading = df["rl"].to_numpy().reshape((-1, 1))
 
     # repeat the ribosome loading score twice because of DNA pair symmetry
-    y = np.concatenate([ribosome_loading,
-                        ribosome_loading], axis=0).astype(np.float32)
+    y = ribosome_loading.astype(np.float32)
 
     # calculate the number of batches per single shard
     batch_per_shard = int(math.ceil(
@@ -64,7 +53,9 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(
                 args.shard_folder,
                 f"utr/"), exist_ok=True)
+
     files_list = []
+
     for shard_id in range(batch_per_shard):
 
         # slice out a component of the current shard
@@ -74,6 +65,7 @@ if __name__ == "__main__":
                      (shard_id + 1) * args.samples_per_shard]
 
         files_list.append(f"utr/utr-x-{shard_id}.npy")
+
         np.save(os.path.join(
             args.shard_folder,
             f"utr/utr-x-{shard_id}.npy"), x_sliced)

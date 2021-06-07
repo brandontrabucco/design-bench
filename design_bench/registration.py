@@ -96,12 +96,12 @@ class TaskSpecification(object):
         """
 
         # use additional_kwargs to override self.kwargs
-        dataset_kwargs_final = self.dataset_kwargs
+        dataset_kwargs_final = self.dataset_kwargs.copy()
         if dataset_kwargs is not None:
             dataset_kwargs_final.update(dataset_kwargs)
 
         # use additional_kwargs to override self.kwargs
-        oracle_kwargs_final = self.oracle_kwargs
+        oracle_kwargs_final = self.oracle_kwargs.copy()
         if oracle_kwargs is not None:
             oracle_kwargs_final.update(oracle_kwargs)
 

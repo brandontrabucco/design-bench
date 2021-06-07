@@ -125,13 +125,15 @@ class DKittyMorphologyOracle(ExactOracle):
 
         # create a policy forward pass in numpy
         def mlp_policy(h):
-            h = np.maximum(0.0, h @ self.policy[0] + self.policy[1])
-            h = np.maximum(0.0, h @ self.policy[2] + self.policy[3])
+            h = np.maximum(0.0, self.policy[0] @ h + self.policy[1])
+            h = np.maximum(0.0, self.policy[2] @ h + self.policy[3])
             return np.tanh(np.split(
-                h @ self.policy[4] + self.policy[5], 2)[0])
+                self.policy[4] @ h + self.policy[5], 2)[0])
 
         # convert vectors to morphologies
-        env = MorphingDKittyEnv(expose_design=False, fixed_design=[
+        env = MorphingDKittyEnv(expose_design=True,
+                                normalize_design=True,
+                                fixed_design=[
             LEG(*np.clip(np.array(xi), LEG_LOWER_BOUND,
                          LEG_UPPER_BOUND)) for xi in np.split(x, 4)])
 

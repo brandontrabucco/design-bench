@@ -341,24 +341,31 @@ class DiscreteDataset(DatasetBuilder):
         """Initialize a model-based optimization dataset and prepare
         that dataset by loading that dataset from disk and modifying
         its distribution of designs and predictions
+
         Arguments:
+
         x_shards: Union[         np.ndarray,           RemoteResource,
                         Iterable[np.ndarray], Iterable[RemoteResource]]
             a single shard or a list of shards representing the design values
             in a model-based optimization dataset; shards are loaded lazily
             if RemoteResource otherwise loaded in memory immediately
+
         y_shards: Union[         np.ndarray,           RemoteResource,
                         Iterable[np.ndarray], Iterable[RemoteResource]]
             a single shard or a list of shards representing prediction values
             in a model-based optimization dataset; shards are loaded lazily
             if RemoteResource otherwise loaded in memory immediately
+
         visible_mask: np.ndarray
             a numpy array of shape [dataset_size] containing boolean entries
             specifying which samples are visible in the provided Iterable
+
         Returns:
+
         dataset: DatasetBuilder
             an instance of a data set builder subclass containing a copy
             of all statistics associated with this dataset
+
         """
 
         # build the dataset using the super class method

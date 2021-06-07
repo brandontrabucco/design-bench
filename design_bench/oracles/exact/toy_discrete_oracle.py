@@ -118,8 +118,8 @@ class ToyDiscreteOracle(ExactOracle):
 
         """
 
-        return np.square(x.astype(np.float32) -
-                         self.optimum).sum(keepdims=True).astype(np.float32)
+        return -np.square(x.astype(
+            np.float32)).sum(keepdims=True).astype(np.float32)
 
     def __init__(self, dataset: DiscreteDataset, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
@@ -142,18 +142,6 @@ class ToyDiscreteOracle(ExactOracle):
             averaged, and is useful when the oracle is stochastic
 
         """
-
-        # ensure optimum has been downloaded
-        optimum = "toy_discrete/optimum.npy"
-        optimum = DiskResource(
-            optimum, is_absolute=False, download_method="direct",
-            download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/{optimum}")
-        if not optimum.is_downloaded and not optimum.download():
-            raise ValueError("unable to download optimum for toy example")
-
-        # load optimum used to calculate y values
-        self.optimum = np.load(optimum.disk_target)
 
         # initialize the oracle using the super class
         super(ToyDiscreteOracle, self).__init__(

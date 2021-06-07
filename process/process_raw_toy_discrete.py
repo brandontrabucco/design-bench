@@ -13,12 +13,8 @@ if __name__ == "__main__":
     parser.add_argument("--samples-per-shard", type=int, default=5000)
     args = parser.parse_args()
 
-    optimum = np.random.randint(args.options,
-                                size=(args.seq_length,)).astype(np.float32)
     os.makedirs(os.path.join(
         args.shard_folder, f"toy_discrete/"), exist_ok=True)
-    np.save(os.path.join(args.shard_folder,
-                         "toy_discrete/", "optimum.npy"), optimum)
 
     xs = []
     ys = []
@@ -30,8 +26,8 @@ if __name__ == "__main__":
     for sample in itertools.product(*list_options):
 
         x = np.array(sample, dtype=np.int32)
-        y = np.square(x.astype(np.float32) -
-                      optimum).sum(keepdims=True).astype(np.float32)
+        y = -np.square(x.astype(
+            np.float32)).sum(keepdims=True).astype(np.float32)
 
         xs.append(x)
         ys.append(y)

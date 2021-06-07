@@ -2,7 +2,7 @@ from design_bench.datasets.discrete_dataset import DiscreteDataset
 from design_bench.disk_resource import DiskResource
 
 
-UTR_FILES = ['utr/utr-x-0.npy', 'utr/utr-x-1.npy', 'utr/utr-x-2.npy', 'utr/utr-x-3.npy', 'utr/utr-x-4.npy', 'utr/utr-x-5.npy', 'utr/utr-x-6.npy', 'utr/utr-x-7.npy', 'utr/utr-x-8.npy', 'utr/utr-x-9.npy', 'utr/utr-x-10.npy', 'utr/utr-x-11.npy', 'utr/utr-x-12.npy', 'utr/utr-x-13.npy', 'utr/utr-x-14.npy', 'utr/utr-x-15.npy', 'utr/utr-x-16.npy', 'utr/utr-x-17.npy', 'utr/utr-x-18.npy', 'utr/utr-x-19.npy', 'utr/utr-x-20.npy', 'utr/utr-x-21.npy', 'utr/utr-x-22.npy', 'utr/utr-x-23.npy', 'utr/utr-x-24.npy', 'utr/utr-x-25.npy', 'utr/utr-x-26.npy', 'utr/utr-x-27.npy']
+UTR_FILES = ['utr/utr-x-0.npy', 'utr/utr-x-1.npy', 'utr/utr-x-2.npy', 'utr/utr-x-3.npy', 'utr/utr-x-4.npy', 'utr/utr-x-5.npy', 'utr/utr-x-6.npy', 'utr/utr-x-7.npy', 'utr/utr-x-8.npy', 'utr/utr-x-9.npy', 'utr/utr-x-10.npy', 'utr/utr-x-11.npy', 'utr/utr-x-12.npy', 'utr/utr-x-13.npy']
 
 
 class UTRDataset(DiscreteDataset):

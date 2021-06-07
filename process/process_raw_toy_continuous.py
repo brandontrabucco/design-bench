@@ -19,11 +19,8 @@ if __name__ == "__main__":
     parser.add_argument("--samples-per-shard", type=int, default=5000)
     args = parser.parse_args()
 
-    optimum = np.random.uniform(0, 1, size=(args.seq_length,)).astype(np.float32)
     os.makedirs(os.path.join(
         args.shard_folder, f"toy_continuous/"), exist_ok=True)
-    np.save(os.path.join(args.shard_folder,
-                         "toy_continuous/", "optimum.npy"), optimum)
 
     xs = []
     ys = []
@@ -36,7 +33,7 @@ if __name__ == "__main__":
 
         x = np.array(sample, dtype=np.int32).astype(np.float32)
         x = (x + np.random.uniform(0., 1., size=x.shape)) / args.options
-        y = np.square(x - optimum).sum(keepdims=True).astype(np.float32)
+        y = -np.square(x - 0.5).sum(keepdims=True).astype(np.float32)
 
         xs.append(x)
         ys.append(y)
