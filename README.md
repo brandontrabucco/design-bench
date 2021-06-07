@@ -35,12 +35,10 @@ TF Bind 8 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅
 GFP |  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅
 ChEMBL |  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅
 UTR |  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅
-Toy Discrete | ✅ |  |  |  |  |  | 
 Hopper Controller | ✅ | ✅ | ✅ | ✅ |  |  | 
 Superconductor |  | ✅ | ✅ | ✅ |  |  | 
 Ant Morphology | ✅ | ✅ | ✅ | ✅ |  |  | 
 D'Kitty Morphology | ✅ | ✅ | ✅ | ✅ |  |  | 
-Toy Continuous | ✅ |  |  |  |  |  | 
 
 Combinations of datasets and oracles that are not available for download from our server are automatically trained on your machine on task creation. This currently only affects approximate oracles on user-defined MBO tasks. Below we provide the preferred oracle for each task, as well as meta data such as the number of data points measured.
 
@@ -49,13 +47,11 @@ Task Name | Dataset | Oracle | Dataset Size | Spearman's ρ
 TFBind8-Exact-v0 | TF Bind 8 | Exact | 65792 | 
 GFP-Transformer-v0 | GFP | Transformer | 56086 | 0.8497
 ChEMBL-ResNet-v0 | ChEMBL | ResNet | 40516 | 0.3208
-UTR-Transformer-v0 | UTR | Transformer | 560000 | 0.6425
-ToyDiscrete-Exact-v0 | Toy Discrete | Exact | 65792 | 
+UTR-ResNet-v0 | UTR | Transformer | 560000 | 0.8617
 HopperController-Exact-v0 | Hopper Controller | Exact | 3200 | 
 Superconductor-FullyConnected-v0 | Superconductor | Fully Connected | 21263 | 0.9210
 AntMorphology-Exact-v0 | Ant Morphology | Exact | 12300 | 
 DKittyMorphology-Exact-v0 | D'Kitty Morphology | Exact | 9546 | 
-ToyContinuous-Exact-v0 | Toy Continuous | Exact | 65792 | 
 
 ## Task API
 
