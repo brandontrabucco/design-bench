@@ -47,7 +47,7 @@ Task Name | Dataset | Oracle | Dataset Size | Spearman's ρ
 TFBind8-Exact-v0 | TF Bind 8 | Exact | 65792 | 
 GFP-Transformer-v0 | GFP | Transformer | 56086 | 0.8497
 ChEMBL-ResNet-v0 | ChEMBL | ResNet | 40516 | 0.3208
-UTR-ResNet-v0 | UTR | Transformer | 280000 | 0.8617
+UTR-ResNet-v0 | UTR | ResNet | 280000 | 0.8617
 HopperController-Exact-v0 | Hopper Controller | Exact | 3200 | 
 Superconductor-RandomForest-v0 | Superconductor | Random Forest | 21263 | 0.9155
 AntMorphology-Exact-v0 | Ant Morphology | Exact | 25009 | 
