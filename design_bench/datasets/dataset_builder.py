@@ -267,9 +267,11 @@ class DatasetBuilder(abc.ABC):
 
         # save the provided dataset shards to be loaded into batches
         self.x_shards = (x_shards,) if \
-            not isinstance(x_shards, Iterable) else x_shards
+            isinstance(x_shards, np.ndarray) or \
+            isinstance(x_shards, DiskResource) else x_shards
         self.y_shards = (y_shards,) if \
-            not isinstance(y_shards, Iterable) else y_shards
+            isinstance(y_shards, np.ndarray) or \
+            isinstance(y_shards, DiskResource) else y_shards
 
         # download the remote resources if they are given
         self.num_shards = 0

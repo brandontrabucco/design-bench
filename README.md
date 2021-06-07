@@ -15,14 +15,14 @@ The goal of model-based optimization is to find an input **x** that maximizes an
 Design-Bench can be installed with the complete set of benchmarks via our pip package.
 
 ```bash
-pip install design-bench[all]>=2.0.10
-pip install morphing-agents==1.5
+pip install design-bench[all]>=2.0.11
+pip install morphing-agents==1.5.1
 ```
 
 Alternatively, if you do not have MuJoCo, you may opt for a minimal install.
 
 ```bash
-pip install design-bench>=2.0.10
+pip install design-bench>=2.0.11
 ```
 
 ## Available Tasks
@@ -50,8 +50,8 @@ ChEMBL-ResNet-v0 | ChEMBL | ResNet | 40516 | 0.3208
 UTR-ResNet-v0 | UTR | Transformer | 280000 | 0.8617
 HopperController-Exact-v0 | Hopper Controller | Exact | 3200 | 
 Superconductor-FullyConnected-v0 | Superconductor | Fully Connected | 21263 | 0.9210
-AntMorphology-Exact-v0 | Ant Morphology | Exact | 12300 | 
-DKittyMorphology-Exact-v0 | D'Kitty Morphology | Exact | 9546 | 
+AntMorphology-Exact-v0 | Ant Morphology | Exact | 25009 | 
+DKittyMorphology-Exact-v0 | D'Kitty Morphology | Exact | 25009 | 
 
 ## Task API
 

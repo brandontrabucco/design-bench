@@ -1120,7 +1120,7 @@ register('AntMorphology-Exact-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
-             max_percentile=20,
+             max_percentile=40,
              min_percentile=0),
 
          # keyword arguments for building the exact oracle
@@ -1135,7 +1135,7 @@ register('AntMorphology-GP-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
-             max_percentile=20,
+             max_percentile=40,
              min_percentile=0),
 
          # keyword arguments for building GP oracle
@@ -1154,10 +1154,10 @@ register('AntMorphology-GP-v0',
              # parameters used for building the validation set
              split_kwargs=dict(val_fraction=0.5,
                                subset=None,
-                               shard_size=5000,
-                               to_disk=True,
-                               disk_target="ant_morphology/split",
-                               is_absolute=False)))
+                               shard_size=25000,
+                               to_disk=False,
+                               disk_target=None,
+                               is_absolute=None)))
 
 
 register('AntMorphology-RandomForest-v0',
@@ -1167,7 +1167,7 @@ register('AntMorphology-RandomForest-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
-             max_percentile=20,
+             max_percentile=40,
              min_percentile=0),
 
          # keyword arguments for building RandomForest oracle
@@ -1185,10 +1185,10 @@ register('AntMorphology-RandomForest-v0',
              # parameters used for building the validation set
              split_kwargs=dict(val_fraction=0.5,
                                subset=None,
-                               shard_size=5000,
-                               to_disk=True,
-                               disk_target="ant_morphology/split",
-                               is_absolute=False)))
+                               shard_size=25000,
+                               to_disk=False,
+                               disk_target=None,
+                               is_absolute=None)))
 
 
 register('AntMorphology-FullyConnected-v0',
@@ -1198,7 +1198,7 @@ register('AntMorphology-FullyConnected-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
-             max_percentile=20,
+             max_percentile=40,
              min_percentile=0),
 
          # keyword arguments for training FullyConnected oracle
@@ -1219,10 +1219,10 @@ register('AntMorphology-FullyConnected-v0',
              # parameters used for building the validation set
              split_kwargs=dict(val_fraction=0.1,
                                subset=None,
-                               shard_size=5000,
-                               to_disk=True,
-                               disk_target="ant_morphology/split",
-                               is_absolute=False)))
+                               shard_size=25000,
+                               to_disk=False,
+                               disk_target=None,
+                               is_absolute=None)))
 
 
 register('DKittyMorphology-Exact-v0',
@@ -1232,7 +1232,7 @@ register('DKittyMorphology-Exact-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
-             max_percentile=20,
+             max_percentile=40,
              min_percentile=0),
 
          # keyword arguments for building the exact oracle
@@ -1247,7 +1247,7 @@ register('DKittyMorphology-GP-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
-             max_percentile=20,
+             max_percentile=40,
              min_percentile=0),
 
          # keyword arguments for building GP oracle
@@ -1266,10 +1266,10 @@ register('DKittyMorphology-GP-v0',
              # parameters used for building the validation set
              split_kwargs=dict(val_fraction=0.5,
                                subset=None,
-                               shard_size=5000,
-                               to_disk=True,
-                               disk_target="dkitty_morphology/split",
-                               is_absolute=False)))
+                               shard_size=25000,
+                               to_disk=False,
+                               disk_target=None,
+                               is_absolute=None)))
 
 
 register('DKittyMorphology-RandomForest-v0',
@@ -1279,7 +1279,7 @@ register('DKittyMorphology-RandomForest-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
-             max_percentile=20,
+             max_percentile=40,
              min_percentile=0),
 
          # keyword arguments for building RandomForest oracle
@@ -1297,10 +1297,10 @@ register('DKittyMorphology-RandomForest-v0',
              # parameters used for building the validation set
              split_kwargs=dict(val_fraction=0.5,
                                subset=None,
-                               shard_size=5000,
-                               to_disk=True,
-                               disk_target="dkitty_morphology/split",
-                               is_absolute=False)))
+                               shard_size=25000,
+                               to_disk=False,
+                               disk_target=None,
+                               is_absolute=None)))
 
 
 register('DKittyMorphology-FullyConnected-v0',
@@ -1310,7 +1310,7 @@ register('DKittyMorphology-FullyConnected-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
-             max_percentile=20,
+             max_percentile=40,
              min_percentile=0),
 
          # keyword arguments for training FullyConnected oracle
@@ -1331,7 +1331,7 @@ register('DKittyMorphology-FullyConnected-v0',
              # parameters used for building the validation set
              split_kwargs=dict(val_fraction=0.1,
                                subset=None,
-                               shard_size=5000,
-                               to_disk=True,
-                               disk_target="dkitty_morphology/split",
-                               is_absolute=False)))
+                               shard_size=25000,
+                               to_disk=False,
+                               disk_target=None,
+                               is_absolute=None)))
