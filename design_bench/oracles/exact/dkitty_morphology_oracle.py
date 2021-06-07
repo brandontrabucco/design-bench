@@ -102,7 +102,7 @@ class DKittyMorphologyOracle(ExactOracle):
 
         return True
 
-    def protected_predict(self, x):
+    def protected_predict(self, x, render=False, **render_kwargs):
         """Score function to be implemented by oracle subclasses, where x is
         either a batch of designs if self.is_batched is True or is a
         single design when self._is_batched is False
@@ -147,6 +147,8 @@ class DKittyMorphologyOracle(ExactOracle):
         sum_of_rewards = np.zeros([1], dtype=np.float32)
         for t in range(self.rollout_horizon):
             obs, rew, done, info = env.step(mlp_policy(obs))
+            if render:
+                env.render(**render_kwargs)
             sum_of_rewards += rew.astype(np.float32)
             if done:
                 break

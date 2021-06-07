@@ -795,7 +795,7 @@ class Task(object):
             raise ValueError("only supported on discrete datasets")
         return self.dataset.to_logits(x)
 
-    def predict(self, x_batch):
+    def predict(self, x_batch, **kwargs):
         """a function that accepts a batch of design values 'x' as input and
         for each design computes a prediction value 'y' which corresponds
         to the score in a model-based optimization problem
@@ -816,7 +816,7 @@ class Task(object):
 
         """
 
-        return self.oracle.predict(x_batch)
+        return self.oracle.predict(x_batch, **kwargs)
 
     def oracle_to_dataset_x(self, x_batch):
         """Helper function for converting from designs in the format of the
