@@ -152,6 +152,22 @@ design-baselines make-table --dir ~/db-results/ --percentile 100th --no-normaliz
 
 These commands will run several model-based optimization algorithms (such as [CbAS](http://proceedings.mlr.press/v97/brookes19a.html)) contained in design-baselines on all tasks released with the design-bench benchmark, and will then generate three performance tables from those results, and print a latex rendition of these performance tables to stdout.
 
+## The Train-Test Discrepency
+
+For tasks where an exact numerical ground truth is not available for evaluating the performance of previously unseen candidate designs, we provide several families of approximate oracle models that have been trained using a larger *held out* dataset of designs x and corresponding scores y.
+
+Using a learned oracle for evaluation and training an MBO method using real data creates a train-test discrepency. This discrepency can be avoided by *relabelling* the y values in an offline MBO dataset with the predictions of the learned oracle, which is controlled by the following parameter when building a task.
+
+```python
+import design_bench
+
+# instantiate the task using y values generated from the learned oracle
+task = design_bench.make('GFP-Transformer-v0', relabel=True)
+
+# instantiate the task using y values generated from real experiments
+task = design_bench.make('GFP-Transformer-v0', relabel=False)
+```
+
 ## Task API
 
 Design-Bench tasks share a common interface specified in **design_bench/task.py**, which exposes a set of input designs **task.x** and a set of output predictions **task.y**. In addition, the performance of a new set of input designs (such as those output from a model-based optimization algorithm) can be found using **y = task.predict(x)**.
