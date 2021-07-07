@@ -95,7 +95,7 @@ conda env create -f design-baselines/environment.yml
 conda activate design-baselines
 ```
 
-You may then run the following series of commands in a bash terminal using the command-line interface exposed in design-baselines. Ensure that the conda environment `design-baselines` is activated in the bash session that you run this script from.
+You may then run the following series of commands in a bash terminal using the command-line interface exposed in design-baselines. Also, please ensure that the conda environment `design-baselines` is activated in the bash session that you run these commands from in order to access the `design-baselines` command-line interface.
 
 ```bash
 # set up machine parameters
