@@ -102,12 +102,40 @@ You may then run the following series of commands in a bash terminal using the c
 NUM_CPUS=32
 NUM_GPUS=8
 
-for TASK_NAME in gfp tf-bind-8 utr chembl superconductor ant dkitty hopper; do
-  for ALGORITHM_NAME in autofocused-cbas cbas bo-qei cma-es gradient-ascent gradient-ascent-min-ensemble gradient-ascent-mean-ensemble mins reinforce; do
+for TASK_NAME in \
+    gfp \
+    tf-bind-8 \
+    utr \
+    chembl \
+    superconductor \
+    ant \
+    dkitty \
+    hopper; do
+  for ALGORITHM_NAME in \
+      autofocused-cbas \
+      cbas \
+      bo-qei \
+      cma-es \
+      gradient-ascent \
+      gradient-ascent-min-ensemble \
+      gradient-ascent-mean-ensemble \
+      mins \
+      reinforce; do
   
     # launch several model-based optimization algorithms using the command line interface
-    # for example: (design-baselines) name@computer:~/$ cbas gfp --local-dir ~/db-results/cbas-gfp --cpus 32 --gpus 8 --num-samples 8 --num-parallel 8
-    $ALGORITHM_NAME $TASK_NAME --local-dir ~/db-results/$ALGORITHM_NAME-$TASK_NAME --cpus $NUM_CPUS --gpus $NUM_GPUS --num-samples 8 --num-parallel 8
+    # for example: 
+    # (design-baselines) name@computer:~/$ cbas gfp \
+                                             --local-dir ~/db-results/cbas-gfp \
+                                             --cpus 32 \
+                                             --gpus 8 \
+                                             --num-parallel 8 \
+                                             --num-samples 8
+    $ALGORITHM_NAME $TASK_NAME \
+      --local-dir ~/db-results/$ALGORITHM_NAME-$TASK_NAME \
+      --cpus $NUM_CPUS \
+      --gpus $NUM_GPUS \
+      --num-parallel 8 \
+      --num-samples 8
     
   done
 done
