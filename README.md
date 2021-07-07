@@ -55,7 +55,7 @@ DKittyMorphology-Exact-v0 | D'Kitty Morphology | Exact | 25009 |
 
 ## Performance Of Baselines
 
-
+In the below tables, we benchmark a set of 9 current methods for solving offline model-based optimization problems. Performance is reported in normalized form, where the 100th percentile score of 128 candidate designs is is evaluated and normalized such that a 1.0 corresponds to performance equivalent to the best performance design in the *full unobserved* dataset assoctated with each model-based optimization task. In circumstances where an exact oracle is not available, this *full unobserved* dataset is used for training the approximate oracle that is used for evaluation. The symbol ± indicates the empirical standard deviation of reported performance across 8 trials.
 
 Method \ Task                 |            GFP |      TF Bind 8 |            UTR |         ChEMBL 
 ----------------------------- | -------------- | -------------- | -------------- | --------------
@@ -69,6 +69,7 @@ Grad. Mean                    |  0.864 ± 0.000 |  0.986 ± 0.012 |  0.647 ± 0.
 MINs                          |  0.865 ± 0.001 |  0.905 ± 0.052 |  0.649 ± 0.004 |  0.473 ± 0.057 
 REINFORCE                     |  0.865 ± 0.000 |  0.948 ± 0.028 |  0.646 ± 0.005 |  0.459 ± 0.036 
 
+The above table corresponds to performance on discrete model-based optimization tasks.
 
 Method \ Task                 | Superconductor | Ant Morphology | D'Kitty Morphology | Hopper Controller 
 ----------------------------- | -------------- | -------------- | ------------------ | -----------------
@@ -81,6 +82,8 @@ Grad. Min                     |  0.506 ± 0.009 |  0.478 ± 0.064 |      0.889 �
 Grad. Mean                    |  0.499 ± 0.017 |  0.444 ± 0.081 |      0.892 ± 0.011 |     1.586 ± 0.454 
 MINs                          |  0.469 ± 0.023 |  0.916 ± 0.036 |      0.945 ± 0.012 |     0.424 ± 0.166 
 REINFORCE                     |  0.481 ± 0.013 |  0.263 ± 0.032 |      0.562 ± 0.196 |    -0.020 ± 0.067 
+
+The above table corresponds to performance on continuous model-based optimization tasks.
 
 ## Task API
 
