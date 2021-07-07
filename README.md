@@ -53,6 +53,31 @@ Superconductor-RandomForest-v0 | Superconductor | Random Forest | 21263 | 0.9155
 AntMorphology-Exact-v0 | Ant Morphology | Exact | 25009 | 
 DKittyMorphology-Exact-v0 | D'Kitty Morphology | Exact | 25009 | 
 
+## Performance Of Baselines
+
+                              |            GFP |      TF Bind 8 |            UTR |         ChEMBL 
+Auto. CbAS                    |  0.865 ± 0.000 |  0.910 ± 0.044 |  0.650 ± 0.006 |  0.470 ± 0.000 
+CbAS                          |  0.865 ± 0.000 |  0.927 ± 0.051 |  0.650 ± 0.002 |  0.517 ± 0.055 
+BO-qEI                        |  0.254 ± 0.352 |  0.798 ± 0.083 |  0.659 ± 0.000 |  0.333 ± 0.035 
+CMA-ES                        |  0.054 ± 0.002 |  0.953 ± 0.022 |  0.666 ± 0.004 |  0.350 ± 0.017 
+Grad.                         |  0.864 ± 0.001 |  0.977 ± 0.025 |  0.639 ± 0.009 |  0.360 ± 0.029 
+Grad. Min                     |  0.864 ± 0.000 |  0.984 ± 0.012 |  0.647 ± 0.007 |  0.361 ± 0.004 
+Grad. Mean                    |  0.864 ± 0.000 |  0.986 ± 0.012 |  0.647 ± 0.005 |  0.373 ± 0.013 
+MINs                          |  0.865 ± 0.001 |  0.905 ± 0.052 |  0.649 ± 0.004 |  0.473 ± 0.057 
+REINFORCE                     |  0.865 ± 0.000 |  0.948 ± 0.028 |  0.646 ± 0.005 |  0.459 ± 0.036 
+
+
+                              | Superconductor | Ant Morphology | D'Kitty Morphology | Hopper Controller 
+Auto. CbAS                    |  0.421 ± 0.045 |  0.884 ± 0.046 |      0.906 ± 0.006 |     0.137 ± 0.005 
+CbAS                          |  0.503 ± 0.069 |  0.879 ± 0.032 |      0.892 ± 0.008 |     0.141 ± 0.012 
+BO-qEI                        |  0.402 ± 0.034 |  0.820 ± 0.000 |      0.896 ± 0.000 |     0.550 ± 0.118 
+CMA-ES                        |  0.465 ± 0.024 |  1.219 ± 0.738 |      0.724 ± 0.001 |     0.604 ± 0.215 
+Grad.                         |  0.518 ± 0.024 |  0.291 ± 0.023 |      0.874 ± 0.022 |     1.035 ± 0.482 
+Grad. Min                     |  0.506 ± 0.009 |  0.478 ± 0.064 |      0.889 ± 0.011 |     1.391 ± 0.589 
+Grad. Mean                    |  0.499 ± 0.017 |  0.444 ± 0.081 |      0.892 ± 0.011 |     1.586 ± 0.454 
+MINs                          |  0.469 ± 0.023 |  0.916 ± 0.036 |      0.945 ± 0.012 |     0.424 ± 0.166 
+REINFORCE                     |  0.481 ± 0.013 |  0.263 ± 0.032 |      0.562 ± 0.196 |    -0.020 ± 0.067 
+
 ## Task API
 
 Design-Bench tasks share a common interface specified in **design_bench/task.py**, which exposes a set of input designs **task.x** and a set of output predictions **task.y**. In addition, the performance of a new set of input designs (such as those output from a model-based optimization algorithm) can be found using **y = task.predict(x)**.
