@@ -150,7 +150,7 @@ design-baselines make-table --dir ~/db-results/ --percentile 50th
 design-baselines make-table --dir ~/db-results/ --percentile 100th --no-normalize
 ```
 
-These commands will run several model-based optimization algorithms (such as [CbAS](http://proceedings.mlr.press/v97/brookes19a.html)) contained in design-baselines on all tasks released with design-bench, and will then generate three performance tables from those results, and print a latex rendition of these tables to stdout.
+These commands will run several model-based optimization algorithms (such as [CbAS](http://proceedings.mlr.press/v97/brookes19a.html)) contained in design-baselines on all tasks released with design-bench benchmark, and will then generate three performance tables from those results, and print a latex rendition of these performance tables to stdout.
 
 ## Task API
 
