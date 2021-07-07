@@ -95,17 +95,32 @@ conda env create -f design-baselines/environment.yml
 conda activate design-baselines
 ```
 
-You may then run the following series of commands in a bash terminal using the command-line interface exposed in design-baselines.
+You may then run the following series of commands in a bash terminal using the command-line interface exposed in design-baselines. Ensure that the conda environment `design-baselines` is activated in the bash session that you run this script from.
 
 ```bash
+# set up machine parameters
 NUM_CPUS=32
 NUM_GPUS=8
+
 for TASK_NAME in gfp tf-bind-8 utr chembl superconductor ant dkitty hopper; do
   for ALGORITHM_NAME in autofocused-cbas cbas bo-qei cma-es gradient-ascent gradient-ascent-min-ensemble gradient-ascent-mean-ensemble mins reinforce; do
-    $ALGORITHM_NAME $TASK_NAME --local-dir ./$ALGORITHM_NAME-$TASK_NAME --cpus $NUM_CPUS --gpus $NUM_GPUS --num-samples 8 --num-parallel 8
+  
+    # launch several model-based optimization algorithms using the command line interface
+    # for example: (design-baselines) name@computer:~/$ cbas gfp --local-dir ~/db-results/cbas-gfp --cpus 32 --gpus 8 --num-samples 8 --num-parallel 8
+    $ALGORITHM_NAME $TASK_NAME --local-dir ~/db-results/$ALGORITHM_NAME-$TASK_NAME --cpus $NUM_CPUS --gpus $NUM_GPUS --num-samples 8 --num-parallel 8
+    
   done
 done
+
+# generate the main performance table of the paper
+design-baselines make-table --dir ~/db-results/ --percentile 100th
+
+# generate the performance tables in the appendix
+design-baselines make-table --dir ~/db-results/ --percentile 50th
+design-baselines make-table --dir ~/db-results/ --percentile 100th --no-normalize
 ```
+
+These commands will run several model-based optimization algorithms (such as ![CbAS](http://proceedings.mlr.press/v97/brookes19a.html)) contained in design-baselines on all tasks released with design-bench, and will then generate three performance tables from those results, and print a latex rendition of these tables to stdout.
 
 ## Task API
 
