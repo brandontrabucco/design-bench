@@ -69,7 +69,7 @@ Grad. Mean                    |  0.864 ± 0.000 |  0.986 ± 0.012 |  0.647 ± 0.
 MINs                          |  0.865 ± 0.001 |  0.905 ± 0.052 |  0.649 ± 0.004 |  0.473 ± 0.057 
 REINFORCE                     |  0.865 ± 0.000 |  0.948 ± 0.028 |  0.646 ± 0.005 |  0.459 ± 0.036 
 
-The above table corresponds to performance on discrete model-based optimization tasks.
+The above table corresponds to performance on discrete tasks.
 
 Method \ Task                 | Superconductor | Ant Morphology | D'Kitty Morphology | Hopper Controller 
 ----------------------------- | -------------- | -------------- | ------------------ | -----------------
@@ -83,7 +83,29 @@ Grad. Mean                    |  0.499 ± 0.017 |  0.444 ± 0.081 |      0.892 �
 MINs                          |  0.469 ± 0.023 |  0.916 ± 0.036 |      0.945 ± 0.012 |     0.424 ± 0.166 
 REINFORCE                     |  0.481 ± 0.013 |  0.263 ± 0.032 |      0.562 ± 0.196 |    -0.020 ± 0.067 
 
-The above table corresponds to performance on continuous model-based optimization tasks.
+The above table corresponds to performance on continuous tasks.
+
+## Reproducing Baseline Performance
+
+In order to reproduce this table, you must first install the implementation of the baseline algorithms.
+
+```bash
+git clone https://github.com/brandontrabucco/design-baselines
+conda env create -f design-baselines/environment.yml
+conda activate design-baselines
+```
+
+You may then run the following series of commands in a bash terminal using the command-line interface exposed in design-baselines.
+
+```bash
+NUM_CPUS=32
+NUM_GPUS=8
+for TASK_NAME in gfp tf-bind-8 utr chembl superconductor ant dkitty hopper; do
+  for ALGORITHM_NAME in autofocused-cbas cbas bo-qei cma-es gradient-ascent gradient-ascent-min-ensemble gradient-ascent-mean-ensemble mins reinforce; do
+    $ALGORITHM_NAME $TASK_NAME --local-dir ./$ALGORITHM_NAME-$TASK_NAME --cpus $NUM_CPUS --gpus $NUM_GPUS --num-samples 8 --num-parallel 8
+  done
+done
+```
 
 ## Task API
 
