@@ -55,7 +55,9 @@ DKittyMorphology-Exact-v0 | D'Kitty Morphology | Exact | 25009 |
 
 ## Performance Of Baselines
 
-                              |            GFP |      TF Bind 8 |            UTR |         ChEMBL 
+
+
+Method \ Task                 |            GFP |      TF Bind 8 |            UTR |         ChEMBL 
 ----------------------------- | -------------- | -------------- | -------------- | --------------
 Auto. CbAS                    |  0.865 ± 0.000 |  0.910 ± 0.044 |  0.650 ± 0.006 |  0.470 ± 0.000 
 CbAS                          |  0.865 ± 0.000 |  0.927 ± 0.051 |  0.650 ± 0.002 |  0.517 ± 0.055 
@@ -68,7 +70,7 @@ MINs                          |  0.865 ± 0.001 |  0.905 ± 0.052 |  0.649 ± 0.
 REINFORCE                     |  0.865 ± 0.000 |  0.948 ± 0.028 |  0.646 ± 0.005 |  0.459 ± 0.036 
 
 
-                              | Superconductor | Ant Morphology | D'Kitty Morphology | Hopper Controller 
+Method \ Task                 | Superconductor | Ant Morphology | D'Kitty Morphology | Hopper Controller 
 ----------------------------- | -------------- | -------------- | ------------------ | -----------------
 Auto. CbAS                    |  0.421 ± 0.045 |  0.884 ± 0.046 |      0.906 ± 0.006 |     0.137 ± 0.005 
 CbAS                          |  0.503 ± 0.069 |  0.879 ± 0.032 |      0.892 ± 0.008 |     0.141 ± 0.012 
