@@ -111,6 +111,7 @@ for TASK_NAME in \
     ant \
     dkitty \
     hopper; do
+    
   for ALGORITHM_NAME in \
       autofocused-cbas \
       cbas \
@@ -138,6 +139,7 @@ for TASK_NAME in \
       --num-samples 8
     
   done
+  
 done
 
 # generate the main performance table of the paper
@@ -148,7 +150,7 @@ design-baselines make-table --dir ~/db-results/ --percentile 50th
 design-baselines make-table --dir ~/db-results/ --percentile 100th --no-normalize
 ```
 
-These commands will run several model-based optimization algorithms (such as ![CbAS](http://proceedings.mlr.press/v97/brookes19a.html)) contained in design-baselines on all tasks released with design-bench, and will then generate three performance tables from those results, and print a latex rendition of these tables to stdout.
+These commands will run several model-based optimization algorithms (such as [CbAS](http://proceedings.mlr.press/v97/brookes19a.html)) contained in design-baselines on all tasks released with design-bench, and will then generate three performance tables from those results, and print a latex rendition of these tables to stdout.
 
 ## Task API
 
