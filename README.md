@@ -126,11 +126,11 @@ for TASK_NAME in \
     # launch several model-based optimization algorithms using the command line interface
     # for example: 
     # (design-baselines) name@computer:~/$ cbas gfp \
-                                             --local-dir ~/db-results/cbas-gfp \
-                                             --cpus 32 \
-                                             --gpus 8 \
-                                             --num-parallel 8 \
-                                             --num-samples 8
+    #                                        --local-dir ~/db-results/cbas-gfp \
+    #                                        --cpus 32 \
+    #                                        --gpus 8 \
+    #                                        --num-parallel 8 \
+    #                                        --num-samples 8
     $ALGORITHM_NAME $TASK_NAME \
       --local-dir ~/db-results/$ALGORITHM_NAME-$TASK_NAME \
       --cpus $NUM_CPUS \
