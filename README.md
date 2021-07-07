@@ -55,7 +55,7 @@ DKittyMorphology-Exact-v0 | D'Kitty Morphology | Exact | 25009 |
 
 ## Performance Of Baselines
 
-In the below tables, we benchmark a set of 9 methods for solving offline model-based optimization problems. Performance is reported in normalized form, where the 100th percentile score of 128 candidate designs is evaluated and normalized such that a 1.0 corresponds to performance equivalent to the best performing design in the *full unobserved* dataset assoctated with each model-based optimization task. A 0.0 corresponds to performance equivalent to the worst performing design in the *full unobserved* dataset. In circumstances where an exact oracle is not available, this *full unobserved* dataset is used for training the approximate oracle that is used for evaluation of candidate designs proposed by each method. The symbol ± indicates the empirical standard deviation of reported performance across 8 trials.
+We benchmark a set of 9 methods for solving offline model-based optimization problems. Performance is reported in normalized form, where the 100th percentile score of 128 candidate designs is evaluated and normalized such that a 1.0 corresponds to performance equivalent to the best performing design in the *full unobserved* dataset assoctated with each model-based optimization task. A 0.0 corresponds to performance equivalent to the worst performing design in the *full unobserved* dataset. In circumstances where an exact oracle is not available, this *full unobserved* dataset is used for training the approximate oracle that is used for evaluation of candidate designs proposed by each method. The symbol ± indicates the empirical standard deviation of reported performance across 8 trials.
 
 Method \ Task                 |            GFP |      TF Bind 8 |            UTR |         ChEMBL 
 ----------------------------- | -------------- | -------------- | -------------- | --------------
@@ -150,7 +150,7 @@ design-baselines make-table --dir ~/db-results/ --percentile 50th
 design-baselines make-table --dir ~/db-results/ --percentile 100th --no-normalize
 ```
 
-These commands will run several model-based optimization algorithms (such as [CbAS](http://proceedings.mlr.press/v97/brookes19a.html)) contained in design-baselines on all tasks released with design-bench benchmark, and will then generate three performance tables from those results, and print a latex rendition of these performance tables to stdout.
+These commands will run several model-based optimization algorithms (such as [CbAS](http://proceedings.mlr.press/v97/brookes19a.html)) contained in design-baselines on all tasks released with the design-bench benchmark, and will then generate three performance tables from those results, and print a latex rendition of these performance tables to stdout.
 
 ## Task API
 
