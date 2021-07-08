@@ -116,29 +116,6 @@ def default_exponential_distribution(ranks, c=3.0):
     return np.exp(-c * ranks)
 
 
-def default_circular_distribution(ranks):
-    """Accepts the rank of a set of designs as input and returns an
-    un-normalized linear probability distribution
-
-    Arguments:
-
-    ranks: np.ndarray
-        a numpy array representing the rank order of a set of designs given
-        by their y values in a model-based optimization dataset
-
-    Returns:
-
-    probabilities: np.ndarray
-        an un-normalized probability distribution that is passed to
-        np.random.choice to subsample a model-based optimization dataset
-
-    """
-
-    ranks = ranks.astype(np.float32)
-    ranks = ranks / ranks.max()
-    return 1.0 - np.sqrt(1.0 - (ranks - 1.0)**2)
-
-
 class DatasetBuilder(abc.ABC):
     """An abstract base class that defines a common set of functions
     and attributes for a model-based optimization dataset, where the
