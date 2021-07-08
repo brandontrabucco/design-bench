@@ -208,7 +208,7 @@ class Task(object):
 
     def __init__(self, dataset: Union[DatasetBuilder, type, str],
                  oracle: Union[OracleBuilder, type, str],
-                 dataset_kwargs=None, oracle_kwargs=None, relabel=True):
+                 dataset_kwargs=None, oracle_kwargs=None, relabel=False):
         """Initialize a model-based optimization problem using a static task
         dataset and a ground truth score function that is either an exact
         simulator, or an approximate model such as a neural network

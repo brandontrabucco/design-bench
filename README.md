@@ -241,7 +241,10 @@ task = design_bench.make('GFP-GP-v0')
 dataset = task.dataset
 
 # modify the distribution of the task dataset
-dataset.subsample(max_samples=10000, min_percentile=10, max_percentile=90)
+dataset.subsample(max_samples=10000, 
+                   distribution="uniform",
+                   min_percentile=10, 
+                   max_percentile=90)
 
 # an instance of the OracleBuilder class from design_bench.oracles.oracle_builder
 oracle = task.oracle
@@ -263,7 +266,7 @@ All datasets implement methods for modifying the format and distribution of the 
 <summary>Display code snippet</summary>
 
 ```python
-from design_bench.datasets.discrete import GFPDataset
+from design_bench.datasets.discrete.gfp_dataset import GFPDataset
 dataset = GFPDataset()
 
 # convert x to logits of a categorical probability distribution
@@ -291,7 +294,10 @@ dataset.map_to_integers()
 continuous_x = dataset.to_logits(dataset.x)
 
 # modify the distribution of the dataset
-dataset.subsample(max_samples=10000, min_percentile=10, max_percentile=90)
+dataset.subsample(max_samples=10000, 
+                   distribution="uniform",
+                   min_percentile=10, 
+                   max_percentile=90)
 
 # change the outputs as a function of their old values
 dataset.relabel(lambda x, y: y ** 2 - 2.0 * y)
@@ -388,7 +394,7 @@ Oracles provide a way of measuring the performance of candidate solutions to a m
 <summary>Display code snippet</summary>
 
 ```python
-from design_bench.datasets.discrete import GFPDataset
+from design_bench.datasets.discrete.gfp_dataset import GFPDataset
 from design_bench.oracles.tensorflow import TransformerOracle
 
 # create a dataset and a noisy oracle
@@ -412,7 +418,7 @@ In order to handle when an exact ground truth is unknown or not tractable to eva
 <summary>Display code snippet</summary>
 
 ```python
-from design_bench.datasets.discrete import GFPDataset
+from design_bench.datasets.discrete.gfp_dataset import GFPDataset
 from design_bench.oracles.tensorflow import TransformerOracle
 
 # parameters for the transformer architecture
@@ -447,6 +453,7 @@ oracle = TransformerOracle(
     is_absolute=True,
     fit=True,
     max_samples=None,
+    distribution=None,
     max_percentile=100,
     min_percentile=0,
     model_kwargs=model_kwargs,
@@ -508,6 +515,7 @@ model_kwargs=dict(
 # keyword arguments for building the dataset
 dataset_kwargs=dict(
     max_samples=None,
+    distribution=None,
     max_percentile=80,
     min_percentile=0)
 
@@ -515,6 +523,7 @@ dataset_kwargs=dict(
 oracle_kwargs=dict(
     noise_std=0.0,
     max_samples=None,
+    distribution=None,
     max_percentile=100,
     min_percentile=0,
     split_kwargs=split_kwargs,

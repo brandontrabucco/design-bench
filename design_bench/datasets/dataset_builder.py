@@ -1,7 +1,142 @@
 from design_bench.disk_resource import DiskResource
-from collections.abc import Iterable
 import numpy as np
 import abc
+
+
+def default_uniform_distribution(ranks):
+    """Accepts the rank of a set of designs as input and returns an
+    un-normalized uniform probability distribution
+
+    Arguments:
+
+    ranks: np.ndarray
+        a numpy array representing the rank order of a set of designs given
+        by their y values in a model-based optimization dataset
+
+    Returns:
+
+    probabilities: np.ndarray
+        an un-normalized probability distribution that is passed to
+        np.random.choice to subsample a model-based optimization dataset
+
+    """
+
+    return np.ones(ranks.shape, dtype=np.float32)
+
+
+def default_linear_distribution(ranks):
+    """Accepts the rank of a set of designs as input and returns an
+    un-normalized linear probability distribution
+
+    Arguments:
+
+    ranks: np.ndarray
+        a numpy array representing the rank order of a set of designs given
+        by their y values in a model-based optimization dataset
+
+    Returns:
+
+    probabilities: np.ndarray
+        an un-normalized probability distribution that is passed to
+        np.random.choice to subsample a model-based optimization dataset
+
+    """
+
+    ranks = ranks.astype(np.float32)
+    ranks = ranks / ranks.max()
+    return 1.0 - ranks
+
+
+def default_quadratic_distribution(ranks):
+    """Accepts the rank of a set of designs as input and returns an
+    un-normalized quadratic probability distribution
+
+    Arguments:
+
+    ranks: np.ndarray
+        a numpy array representing the rank order of a set of designs given
+        by their y values in a model-based optimization dataset
+
+    Returns:
+
+    probabilities: np.ndarray
+        an un-normalized probability distribution that is passed to
+        np.random.choice to subsample a model-based optimization dataset
+
+    """
+
+    ranks = ranks.astype(np.float32)
+    ranks = ranks / ranks.max()
+    return (1.0 - ranks)**2
+
+
+def default_circular_distribution(ranks):
+    """Accepts the rank of a set of designs as input and returns an
+    un-normalized circular probability distribution
+
+    Arguments:
+
+    ranks: np.ndarray
+        a numpy array representing the rank order of a set of designs given
+        by their y values in a model-based optimization dataset
+
+    Returns:
+
+    probabilities: np.ndarray
+        an un-normalized probability distribution that is passed to
+        np.random.choice to subsample a model-based optimization dataset
+
+    """
+
+    ranks = ranks.astype(np.float32)
+    ranks = ranks / ranks.max()
+    return 1.0 - np.sqrt(1.0 - (ranks - 1.0)**2)
+
+
+def default_exponential_distribution(ranks, c=3.0):
+    """Accepts the rank of a set of designs as input and returns an
+    un-normalized exponential probability distribution
+
+    Arguments:
+
+    ranks: np.ndarray
+        a numpy array representing the rank order of a set of designs given
+        by their y values in a model-based optimization dataset
+
+    Returns:
+
+    probabilities: np.ndarray
+        an un-normalized probability distribution that is passed to
+        np.random.choice to subsample a model-based optimization dataset
+
+    """
+
+    ranks = ranks.astype(np.float32)
+    ranks = ranks / ranks.max()
+    return np.exp(-c * ranks)
+
+
+def default_circular_distribution(ranks):
+    """Accepts the rank of a set of designs as input and returns an
+    un-normalized linear probability distribution
+
+    Arguments:
+
+    ranks: np.ndarray
+        a numpy array representing the rank order of a set of designs given
+        by their y values in a model-based optimization dataset
+
+    Returns:
+
+    probabilities: np.ndarray
+        an un-normalized probability distribution that is passed to
+        np.random.choice to subsample a model-based optimization dataset
+
+    """
+
+    ranks = ranks.astype(np.float32)
+    ranks = ranks / ranks.max()
+    return 1.0 - np.sqrt(1.0 - (ranks - 1.0)**2)
 
 
 class DatasetBuilder(abc.ABC):
@@ -936,14 +1071,20 @@ class DatasetBuilder(abc.ABC):
         max_samples = indices.size \
             if max_samples is None else min(indices.size, max_samples)
 
-        # define a probability distribution for sampling y
-        self.dataset_distribution = distribution
-        if distribution is None or distribution == "uniform":
-            self.dataset_distribution = \
-                lambda p: np.ones(p.shape, dtype=np.float32)
+        # replace default distributions with their implementations
+        if distribution in {None, "uniform"}:
+            distribution = default_uniform_distribution
+        elif distribution == "linear":
+            distribution = default_linear_distribution
+        elif distribution == "quadratic":
+            distribution = default_quadratic_distribution
+        elif distribution == "exponential":
+            distribution = default_exponential_distribution
+        elif distribution == "circular":
+            distribution = default_circular_distribution
 
         # calculate the probability to subsample individual designs
-        probs = self.dataset_distribution(y[indices, 0].argsort().argsort())
+        probs = distribution(y[indices, 0].argsort().argsort())
         probs = np.asarray(probs, dtype=np.float32)
         probs = np.broadcast_to(probs, (indices.size,))
         indices = indices[np.random.choice(
@@ -954,6 +1095,7 @@ class DatasetBuilder(abc.ABC):
         visible_mask[indices] = True
         self.dataset_visible_mask = visible_mask
         self.dataset_size = indices.size
+        self.dataset_distribution = distribution
 
         # update normalization statistics for design values
         if self.is_normalized_x:
