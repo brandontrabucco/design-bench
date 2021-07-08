@@ -6,7 +6,7 @@ These applications have significant potential to accelerate research in biochemi
 
 ## Offline Model-Based Optimization
 
-![Offline Model-Based Optimization](https://design-bench.s3-us-west-1.amazonaws.com/mbo.png)
+![Offline Model-Based Optimization](https://storage.googleapis.com/design-bench/mbo.png)
 
 The goal of model-based optimization is to find an input **x** that maximizes an unknown black-box function **f**. This function is frequently difficulty or costly to evaluate---such as requiring wet-lab experiments in the case of protein design. In these cases, **f** is described by a set of function evaluations: D = {(x_0, y_0), (x_1, y_1), ... (x_n, y_n)}, and optimization is performed without querying **f** on new data points.
 
@@ -47,11 +47,126 @@ Task Name | Dataset | Oracle | Dataset Size | Spearman's ρ
 TFBind8-Exact-v0 | TF Bind 8 | Exact | 65792 | 
 GFP-Transformer-v0 | GFP | Transformer | 56086 | 0.8497
 ChEMBL-ResNet-v0 | ChEMBL | ResNet | 40516 | 0.3208
-UTR-ResNet-v0 | UTR | Transformer | 280000 | 0.8617
+UTR-ResNet-v0 | UTR | ResNet | 280000 | 0.8617
 HopperController-Exact-v0 | Hopper Controller | Exact | 3200 | 
-Superconductor-FullyConnected-v0 | Superconductor | Fully Connected | 21263 | 0.9210
+Superconductor-RandomForest-v0 | Superconductor | Random Forest | 21263 | 0.9155
 AntMorphology-Exact-v0 | Ant Morphology | Exact | 25009 | 
 DKittyMorphology-Exact-v0 | D'Kitty Morphology | Exact | 25009 | 
+
+## Performance Of Baselines
+
+We benchmark a set of 9 methods for solving offline model-based optimization problems. Performance is reported in normalized form, where the 100th percentile score of 128 candidate designs is evaluated and normalized such that a 1.0 corresponds to performance equivalent to the best performing design in the *full unobserved* dataset assoctated with each model-based optimization task. A 0.0 corresponds to performance equivalent to the worst performing design in the *full unobserved* dataset. In circumstances where an exact oracle is not available, this *full unobserved* dataset is used for training the approximate oracle that is used for evaluation of candidate designs proposed by each method. The symbol ± indicates the empirical standard deviation of reported performance across 8 trials.
+
+Method \ Task                 |            GFP |      TF Bind 8 |            UTR |         ChEMBL 
+----------------------------- | -------------- | -------------- | -------------- | --------------
+Auto. CbAS                    |  0.865 ± 0.000 |  0.910 ± 0.044 |  0.650 ± 0.006 |  0.470 ± 0.000 
+CbAS                          |  0.865 ± 0.000 |  0.927 ± 0.051 |  0.650 ± 0.002 |  0.517 ± 0.055 
+BO-qEI                        |  0.254 ± 0.352 |  0.798 ± 0.083 |  0.659 ± 0.000 |  0.333 ± 0.035 
+CMA-ES                        |  0.054 ± 0.002 |  0.953 ± 0.022 |  0.666 ± 0.004 |  0.350 ± 0.017 
+Grad.                         |  0.864 ± 0.001 |  0.977 ± 0.025 |  0.639 ± 0.009 |  0.360 ± 0.029 
+Grad. Min                     |  0.864 ± 0.000 |  0.984 ± 0.012 |  0.647 ± 0.007 |  0.361 ± 0.004 
+Grad. Mean                    |  0.864 ± 0.000 |  0.986 ± 0.012 |  0.647 ± 0.005 |  0.373 ± 0.013 
+MINs                          |  0.865 ± 0.001 |  0.905 ± 0.052 |  0.649 ± 0.004 |  0.473 ± 0.057 
+REINFORCE                     |  0.865 ± 0.000 |  0.948 ± 0.028 |  0.646 ± 0.005 |  0.459 ± 0.036 
+
+Performance On Discrete Tasks.
+
+Method \ Task                 | Superconductor | Ant Morphology | D'Kitty Morphology | Hopper Controller 
+----------------------------- | -------------- | -------------- | ------------------ | -----------------
+Auto. CbAS                    |  0.421 ± 0.045 |  0.884 ± 0.046 |      0.906 ± 0.006 |     0.137 ± 0.005 
+CbAS                          |  0.503 ± 0.069 |  0.879 ± 0.032 |      0.892 ± 0.008 |     0.141 ± 0.012 
+BO-qEI                        |  0.402 ± 0.034 |  0.820 ± 0.000 |      0.896 ± 0.000 |     0.550 ± 0.118 
+CMA-ES                        |  0.465 ± 0.024 |  1.219 ± 0.738 |      0.724 ± 0.001 |     0.604 ± 0.215 
+Grad.                         |  0.518 ± 0.024 |  0.291 ± 0.023 |      0.874 ± 0.022 |     1.035 ± 0.482 
+Grad. Min                     |  0.506 ± 0.009 |  0.478 ± 0.064 |      0.889 ± 0.011 |     1.391 ± 0.589 
+Grad. Mean                    |  0.499 ± 0.017 |  0.444 ± 0.081 |      0.892 ± 0.011 |     1.586 ± 0.454 
+MINs                          |  0.469 ± 0.023 |  0.916 ± 0.036 |      0.945 ± 0.012 |     0.424 ± 0.166 
+REINFORCE                     |  0.481 ± 0.013 |  0.263 ± 0.032 |      0.562 ± 0.196 |    -0.020 ± 0.067 
+
+Performance On Continuous Tasks.
+
+## Reproducing Baseline Performance
+
+In order to reproduce this table, you must first install the implementation of the baseline algorithms.
+
+```bash
+git clone https://github.com/brandontrabucco/design-baselines
+conda env create -f design-baselines/environment.yml
+conda activate design-baselines
+```
+
+You may then run the following series of commands in a bash terminal using the command-line interface exposed in design-baselines. Also, please ensure that the conda environment `design-baselines` is activated in the bash session that you run these commands from in order to access the `design-baselines` command-line interface.
+
+```bash
+# set up machine parameters
+NUM_CPUS=32
+NUM_GPUS=8
+
+for TASK_NAME in \
+    gfp \
+    tf-bind-8 \
+    utr \
+    chembl \
+    superconductor \
+    ant \
+    dkitty \
+    hopper; do
+    
+  for ALGORITHM_NAME in \
+      autofocused-cbas \
+      cbas \
+      bo-qei \
+      cma-es \
+      gradient-ascent \
+      gradient-ascent-min-ensemble \
+      gradient-ascent-mean-ensemble \
+      mins \
+      reinforce; do
+  
+    # launch several model-based optimization algorithms using the command line interface
+    # for example: 
+    # (design-baselines) name@computer:~/$ cbas gfp \
+    #                                        --local-dir ~/db-results/cbas-gfp \
+    #                                        --cpus 32 \
+    #                                        --gpus 8 \
+    #                                        --num-parallel 8 \
+    #                                        --num-samples 8
+    $ALGORITHM_NAME $TASK_NAME \
+      --local-dir ~/db-results/$ALGORITHM_NAME-$TASK_NAME \
+      --cpus $NUM_CPUS \
+      --gpus $NUM_GPUS \
+      --num-parallel 8 \
+      --num-samples 8
+    
+  done
+  
+done
+
+# generate the main performance table of the paper
+design-baselines make-table --dir ~/db-results/ --percentile 100th
+
+# generate the performance tables in the appendix
+design-baselines make-table --dir ~/db-results/ --percentile 50th
+design-baselines make-table --dir ~/db-results/ --percentile 100th --no-normalize
+```
+
+These commands will run several model-based optimization algorithms (such as [CbAS](http://proceedings.mlr.press/v97/brookes19a.html)) contained in design-baselines on all tasks released with the design-bench benchmark, and will then generate three performance tables from those results, and print a latex rendition of these performance tables to stdout.
+
+## The Train-Test Discrepency
+
+For tasks where an exact numerical ground truth is not available for evaluating the performance of previously unseen candidate designs, we provide several families of approximate oracle models that have been trained using a larger *held out* dataset of designs x and corresponding scores y.
+
+Using a learned oracle for evaluation and training an MBO method using real data creates a train-test discrepency. This discrepency can be avoided by *relabelling* the y values in an offline MBO dataset with the predictions of the learned oracle, which is controlled by the following parameter when building a task.
+
+```python
+import design_bench
+
+# instantiate the task using y values generated from the learned oracle
+task = design_bench.make('GFP-Transformer-v0', relabel=True)
+
+# instantiate the task using y values generated from real experiments
+task = design_bench.make('GFP-Transformer-v0', relabel=False)
+```
 
 ## Task API
 
