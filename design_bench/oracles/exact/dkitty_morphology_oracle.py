@@ -5,7 +5,7 @@ from morphing_agents.mujoco.dkitty.elements import LEG_UPPER_BOUND
 from design_bench.oracles.exact_oracle import ExactOracle
 from design_bench.datasets.continuous_dataset import ContinuousDataset
 from design_bench.datasets.continuous.dkitty_morphology_dataset import DKittyMorphologyDataset
-from design_bench.disk_resource import DiskResource
+from design_bench.disk_resource import DiskResource, SERVER_URL
 import numpy as np
 import pickle as pkl
 
@@ -186,8 +186,7 @@ class DKittyMorphologyOracle(ExactOracle):
         policy = "dkitty_morphology/dkitty_oracle.pkl"
         policy = DiskResource(
             policy, is_absolute=False, download_method="direct",
-            download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/{policy}")
+            download_target=f"{SERVER_URL}/{policy}")
         if not policy.is_downloaded and not policy.download():
             raise ValueError("unable to download trained policy for ant")
 

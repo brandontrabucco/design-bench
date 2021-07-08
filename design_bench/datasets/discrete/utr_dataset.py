@@ -1,5 +1,5 @@
 from design_bench.datasets.discrete_dataset import DiscreteDataset
-from design_bench.disk_resource import DiskResource
+from design_bench.disk_resource import DiskResource, SERVER_URL
 
 
 UTR_FILES = ['utr/utr-x-0.npy', 'utr/utr-x-1.npy', 'utr/utr-x-2.npy', 'utr/utr-x-3.npy', 'utr/utr-x-4.npy', 'utr/utr-x-5.npy', 'utr/utr-x-6.npy', 'utr/utr-x-7.npy', 'utr/utr-x-8.npy', 'utr/utr-x-9.npy', 'utr/utr-x-10.npy', 'utr/utr-x-11.npy', 'utr/utr-x-12.npy', 'utr/utr-x-13.npy']
@@ -215,8 +215,7 @@ class UTRDataset(DiscreteDataset):
 
         return [DiskResource(
             file, is_absolute=False,
-            download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/{file}",
+            download_target=f"{SERVER_URL}/{file}",
             download_method="direct") for file in UTR_FILES]
 
     @staticmethod
@@ -236,9 +235,7 @@ class UTRDataset(DiscreteDataset):
 
         return [DiskResource(
             file.replace("-x-", "-y-"), is_absolute=False,
-            download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/"
-                            f"{file.replace('-x-', '-y-')}",
+            download_target=f"{SERVER_URL}/{file.replace('-x-', '-y-')}",
             download_method="direct") for file in UTR_FILES]
 
     def __init__(self, soft_interpolation=0.6, **kwargs):

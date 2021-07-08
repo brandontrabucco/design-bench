@@ -3,6 +3,10 @@ import zipfile
 import os
 
 
+# the public url to objects available for download
+SERVER_URL = "https://storage.googleapis.com/design-bench"
+
+
 # the global path to a folder that stores all data files
 DATA_DIR = os.path.join(
     os.path.abspath(

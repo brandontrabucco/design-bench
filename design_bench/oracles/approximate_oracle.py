@@ -1,6 +1,6 @@
 from design_bench.oracles.oracle_builder import OracleBuilder
 from design_bench.datasets.dataset_builder import DatasetBuilder
-from design_bench.disk_resource import DiskResource
+from design_bench.disk_resource import DiskResource, SERVER_URL
 from scipy import stats
 import numpy as np
 import pickle as pkl
@@ -328,8 +328,7 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
                             is_absolute=is_absolute,
                             download_method=None if disk_target else "direct",
                             download_target=None if disk_target else
-                            f"https://design-bench.s3-"
-                            f"us-west-1.amazonaws.com/{default}")
+                            f"{SERVER_URL}/{default}")
 
     def save_params(self, file, params):
         """a function that serializes a machine learning model and stores

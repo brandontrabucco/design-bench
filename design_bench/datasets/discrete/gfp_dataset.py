@@ -1,5 +1,5 @@
 from design_bench.datasets.discrete_dataset import DiscreteDataset
-from design_bench.disk_resource import DiskResource
+from design_bench.disk_resource import DiskResource, SERVER_URL
 
 
 GFP_FILES = ['gfp/gfp-x-0.npy',
@@ -226,8 +226,7 @@ class GFPDataset(DiscreteDataset):
 
         return [DiskResource(
             file, is_absolute=False,
-            download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/{file}",
+            download_target=f"{SERVER_URL}/{file}",
             download_method="direct") for file in GFP_FILES]
 
     @staticmethod
@@ -247,9 +246,7 @@ class GFPDataset(DiscreteDataset):
 
         return [DiskResource(
             file.replace("-x-", "-y-"), is_absolute=False,
-            download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/"
-                            f"{file.replace('-x-', '-y-')}",
+            download_target=f"{SERVER_URL}/{file.replace('-x-', '-y-')}",
             download_method="direct") for file in GFP_FILES]
 
     def __init__(self, soft_interpolation=0.6, **kwargs):

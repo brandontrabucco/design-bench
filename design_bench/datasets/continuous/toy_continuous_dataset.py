@@ -1,5 +1,5 @@
 from design_bench.datasets.continuous_dataset import ContinuousDataset
-from design_bench.disk_resource import DiskResource
+from design_bench.disk_resource import DiskResource, SERVER_URL
 
 
 TOY_CONTINUOUS_FILES = ["toy_continuous/toy_continuous-x-0.npy",
@@ -203,8 +203,7 @@ class ToyContinuousDataset(ContinuousDataset):
 
         return [DiskResource(
             file, is_absolute=False,
-            download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/{file}",
+            download_target=f"{SERVER_URL}/{file}",
             download_method="direct") for file in TOY_CONTINUOUS_FILES]
 
     @staticmethod
@@ -224,9 +223,7 @@ class ToyContinuousDataset(ContinuousDataset):
 
         return [DiskResource(
             file.replace("-x-", "-y-"), is_absolute=False,
-            download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/"
-                            f"{file.replace('-x-', '-y-')}",
+            download_target=f"{SERVER_URL}/{file.replace('-x-', '-y-')}",
             download_method="direct") for file in TOY_CONTINUOUS_FILES]
 
     def __init__(self, **kwargs):

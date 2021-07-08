@@ -1,5 +1,5 @@
 from design_bench.datasets.continuous_dataset import ContinuousDataset
-from design_bench.disk_resource import DiskResource
+from design_bench.disk_resource import DiskResource, SERVER_URL
 
 
 ANT_MORPHOLOGY_FILES = ["ant_morphology/ant_morphology-x-0.npy"]
@@ -190,8 +190,7 @@ class AntMorphologyDataset(ContinuousDataset):
 
         return [DiskResource(
             file, is_absolute=False,
-            download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/{file}",
+            download_target=f"{SERVER_URL}/{file}",
             download_method="direct") for file in ANT_MORPHOLOGY_FILES]
 
     @staticmethod
@@ -211,9 +210,7 @@ class AntMorphologyDataset(ContinuousDataset):
 
         return [DiskResource(
             file.replace("-x-", "-y-"), is_absolute=False,
-            download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/"
-                            f"{file.replace('-x-', '-y-')}",
+            download_target=f"{SERVER_URL}/{file.replace('-x-', '-y-')}",
             download_method="direct") for file in ANT_MORPHOLOGY_FILES]
 
     def __init__(self, **kwargs):

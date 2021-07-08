@@ -1,7 +1,6 @@
 from design_bench.oracles.exact_oracle import ExactOracle
 from design_bench.datasets.discrete_dataset import DiscreteDataset
 from design_bench.datasets.discrete.toy_discrete_dataset import ToyDiscreteDataset
-from design_bench.disk_resource import DiskResource
 import numpy as np
 
 

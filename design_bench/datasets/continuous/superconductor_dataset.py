@@ -1,5 +1,5 @@
 from design_bench.datasets.continuous_dataset import ContinuousDataset
-from design_bench.disk_resource import DiskResource
+from design_bench.disk_resource import DiskResource, SERVER_URL
 
 
 SUPERCONDUCTOR_FILES = ["superconductor/superconductor-x-0.npy",
@@ -194,8 +194,7 @@ class SuperconductorDataset(ContinuousDataset):
 
         return [DiskResource(
             file, is_absolute=False,
-            download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/{file}",
+            download_target=f"{SERVER_URL}/{file}",
             download_method="direct") for file in SUPERCONDUCTOR_FILES]
 
     @staticmethod
@@ -215,9 +214,7 @@ class SuperconductorDataset(ContinuousDataset):
 
         return [DiskResource(
             file.replace("-x-", "-y-"), is_absolute=False,
-            download_target=f"https://design-bench."
-                            f"s3-us-west-1.amazonaws.com/"
-                            f"{file.replace('-x-', '-y-')}",
+            download_target=f"{SERVER_URL}/{file.replace('-x-', '-y-')}",
             download_method="direct") for file in SUPERCONDUCTOR_FILES]
 
     def __init__(self, **kwargs):
