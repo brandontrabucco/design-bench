@@ -261,6 +261,10 @@ class ApproximateOracle(OracleBuilder, abc.ABC):
             the maximum number of samples to include in the visible dataset;
             if more than this number of samples would be present, samples
             are randomly removed from the visible dataset
+        distribution: Callable[np.ndarray, np.ndarray]
+            a function that accepts an array of the ranks of designs as
+            input and returns the probability to sample each according to
+            a distribution---for example, a geometric distribution
         max_percentile: float
             the percentile between 0 and 100 of prediction values 'y' above
             which are hidden from access by members outside the class

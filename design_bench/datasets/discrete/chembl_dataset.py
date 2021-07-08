@@ -56,6 +56,9 @@ class ChEMBLDataset(DiscreteDataset):
     dataset_size: int
         the total number of paired design values 'x' and prediction values
         'y' in the dataset, represented as a single integer
+    dataset_distribution: Callable[np.ndarray, np.ndarray]
+        the target distribution of the model-based optimization dataset
+        marginal p(y) used for controlling the sampling distribution
     dataset_max_percentile: float
         the percentile between 0 and 100 of prediction values 'y' above
         which are hidden from access by members outside the class

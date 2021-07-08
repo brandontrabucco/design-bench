@@ -55,6 +55,9 @@ class DatasetBuilder(abc.ABC):
     dataset_size: int
         the total number of paired design values 'x' and prediction values
         'y' in the dataset, represented as a single integer
+    dataset_distribution: Callable[np.ndarray, np.ndarray]
+        the target distribution of the model-based optimization dataset
+        marginal p(y) used for controlling the sampling distribution
     dataset_max_percentile: float
         the percentile between 0 and 100 of prediction values 'y' above
         which are hidden from access by members outside the class
@@ -110,6 +113,7 @@ class DatasetBuilder(abc.ABC):
         optimization data set for training a model
 
     subsample(max_samples: int,
+              distribution: Callable[np.ndarray, np.ndarray],
               max_percentile: float,
               min_percentile: float):
         a function that exposes a subsampled version of a much larger
@@ -225,7 +229,8 @@ class DatasetBuilder(abc.ABC):
 
     def __init__(self, x_shards, y_shards, internal_batch_size=32,
                  is_normalized_x=False, is_normalized_y=False,
-                 max_samples=None, max_percentile=100.0, min_percentile=0.0):
+                 max_samples=None, distribution=None,
+                 max_percentile=100.0, min_percentile=0.0):
         """Initialize a model-based optimization dataset and prepare
         that dataset by loading that dataset from disk and modifying
         its distribution of designs and predictions
@@ -256,6 +261,10 @@ class DatasetBuilder(abc.ABC):
             the maximum number of samples to include in the visible dataset;
             if more than this number of samples would be present, samples
             are randomly removed from the visible dataset
+        distribution: Callable[np.ndarray, np.ndarray]
+            a function that accepts an array of the ranks of designs as
+            input and returns the probability to sample each according to
+            a distribution---for example, a geometric distribution
         max_percentile: float
             the percentile between 0 and 100 of prediction values 'y' above
             which are hidden from access by members outside the class
@@ -289,6 +298,7 @@ class DatasetBuilder(abc.ABC):
         self.dataset_max_percentile = 100.0
         self.dataset_min_output = np.NINF
         self.dataset_max_output = np.PINF
+        self.dataset_distribution = None
 
         # initialize the normalization state to False
         self.internal_batch_size = internal_batch_size
@@ -339,6 +349,7 @@ class DatasetBuilder(abc.ABC):
         if is_normalized_y:
             self.map_normalize_y()
         self.subsample(max_samples=max_samples,
+                       distribution=distribution,
                        min_percentile=min_percentile,
                        max_percentile=max_percentile)
 
@@ -862,7 +873,7 @@ class DatasetBuilder(abc.ABC):
         # reset the normalized state to what it originally was
         self.is_normalized_y = original_is_normalized_y
 
-    def subsample(self, max_samples=None,
+    def subsample(self, max_samples=None, distribution=None,
                   max_percentile=100.0, min_percentile=0.0):
         """a function that exposes a subsampled version of a much larger
         model-based optimization dataset containing design values 'x'
@@ -874,6 +885,10 @@ class DatasetBuilder(abc.ABC):
             the maximum number of samples to include in the visible dataset;
             if more than this number of samples would be present, samples
             are randomly removed from the visible dataset
+        distribution: Callable[np.ndarray, np.ndarray]
+            a function that accepts an array of the ranks of designs as
+            input and returns the probability to sample each according to
+            a distribution---for example, a geometric distribution
         max_percentile: float
             the percentile between 0 and 100 of prediction values 'y' above
             which are hidden from access by members outside the class
@@ -915,19 +930,30 @@ class DatasetBuilder(abc.ABC):
         self.dataset_max_percentile = max_percentile
         self.dataset_max_output = max_output
 
-        # calculate indices of samples that are visible
+        # calculate indices of samples that are within range
         indices = np.arange(y.shape[0])[np.where(
             np.logical_and(y <= max_output, y >= min_output))[0]]
         max_samples = indices.size \
             if max_samples is None else min(indices.size, max_samples)
+
+        # define a probability distribution for sampling y
+        self.dataset_distribution = distribution
+        if distribution is None or distribution == "uniform":
+            self.dataset_distribution = \
+                lambda p: np.ones(p.shape, dtype=np.float32)
+
+        # calculate the probability to subsample individual designs
+        probs = self.dataset_distribution(y[indices, 0].argsort().argsort())
+        probs = np.asarray(probs, dtype=np.float32)
+        probs = np.broadcast_to(probs, (indices.size,))
         indices = indices[np.random.choice(
-            indices.size, max_samples, replace=False)]
-        self.dataset_size = indices.size
+            indices.size, max_samples, replace=False, p=probs / probs.sum())]
 
         # binary mask that determines which samples are visible
         visible_mask = np.full([y.shape[0]], False, dtype=np.bool)
         visible_mask[indices] = True
         self.dataset_visible_mask = visible_mask
+        self.dataset_size = indices.size
 
         # update normalization statistics for design values
         if self.is_normalized_x:
@@ -1071,6 +1097,7 @@ class DatasetBuilder(abc.ABC):
         # re-sample the data set and recalculate statistics
         self._disable_subsample = False
         self.subsample(max_samples=self.dataset_size,
+                       distribution=self.dataset_distribution,
                        max_percentile=self.dataset_max_percentile,
                        min_percentile=self.dataset_min_percentile)
 
@@ -1128,6 +1155,7 @@ class DatasetBuilder(abc.ABC):
         dataset.dataset_max_percentile = self.dataset_max_percentile
         dataset.dataset_min_output = self.dataset_min_output
         dataset.dataset_max_output = self.dataset_max_output
+        dataset.dataset_distribution = self.dataset_distribution
 
         # calculate indices of samples that are visible
         dataset.dataset_visible_mask = visible_mask

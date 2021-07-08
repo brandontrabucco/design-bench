@@ -11,6 +11,7 @@ register('ToyDiscrete-Exact-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0),
 
@@ -26,6 +27,7 @@ register('GFP-GP-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=5000,
+             distribution=None,
              max_percentile=60,
              min_percentile=50),
 
@@ -33,6 +35,7 @@ register('GFP-GP-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=2000,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -55,6 +58,7 @@ register('GFP-RandomForest-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=5000,
+             distribution=None,
              max_percentile=60,
              min_percentile=50),
 
@@ -62,6 +66,7 @@ register('GFP-RandomForest-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=2000,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -86,6 +91,7 @@ register('GFP-FullyConnected-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=5000,
+             distribution=None,
              max_percentile=60,
              min_percentile=50),
 
@@ -93,6 +99,7 @@ register('GFP-FullyConnected-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -121,6 +128,7 @@ register('GFP-LSTM-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=5000,
+             distribution=None,
              max_percentile=60,
              min_percentile=50),
 
@@ -128,6 +136,7 @@ register('GFP-LSTM-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -154,6 +163,7 @@ register('GFP-ResNet-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=5000,
+             distribution=None,
              max_percentile=60,
              min_percentile=50),
 
@@ -161,6 +171,7 @@ register('GFP-ResNet-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -189,6 +200,7 @@ register('GFP-Transformer-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=5000,
+             distribution=None,
              max_percentile=60,
              min_percentile=50),
 
@@ -197,6 +209,7 @@ register('GFP-Transformer-v0',
              noise_std=0.0,
              internal_batch_size=32,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -227,6 +240,7 @@ register('TFBind8-Exact-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=50,
              min_percentile=0),
 
@@ -242,6 +256,7 @@ register('TFBind8-GP-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=50,
              min_percentile=0,
              transcription_factor="SIX6_REF_R1"),
@@ -250,6 +265,7 @@ register('TFBind8-GP-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=2000,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -272,6 +288,7 @@ register('TFBind8-RandomForest-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=50,
              min_percentile=0,
              transcription_factor="SIX6_REF_R1"),
@@ -280,6 +297,7 @@ register('TFBind8-RandomForest-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=2000,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -304,6 +322,7 @@ register('TFBind8-FullyConnected-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=50,
              min_percentile=0,
              transcription_factor="SIX6_REF_R1"),
@@ -312,6 +331,7 @@ register('TFBind8-FullyConnected-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -340,6 +360,7 @@ register('TFBind8-LSTM-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=50,
              min_percentile=0,
              transcription_factor="SIX6_REF_R1"),
@@ -348,6 +369,7 @@ register('TFBind8-LSTM-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -374,6 +396,7 @@ register('TFBind8-ResNet-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=50,
              min_percentile=0,
              transcription_factor="SIX6_REF_R1"),
@@ -382,6 +405,7 @@ register('TFBind8-ResNet-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -410,6 +434,7 @@ register('TFBind8-Transformer-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=50,
              min_percentile=0,
              transcription_factor="SIX6_REF_R1"),
@@ -419,6 +444,7 @@ register('TFBind8-Transformer-v0',
              noise_std=0.0,
              internal_batch_size=32,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -449,6 +475,7 @@ register('TFBind10-Exact-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=50,
              min_percentile=0,
              transcription_factor='pho4'),
@@ -465,6 +492,7 @@ register('NASBench-Exact-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=30,
              min_percentile=0),
 
@@ -480,6 +508,7 @@ register('UTR-GP-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=50,
              min_percentile=0),
 
@@ -487,6 +516,7 @@ register('UTR-GP-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=5000,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -509,6 +539,7 @@ register('UTR-RandomForest-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=50,
              min_percentile=0),
 
@@ -516,6 +547,7 @@ register('UTR-RandomForest-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=5000,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -540,6 +572,7 @@ register('UTR-FullyConnected-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=50,
              min_percentile=0),
 
@@ -547,6 +580,7 @@ register('UTR-FullyConnected-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -575,6 +609,7 @@ register('UTR-LSTM-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=50,
              min_percentile=0),
 
@@ -582,6 +617,7 @@ register('UTR-LSTM-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -608,6 +644,7 @@ register('UTR-ResNet-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=50,
              min_percentile=0),
 
@@ -616,6 +653,7 @@ register('UTR-ResNet-v0',
              noise_std=0.0,
              internal_batch_size=128,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -644,6 +682,7 @@ register('UTR-Transformer-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=50,
              min_percentile=0),
 
@@ -652,6 +691,7 @@ register('UTR-Transformer-v0',
              noise_std=0.0,
              internal_batch_size=128,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -682,6 +722,7 @@ register('ChEMBL-GP-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0,
              assay_chembl_id="CHEMBL1964047",
@@ -691,6 +732,7 @@ register('ChEMBL-GP-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=2000,
+             distribution=None,
              max_percentile=53,
              min_percentile=0,
 
@@ -714,6 +756,7 @@ register('ChEMBL-RandomForest-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0,
              assay_chembl_id="CHEMBL1964047",
@@ -723,6 +766,7 @@ register('ChEMBL-RandomForest-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=2000,
+             distribution=None,
              max_percentile=53,
              min_percentile=0,
 
@@ -747,6 +791,7 @@ register('ChEMBL-FullyConnected-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0,
              assay_chembl_id="CHEMBL1964047",
@@ -756,6 +801,7 @@ register('ChEMBL-FullyConnected-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=53,
              min_percentile=0,
 
@@ -784,6 +830,7 @@ register('ChEMBL-LSTM-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0,
              assay_chembl_id="CHEMBL1964047",
@@ -793,6 +840,7 @@ register('ChEMBL-LSTM-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=53,
              min_percentile=0,
 
@@ -819,6 +867,7 @@ register('ChEMBL-ResNet-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0,
              assay_chembl_id="CHEMBL1964047",
@@ -828,6 +877,7 @@ register('ChEMBL-ResNet-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=53,
              min_percentile=0,
 
@@ -856,6 +906,7 @@ register('ChEMBL-Transformer-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0,
              assay_chembl_id="CHEMBL1964047",
@@ -866,6 +917,7 @@ register('ChEMBL-Transformer-v0',
              noise_std=0.0,
              internal_batch_size=32,
              max_samples=None,
+             distribution=None,
              max_percentile=53,
              min_percentile=0,
 
@@ -896,6 +948,7 @@ register('ToyContinuous-Exact-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0),
 
@@ -911,6 +964,7 @@ register('HopperController-Exact-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0),
 
@@ -926,6 +980,7 @@ register('HopperController-GP-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0),
 
@@ -933,6 +988,7 @@ register('HopperController-GP-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=2000,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -958,6 +1014,7 @@ register('HopperController-RandomForest-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0),
 
@@ -965,6 +1022,7 @@ register('HopperController-RandomForest-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=2000,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -989,6 +1047,7 @@ register('HopperController-FullyConnected-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0),
 
@@ -996,6 +1055,7 @@ register('HopperController-FullyConnected-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -1023,6 +1083,7 @@ register('Superconductor-GP-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=80,
              min_percentile=0),
 
@@ -1030,6 +1091,7 @@ register('Superconductor-GP-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=2000,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -1055,6 +1117,7 @@ register('Superconductor-RandomForest-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=80,
              min_percentile=0),
 
@@ -1062,6 +1125,7 @@ register('Superconductor-RandomForest-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=2000,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -1086,6 +1150,7 @@ register('Superconductor-FullyConnected-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=80,
              min_percentile=0),
 
@@ -1093,6 +1158,7 @@ register('Superconductor-FullyConnected-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -1120,6 +1186,7 @@ register('AntMorphology-Exact-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0),
 
@@ -1135,6 +1202,7 @@ register('AntMorphology-GP-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0),
 
@@ -1142,6 +1210,7 @@ register('AntMorphology-GP-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=2000,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -1167,6 +1236,7 @@ register('AntMorphology-RandomForest-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0),
 
@@ -1174,6 +1244,7 @@ register('AntMorphology-RandomForest-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=2000,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -1198,6 +1269,7 @@ register('AntMorphology-FullyConnected-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0),
 
@@ -1205,6 +1277,7 @@ register('AntMorphology-FullyConnected-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -1232,6 +1305,7 @@ register('DKittyMorphology-Exact-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0),
 
@@ -1247,6 +1321,7 @@ register('DKittyMorphology-GP-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0),
 
@@ -1254,6 +1329,7 @@ register('DKittyMorphology-GP-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=2000,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -1279,6 +1355,7 @@ register('DKittyMorphology-RandomForest-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0),
 
@@ -1286,6 +1363,7 @@ register('DKittyMorphology-RandomForest-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=2000,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 
@@ -1310,6 +1388,7 @@ register('DKittyMorphology-FullyConnected-v0',
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
              max_samples=None,
+             distribution=None,
              max_percentile=40,
              min_percentile=0),
 
@@ -1317,6 +1396,7 @@ register('DKittyMorphology-FullyConnected-v0',
          oracle_kwargs=dict(
              noise_std=0.0,
              max_samples=None,
+             distribution=None,
              max_percentile=100,
              min_percentile=0,
 

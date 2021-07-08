@@ -80,6 +80,9 @@ class Task(object):
     dataset_size: int
         the total number of paired design values 'x' and prediction values
         'y' in the dataset, represented as a single integer
+    dataset_distribution: Callable[np.ndarray, np.ndarray]
+        the target distribution of the model-based optimization dataset
+        marginal p(y) used for controlling the sampling distribution
     dataset_max_percentile: float
         the percentile between 0 and 100 of prediction values 'y' above
         which are hidden from access by members outside the class
@@ -295,6 +298,7 @@ class Task(object):
             # the dataset if sub sampling is being used
             dataset.y_shards = new_shards
             dataset.subsample(max_samples=dataset.dataset_size,
+                              distribution=dataset.dataset_distribution,
                               max_percentile=dataset.dataset_max_percentile,
                               min_percentile=dataset.dataset_min_percentile)
 
@@ -373,6 +377,15 @@ class Task(object):
         """
 
         return self.dataset.dataset_size
+
+    @property
+    def dataset_distribution(self):
+        """the target distribution of the model-based optimization dataset
+        marginal p(y) used for controlling the sampling distribution
+
+        """
+
+        return self.dataset.dataset_distribution
 
     @property
     def dataset_max_percentile(self):

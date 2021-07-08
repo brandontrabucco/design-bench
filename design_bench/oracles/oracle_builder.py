@@ -145,7 +145,8 @@ class OracleBuilder(abc.ABC):
                  internal_batch_size=32, internal_measurements=1,
                  noise_std=0.0, expect_normalized_y=False,
                  expect_normalized_x=False, expect_logits=None,
-                 max_samples=None, min_percentile=0.0, max_percentile=100.0):
+                 max_samples=None, distribution=None,
+                 min_percentile=0.0, max_percentile=100.0):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -185,6 +186,10 @@ class OracleBuilder(abc.ABC):
             the maximum number of samples to include in the visible dataset;
             if more than this number of samples would be present, samples
             are randomly removed from the visible dataset
+        distribution: Callable[np.ndarray, np.ndarray]
+            a function that accepts an array of the ranks of designs as
+            input and returns the probability to sample each according to
+            a distribution---for example, a geometric distribution
         max_percentile: float
             the percentile between 0 and 100 of prediction values 'y' above
             which are hidden from access by members outside the class
@@ -214,6 +219,7 @@ class OracleBuilder(abc.ABC):
         # draw statistics from a fixed distribution
         # this is necessary because self.dataset is mutable
         self.internal_dataset.subsample(max_samples=max_samples,
+                                        distribution=distribution,
                                         min_percentile=min_percentile,
                                         max_percentile=max_percentile)
 
