@@ -6,7 +6,7 @@ These applications have significant potential to accelerate research in biochemi
 
 ## Offline Model-Based Optimization
 
-![Offline Model-Based Optimization](https://design-bench.s3-us-west-1.amazonaws.com/mbo.png)
+![Offline Model-Based Optimization](https://storage.googleapis.com/design-bench/mbo.png)
 
 The goal of model-based optimization is to find an input **x** that maximizes an unknown black-box function **f**. This function is frequently difficulty or costly to evaluate---such as requiring wet-lab experiments in the case of protein design. In these cases, **f** is described by a set of function evaluations: D = {(x_0, y_0), (x_1, y_1), ... (x_n, y_n)}, and optimization is performed without querying **f** on new data points.
 
