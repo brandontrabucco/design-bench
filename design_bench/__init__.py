@@ -485,6 +485,22 @@ register('TFBind10-Exact-v0',
              noise_std=0.0))
 
 
+register('CIFARNAS-Exact-v0',
+         'design_bench.datasets.discrete.cifar_nas_dataset:CIFARNASDataset',
+         'design_bench.oracles.exact.cifar_nas_oracle:CIFARNASOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             distribution=None,
+             max_percentile=50,
+             min_percentile=0),
+
+         # keyword arguments for building the exact oracle
+         oracle_kwargs=dict(
+             noise_std=0.0))
+
+
 register('NASBench-Exact-v0',
          'design_bench.datasets.discrete.nas_bench_dataset:NASBenchDataset',
          'design_bench.oracles.exact:NASBenchOracle',

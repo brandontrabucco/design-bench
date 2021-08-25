@@ -7,7 +7,7 @@ with open(F, 'r') as readme:
     LONG_DESCRIPTION = readme.read()
 
 
-setup(name='design-bench', version='2.0.12', license='MIT',
+setup(name='design-bench', version='2.0.13', license='MIT',
       packages=find_packages(include=['design_bench', 'design_bench.*']),
       description='Design-Bench: Benchmarks for '
                   'Data-Driven Offline Model-Based Optimization',
@@ -17,11 +17,12 @@ setup(name='design-bench', version='2.0.12', license='MIT',
       author_email='brandon@btrabucco.com',
       url='https://github.com/brandontrabucco/design-bench',
       download_url='https://github.com/'
-                   'brandontrabucco/design-bench/archive/v2_0_12.tar.gz',
+                   'brandontrabucco/design-bench/archive/v2_0_13.tar.gz',
       keywords=['Deep Learning', 'Neural Networks',
                 'Benchmark', 'Model-Based Optimization'],
       extras_require={'all': ['gym[mujoco]'], 'cma': ['cma']},
       install_requires=['pandas', 'requests', 'scikit-learn',
+                        'torch', 'torchvision',
                         'numpy', 'tensorflow>=2.2', 'transformers'],
       classifiers=[
           'Intended Audience :: Developers',
