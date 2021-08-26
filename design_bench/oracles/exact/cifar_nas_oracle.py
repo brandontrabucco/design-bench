@@ -12,6 +12,9 @@ Original Author: Young Geng
 Design-Bench Maintainer: Brandon Trabucco
 """
 
+import functools
+import operator
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -42,10 +45,24 @@ class Block(nn.Module):
         kernel_size2 = kernel_sizes[config[2]]
         activation2 = activations[config[3]]
 
+        # the next lines are to compensate for how older versions of
+        # pytorch do not natively support padding=same
+        padding1 = (kernel_size1 // 2 + (kernel_size1 - 2 * (
+            kernel_size1 // 2)) - 1, kernel_size1 // 2,
+                kernel_size1 // 2 + (kernel_size1 - 2 * (
+                    kernel_size1 // 2)) - 1, kernel_size1 // 2)
+
+        padding2 = (kernel_size2 // 2 + (kernel_size2 - 2 * (
+            kernel_size2 // 2)) - 1, kernel_size2 // 2,
+                kernel_size2 // 2 + (kernel_size2 - 2 * (
+                    kernel_size2 // 2)) - 1, kernel_size2 // 2)
+
         self.network = nn.Sequential(
-            nn.Conv2d(32, 32, kernel_size1, padding='same'),
+            nn.ZeroPad2d(padding1),
+            nn.Conv2d(32, 32, kernel_size1),
             activation1(),
-            nn.Conv2d(32, 32, kernel_size2, padding='same'),
+            nn.ZeroPad2d(padding2),
+            nn.Conv2d(32, 32, kernel_size2),
             activation2(),
             nn.MaxPool2d(3, stride=1, padding=1)
         )
@@ -65,8 +82,8 @@ class ParameterizedCNN(nn.Module):
         for i in range(0, len(config), n_params):
             configs.append(config[i:i + n_params])
 
-        layers = []
-        layers.append(nn.Conv2d(3, 32, 3, padding='same'))
+        layers = [nn.ZeroPad2d((1, 1, 1, 1)),
+                  nn.Conv2d(3, 32, 3)]
 
         for config in configs:
             layers.append(Block(config))
