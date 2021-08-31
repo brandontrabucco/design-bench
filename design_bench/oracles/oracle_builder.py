@@ -1,5 +1,6 @@
 from design_bench.datasets.dataset_builder import DatasetBuilder
 from design_bench.datasets.discrete_dataset import DiscreteDataset
+from design_bench.oracles.feature_extractors.feature_extractor import FeatureExtractor
 import abc
 import numpy as np
 import math
@@ -146,7 +147,8 @@ class OracleBuilder(abc.ABC):
                  noise_std=0.0, expect_normalized_y=False,
                  expect_normalized_x=False, expect_logits=None,
                  max_samples=None, distribution=None,
-                 min_percentile=0.0, max_percentile=100.0):
+                 min_percentile=0.0, max_percentile=100.0,
+                 feature_extractor: FeatureExtractor = None):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -196,6 +198,10 @@ class OracleBuilder(abc.ABC):
         min_percentile: float
             the percentile between 0 and 100 of prediction values 'y' below
             which are hidden from access by members outside the class
+        feature_extractor: FeatureExtractor
+            an optional feature extraction module that encodes designs and
+            scores from a model-based optimization dataset into different
+            feature spaces for training oracle models
 
         """
 
@@ -204,10 +210,6 @@ class OracleBuilder(abc.ABC):
                 isinstance(dataset, DiscreteDataset):
             raise ValueError("is_logits is only defined "
                              "for use with discrete datasets")
-
-        # check the given dataset is compatible with this oracle
-        if not self.check_input_format(dataset):
-            raise ValueError("the given dataset is not compatible")
 
         # keep the dataset in case it is needed for normalization
         self.external_dataset = dataset
@@ -237,10 +239,19 @@ class OracleBuilder(abc.ABC):
         self.is_batched = is_batched
         self.internal_batch_size = internal_batch_size
         self.internal_measurements = internal_measurements
+        self.feature_extractor = feature_extractor
 
         # attributes that describe model predictions
         self.noise_std = noise_std
         self.num_evaluations = self.external_dataset.dataset_size
+
+        # check the given dataset is compatible with this oracle
+        if not self.check_input_format(dataset):
+            raise ValueError("the given dataset is not compatible")
+
+        # update the name of this oracle
+        if self.feature_extractor is not None:
+            self.name = self.name + "_" + self.feature_extractor.name
 
     def dataset_to_oracle_x(self, x_batch, dataset=None):
         """Helper function for converting from designs contained in the
@@ -290,6 +301,10 @@ class OracleBuilder(abc.ABC):
         if self.expect_normalized_x:
             x_batch = self.internal_dataset.normalize_x(x_batch)
 
+        # apply a feature extraction process unique to the oracle
+        if self.feature_extractor is not None:
+            x_batch = self.feature_extractor\
+                .dataset_to_oracle_x(x_batch, self.internal_dataset)
         return x_batch
 
     def dataset_to_oracle_y(self, y_batch, dataset=None):
@@ -330,6 +345,10 @@ class OracleBuilder(abc.ABC):
         if self.expect_normalized_y:
             y_batch = self.internal_dataset.normalize_y(y_batch)
 
+        # apply a feature extraction process unique to the oracle
+        if self.feature_extractor is not None:
+            y_batch = self.feature_extractor\
+                .dataset_to_oracle_y(y_batch, self.internal_dataset)
         return y_batch
 
     def oracle_to_dataset_x(self, x_batch, dataset=None):
@@ -359,6 +378,11 @@ class OracleBuilder(abc.ABC):
         # the default source is self.external_dataset
         if dataset is None:
             dataset = self.external_dataset
+
+        # apply a feature extraction process unique to the oracle
+        if self.feature_extractor is not None:
+            x_batch = self.feature_extractor\
+                .oracle_to_dataset_x(x_batch, self.internal_dataset)
 
         # handle when the dataset is normalized and the normalization
         # statistics expected by the oracle are different
@@ -409,6 +433,11 @@ class OracleBuilder(abc.ABC):
         # the default source is self.dataset
         if dataset is None:
             dataset = self.external_dataset
+
+        # apply a feature extraction process unique to the oracle
+        if self.feature_extractor is not None:
+            y_batch = self.feature_extractor\
+                .oracle_to_dataset_y(y_batch, self.internal_dataset)
 
         # handle when the oracle expects normalized predictions but
         # the dataset is not currently normalized

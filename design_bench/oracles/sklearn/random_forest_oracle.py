@@ -72,7 +72,8 @@ class RandomForestOracle(SKLearnOracle):
 
     name = "random_forest"
 
-    def __init__(self, dataset: DiscreteDataset, **kwargs):
+    def __init__(self, dataset: DiscreteDataset,
+                 override_input_spec=False, **kwargs):
         """Initialize the ground truth score function f(x) for a model-based
         optimization problem, which involves loading the parameters of an
         oracle model and estimating its computational cost
@@ -90,9 +91,9 @@ class RandomForestOracle(SKLearnOracle):
         super(RandomForestOracle, self).__init__(
             dataset, is_batched=True, internal_measurements=1,
             expect_normalized_y=True,
-            expect_normalized_x=True,
-            expect_logits=True if isinstance(
-                dataset, DiscreteDataset) else None, **kwargs)
+            expect_normalized_x=not override_input_spec,
+            expect_logits=True if isinstance(dataset, DiscreteDataset)
+            and not override_input_spec else None, **kwargs)
 
     @classmethod
     def check_input_format(cls, dataset):

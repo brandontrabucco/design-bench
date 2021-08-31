@@ -106,6 +106,11 @@ class TensorflowOracle(ApproximateOracle, abc.ABC):
                       DiscreteDataset) and dataset.is_logits:
             input_shape = input_shape[:-1]
 
+        # if the feature extraction model is given, assume its input shape
+        if self.feature_extractor is not None:
+            input_shape = self.feature_extractor\
+                .input_shape(self.internal_dataset)
+
         # map from dataset format to oracle format using numpy
         def dataset_to_oracle_numpy(x, y):
             return self.dataset_to_oracle_x(x, dataset=dataset), \
@@ -113,8 +118,14 @@ class TensorflowOracle(ApproximateOracle, abc.ABC):
 
         # map from dataset format to oracle format using tensorflow
         def dataset_to_oracle_tensorflow(x, y):
-            dtype = tf.int32 if isinstance(
-                dataset, DiscreteDataset) else tf.float32
+
+            # identify the data type of the designs (or their features)
+            dtype = tf.float32
+            if self.feature_extractor is not None:
+                if self.feature_extractor.is_discrete(self.internal_dataset):
+                    dtype = tf.int32
+            elif isinstance(dataset, DiscreteDataset):
+                dtype = tf.int32
 
             # process the input tensors using numpy
             x, y = tf.numpy_function(dataset_to_oracle_numpy,

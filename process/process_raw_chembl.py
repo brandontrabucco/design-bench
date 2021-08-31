@@ -30,8 +30,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("Process Raw ChEMBL")
     parser.add_argument("--dir", type=str, default="data/chembl_activities")
     parser.add_argument("--shard-folder", type=str, default="./")
-    parser.add_argument("--min-samples", type=int, default=20000)
-    parser.add_argument("--samples-per-shard", type=int, default=5000)
+    parser.add_argument("--max-smiles-len", type=int, default=30)
+    parser.add_argument("--min-samples", type=int, default=1000)
+    parser.add_argument("--samples-per-shard", type=int, default=50000)
     args = parser.parse_args()
 
     file_matches = glob.glob(os.path.join(args.dir, "*.csv"))
@@ -51,19 +52,22 @@ if __name__ == "__main__":
 
     data = data.dropna(subset=['Standard Value'])
     data = data.groupby(["Standard Type", "Assay ChEMBL ID"])\
-               .filter(lambda x: len(x) >= args.min_samples)
+        .filter(lambda x: sum([1 if len(sm) < args.max_smiles_len
+                               else 0 for sm in x['Smiles'].tolist()]) >= args.min_samples)
 
     group_sizes = data.groupby(["Standard Type", "Assay ChEMBL ID"]).size()
     group = list(zip(*list(
         data.groupby(["Standard Type", "Assay ChEMBL ID"]))))[0]
 
+    # download the molecule dataset if not already
+    google_drive_download('1u5wQVwVSK7PG6dxGL2p_6pXf8gvsfUAk',
+                          os.path.join(DATA_DIR, 'smiles_vocab.txt'))
+    tokenizer = SmilesTokenizer(
+        os.path.join(DATA_DIR, 'smiles_vocab.txt'))
+
     os.makedirs(args.shard_folder, exist_ok=True)
     files_list = []
     for standard_type, assay_chembl_id in group:
-
-        # download the molecule dataset if not already
-        google_drive_download('1u5wQVwVSK7PG6dxGL2p_6pXf8gvsfUAk',
-                              os.path.join(DATA_DIR, 'smiles_vocab.txt'))
 
         # load the static dataset
         df = data
@@ -72,16 +76,17 @@ if __name__ == "__main__":
         df = df[df["Standard Type"] ==
                 standard_type][df["Assay ChEMBL ID"] == assay_chembl_id]
 
+        x = df['Smiles'].to_list()
+        y = df['Standard Value'].to_list()
+        x, y = zip(*[(xi, yi) for xi, yi in
+                     zip(x, y) if len(xi) < args.max_smiles_len])
+
         # build an integer encoder for smiles sequences
-        tokenizer = SmilesTokenizer(
-            os.path.join(DATA_DIR, 'smiles_vocab.txt'))
-        x = tokenizer(df['Smiles'].to_list(),
-                      padding="longest")["input_ids"]
+        x = tokenizer(x, padding="longest")["input_ids"]
         x = np.array(x).astype(np.int32)
 
         # extract the prediction property of interest
-        y = df['Standard Value'] \
-            .to_numpy().astype(np.float32).reshape([-1, 1])
+        y = np.array(y).astype(np.float32).reshape([-1, 1])
 
         # calculate the number of batches per single shard
         batch_per_shard = int(math.ceil(

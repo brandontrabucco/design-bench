@@ -106,8 +106,7 @@ class TransformerOracle(TensorflowOracle):
             expect_logits=False if isinstance(
                 dataset, DiscreteDataset) else None, **kwargs)
 
-    @classmethod
-    def check_input_format(cls, dataset):
+    def check_input_format(self, dataset):
         """a function that accepts a model-based optimization dataset as input
         and determines whether the provided dataset is compatible with this
         oracle score function (is this oracle a correct one)
@@ -127,10 +126,22 @@ class TransformerOracle(TensorflowOracle):
 
         """
 
+        # handle when a feature extractor is used
+        if self.feature_extractor is not None:
+            input_shape = self.feature_extractor\
+                .input_shape(self.internal_dataset)
+            
+            # ensure that the data has exactly one sequence dimension
+            if self.feature_extractor.is_discrete(self.internal_dataset):
+                return len(input_shape) == 1
+            else:
+                return len(input_shape) == 2
+
         # ensure that the data has exactly one sequence dimension
         if isinstance(dataset, DiscreteDataset) and not dataset.is_logits:
             return len(dataset.input_shape) == 1
-        return len(dataset.input_shape) == 2
+        else:
+            return len(dataset.input_shape) == 2
 
     def save_model_to_zip(self, model, zip_archive):
         """a function that serializes a machine learning model and stores
@@ -230,9 +241,28 @@ class TransformerOracle(TensorflowOracle):
         shuffle_buffer = model_kwargs["shuffle_buffer"]
         learning_rate = model_kwargs["learning_rate"]
 
+        # determine the vocab size to initialize the model with
+        num_classes = 1
+        if self.feature_extractor is not None:
+            if self.feature_extractor.is_discrete(self.internal_dataset):
+                num_classes = self.feature_extractor\
+                    .num_classes(self.internal_dataset)
+        elif isinstance(training, DiscreteDataset):
+            num_classes = training.num_classes
+
+        # obtain the expected shape of inputs to the model
+        input_shape = training.input_shape
+        if isinstance(training, DiscreteDataset) and training.is_logits:
+            input_shape = input_shape[:-1]
+
+        # if the feature extraction model is given, assume its input shape
+        if self.feature_extractor is not None:
+            input_shape = self.feature_extractor\
+                .input_shape(self.internal_dataset)
+
         # build the hugging face model from a configuration
         model = TFBert(transformers.BertConfig(
-            vocab_size=training.num_classes,
+            vocab_size=num_classes,
             num_labels=1,
             hidden_size=hidden_size,
             num_hidden_layers=num_blocks,
@@ -241,7 +271,7 @@ class TransformerOracle(TensorflowOracle):
             hidden_act=activation,
             hidden_dropout_prob=dropout_rate,
             attention_probs_dropout_prob=dropout_rate,
-            max_position_embeddings=training.input_shape[0],
+            max_position_embeddings=input_shape[0],
             initializer_range=0.02,
             layer_norm_eps=1e-12,
             position_embedding_type='absolute'))
@@ -257,9 +287,15 @@ class TransformerOracle(TensorflowOracle):
         model.compile(optimizer=optimizer,
                       loss=tf.keras.losses.MeanSquaredError())
 
-        # an input key for the huggingface transformer api
-        input_key = "input_ids" if isinstance(
-            training, DiscreteDataset) else "inputs_embeds"
+        # if the feature extraction model is given, assume its format
+        if self.feature_extractor is not None:
+            input_key = ("input_ids" if self.feature_extractor
+                         .is_discrete(self.internal_dataset)
+                         else "inputs_embeds")
+        elif isinstance(training, DiscreteDataset):
+            input_key = "input_ids"
+        else:
+            input_key = "inputs_embeds"
 
         # create a tensorflow dataset generator for training
         training = self.create_tensorflow_dataset(
@@ -311,8 +347,15 @@ class TransformerOracle(TensorflowOracle):
 
         """
 
-        input_key = "input_ids" if isinstance(
-            self.internal_dataset, DiscreteDataset) else "inputs_embeds"
+        # if the feature extraction model is given, assume its format
+        if self.feature_extractor is not None:
+            input_key = ("input_ids" if self.feature_extractor
+                         .is_discrete(self.internal_dataset)
+                         else "inputs_embeds")
+        elif isinstance(training, DiscreteDataset):
+            input_key = "input_ids"
+        else:
+            input_key = "inputs_embeds"
 
         # call the model's predict function to generate predictions
         return (model if model else self.params["model"])\

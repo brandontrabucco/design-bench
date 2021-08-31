@@ -225,11 +225,23 @@ class FullyConnectedOracle(TensorflowOracle):
         if isinstance(training, DiscreteDataset) and training.is_logits:
             input_shape = input_shape[:-1]
 
+        # if the feature extraction model is given, assume its input shape
+        if self.feature_extractor is not None:
+            input_shape = self.feature_extractor\
+                .input_shape(self.internal_dataset)
+
         # the input layer of a keras model
         x = input_layer = keras.Input(shape=input_shape)
 
+        # if the feature extraction model is given, assume its input shape
+        if self.feature_extractor is not None:
+            if self.feature_extractor.is_discrete(self.internal_dataset):
+                x = layers.Embedding(
+                    self.feature_extractor.num_classes(
+                        self.internal_dataset), embedding_size)(x)
+
         # build a model with an input layer and optional embedding
-        if isinstance(training, DiscreteDataset):
+        elif isinstance(training, DiscreteDataset):
             x = layers.Embedding(training.num_classes, embedding_size)(x)
 
         # flatten all sequence dimensions into the channels

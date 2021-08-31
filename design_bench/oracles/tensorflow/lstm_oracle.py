@@ -99,8 +99,7 @@ class LSTMOracle(TensorflowOracle):
             expect_logits=False if isinstance(
                 dataset, DiscreteDataset) else None, **kwargs)
 
-    @classmethod
-    def check_input_format(cls, dataset):
+    def check_input_format(self, dataset):
         """a function that accepts a model-based optimization dataset as input
         and determines whether the provided dataset is compatible with this
         oracle score function (is this oracle a correct one)
@@ -120,10 +119,22 @@ class LSTMOracle(TensorflowOracle):
 
         """
 
+        # handle when a feature extractor is used
+        if self.feature_extractor is not None:
+            input_shape = self.feature_extractor\
+                .input_shape(self.internal_dataset)
+
+            # ensure that the data has exactly one sequence dimension
+            if self.feature_extractor.is_discrete(self.internal_dataset):
+                return len(input_shape) == 1
+            else:
+                return len(input_shape) == 2
+
         # ensure that the data has exactly one sequence dimension
         if isinstance(dataset, DiscreteDataset) and not dataset.is_logits:
             return len(dataset.input_shape) == 1
-        return len(dataset.input_shape) == 2
+        else:
+            return len(dataset.input_shape) == 2
 
     def save_model_to_zip(self, model, zip_archive):
         """a function that serializes a machine learning model and stores
@@ -226,11 +237,26 @@ class LSTMOracle(TensorflowOracle):
         if isinstance(training, DiscreteDataset) and training.is_logits:
             input_shape = input_shape[:-1]
 
+        # if the feature extraction model is given, assume its input shape
+        if self.feature_extractor is not None:
+            input_shape = self.feature_extractor\
+                .input_shape(self.internal_dataset)
+
         # the input layer of a keras model
         x = input_layer = keras.Input(shape=input_shape)
 
+        # if the feature extraction model is given, assume its input shape
+        if self.feature_extractor is not None:
+            if self.feature_extractor.is_discrete(self.internal_dataset):
+                x = layers.Embedding(
+                    self.feature_extractor.num_classes(
+                        self.internal_dataset), hidden_size)(x)
+            else:
+                x = layers.Dense(hidden_size,
+                                 activation=None, use_bias=False)(x)
+
         # build a model with an input layer and optional embedding
-        if isinstance(training, DiscreteDataset):
+        elif isinstance(training, DiscreteDataset):
             x = layers.Embedding(training.num_classes, hidden_size)(x)
         else:
             x = layers.Dense(hidden_size,

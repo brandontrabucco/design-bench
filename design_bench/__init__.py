@@ -1,7 +1,10 @@
 from design_bench.registration import registry, register, make, spec
 from design_bench.oracles.sklearn.kernels import ProteinKernel
 from design_bench.oracles.sklearn.kernels import DefaultSequenceKernel
+from design_bench.oracles.feature_extractors.\
+    morgan_fingerprint_features import MorganFingerprintFeatures
 from sklearn.gaussian_process.kernels import ConstantKernel, RBF
+import numpy as np
 
 
 register('ToyDiscrete-Exact-v0',
@@ -470,7 +473,7 @@ register('TFBind8-Transformer-v0',
 
 register('TFBind10-Exact-v0',
          'design_bench.datasets.discrete.tf_bind_10_dataset:TFBind10Dataset',
-         'design_bench.oracles.exact:TFBind10Oracle',
+         'design_bench.oracles.exact.tf_bind_10_oracle:TFBind10Oracle',
 
          # keyword arguments for building the dataset
          dataset_kwargs=dict(
@@ -731,6 +734,43 @@ register('UTR-Transformer-v0',
                                is_absolute=None)))
 
 
+register('ChEMBLMorganFingerprint-GP-v0',
+         'design_bench.datasets.discrete.chembl_dataset:ChEMBLDataset',
+         'design_bench.oracles.sklearn:GaussianProcessOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             distribution=None,
+             max_percentile=40,
+             min_percentile=0,
+             assay_chembl_id="CHEMBL1794345",
+             standard_type="Potency"),
+
+         # keyword arguments for building GP oracle
+         oracle_kwargs=dict(
+             noise_std=0.0,
+             max_samples=2000,
+             distribution=None,
+             max_percentile=53,
+             min_percentile=0,
+
+             # process the data into morgan fingerprints
+             feature_extractor=MorganFingerprintFeatures(dtype=np.int32),
+
+             # parameters used for building the model
+             model_kwargs=dict(kernel=DefaultSequenceKernel(size=2),
+                               alpha=0.01),
+
+             # parameters used for building the validation set
+             split_kwargs=dict(val_fraction=0.5,
+                               subset=None,
+                               shard_size=50000,
+                               to_disk=True,
+                               disk_target="chembl-Potency-CHEMBL1794345/split",
+                               is_absolute=False)))
+
+
 register('ChEMBL-GP-v0',
          'design_bench.datasets.discrete.chembl_dataset:ChEMBLDataset',
          'design_bench.oracles.sklearn:GaussianProcessOracle',
@@ -741,8 +781,8 @@ register('ChEMBL-GP-v0',
              distribution=None,
              max_percentile=40,
              min_percentile=0,
-             assay_chembl_id="CHEMBL1964047",
-             standard_type="GI50"),
+             assay_chembl_id="CHEMBL1794345",
+             standard_type="Potency"),
 
          # keyword arguments for building GP oracle
          oracle_kwargs=dict(
@@ -759,9 +799,48 @@ register('ChEMBL-GP-v0',
              # parameters used for building the validation set
              split_kwargs=dict(val_fraction=0.5,
                                subset=None,
-                               shard_size=5000,
+                               shard_size=50000,
                                to_disk=True,
-                               disk_target="chembl-GI50-CHEMBL1964047/split",
+                               disk_target="chembl-Potency-CHEMBL1794345/split",
+                               is_absolute=False)))
+
+
+register('ChEMBLMorganFingerprint-RandomForest-v0',
+         'design_bench.datasets.discrete.chembl_dataset:ChEMBLDataset',
+         'design_bench.oracles.sklearn:RandomForestOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             distribution=None,
+             max_percentile=40,
+             min_percentile=0,
+             assay_chembl_id="CHEMBL1794345",
+             standard_type="Potency"),
+
+         # keyword arguments for building RandomForest oracle
+         oracle_kwargs=dict(
+             noise_std=0.0,
+             max_samples=2000,
+             distribution=None,
+             max_percentile=53,
+             min_percentile=0,
+
+             # process the data into morgan fingerprints
+             override_input_spec=True,
+             feature_extractor=MorganFingerprintFeatures(dtype=np.float32),
+
+             # parameters used for building the model
+             model_kwargs=dict(n_estimators=100,
+                               max_depth=100,
+                               max_features="auto"),
+
+             # parameters used for building the validation set
+             split_kwargs=dict(val_fraction=0.5,
+                               subset=None,
+                               shard_size=50000,
+                               to_disk=True,
+                               disk_target="chembl-Potency-CHEMBL1794345/split",
                                is_absolute=False)))
 
 
@@ -775,8 +854,8 @@ register('ChEMBL-RandomForest-v0',
              distribution=None,
              max_percentile=40,
              min_percentile=0,
-             assay_chembl_id="CHEMBL1964047",
-             standard_type="GI50"),
+             assay_chembl_id="CHEMBL1794345",
+             standard_type="Potency"),
 
          # keyword arguments for building RandomForest oracle
          oracle_kwargs=dict(
@@ -794,9 +873,51 @@ register('ChEMBL-RandomForest-v0',
              # parameters used for building the validation set
              split_kwargs=dict(val_fraction=0.5,
                                subset=None,
-                               shard_size=5000,
+                               shard_size=50000,
                                to_disk=True,
-                               disk_target="chembl-GI50-CHEMBL1964047/split",
+                               disk_target="chembl-Potency-CHEMBL1794345/split",
+                               is_absolute=False)))
+
+
+register('ChEMBLMorganFingerprint-FullyConnected-v0',
+         'design_bench.datasets.discrete.chembl_dataset:ChEMBLDataset',
+         'design_bench.oracles.tensorflow:FullyConnectedOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             distribution=None,
+             max_percentile=40,
+             min_percentile=0,
+             assay_chembl_id="CHEMBL1794345",
+             standard_type="Potency"),
+
+         # keyword arguments for training FullyConnected oracle
+         oracle_kwargs=dict(
+             noise_std=0.0,
+             max_samples=None,
+             distribution=None,
+             max_percentile=53,
+             min_percentile=0,
+
+             # process the data into morgan fingerprints
+             feature_extractor=MorganFingerprintFeatures(dtype=np.float32),
+
+             # parameters used for building the model
+             model_kwargs=dict(embedding_size=32,
+                               hidden_size=512,
+                               activation='relu',
+                               num_layers=2,
+                               epochs=5,
+                               shuffle_buffer=5000,
+                               learning_rate=0.0001),
+
+             # parameters used for building the validation set
+             split_kwargs=dict(val_fraction=0.1,
+                               subset=None,
+                               shard_size=50000,
+                               to_disk=True,
+                               disk_target="chembl-Potency-CHEMBL1794345/split",
                                is_absolute=False)))
 
 
@@ -810,8 +931,8 @@ register('ChEMBL-FullyConnected-v0',
              distribution=None,
              max_percentile=40,
              min_percentile=0,
-             assay_chembl_id="CHEMBL1964047",
-             standard_type="GI50"),
+             assay_chembl_id="CHEMBL1794345",
+             standard_type="Potency"),
 
          # keyword arguments for training FullyConnected oracle
          oracle_kwargs=dict(
@@ -822,20 +943,60 @@ register('ChEMBL-FullyConnected-v0',
              min_percentile=0,
 
              # parameters used for building the model
-             model_kwargs=dict(embedding_size=64,
+             model_kwargs=dict(embedding_size=32,
                                hidden_size=512,
                                activation='relu',
                                num_layers=2,
-                               epochs=5,
+                               epochs=20,
+                               shuffle_buffer=5000,
+                               learning_rate=0.0001),
+
+             # parameters used for building the validation set
+             split_kwargs=dict(val_fraction=0.1,
+                               subset=None,
+                               shard_size=50000,
+                               to_disk=True,
+                               disk_target="chembl-Potency-CHEMBL1794345/split",
+                               is_absolute=False)))
+
+
+register('ChEMBLMorganFingerprint-LSTM-v0',
+         'design_bench.datasets.discrete.chembl_dataset:ChEMBLDataset',
+         'design_bench.oracles.tensorflow:LSTMOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             distribution=None,
+             max_percentile=40,
+             min_percentile=0,
+             assay_chembl_id="CHEMBL1794345",
+             standard_type="Potency"),
+
+         # keyword arguments for training LSTM oracle
+         oracle_kwargs=dict(
+             noise_std=0.0,
+             max_samples=None,
+             distribution=None,
+             max_percentile=53,
+             min_percentile=0,
+
+             # process the data into morgan fingerprints
+             feature_extractor=MorganFingerprintFeatures(dtype=np.int32),
+
+             # parameters used for building the model
+             model_kwargs=dict(hidden_size=64,
+                               num_layers=2,
+                               epochs=20,
                                shuffle_buffer=5000,
                                learning_rate=0.001),
 
              # parameters used for building the validation set
              split_kwargs=dict(val_fraction=0.1,
                                subset=None,
-                               shard_size=5000,
+                               shard_size=50000,
                                to_disk=True,
-                               disk_target="chembl-GI50-CHEMBL1964047/split",
+                               disk_target="chembl-Potency-CHEMBL1794345/split",
                                is_absolute=False)))
 
 
@@ -849,8 +1010,8 @@ register('ChEMBL-LSTM-v0',
              distribution=None,
              max_percentile=40,
              min_percentile=0,
-             assay_chembl_id="CHEMBL1964047",
-             standard_type="GI50"),
+             assay_chembl_id="CHEMBL1794345",
+             standard_type="Potency"),
 
          # keyword arguments for training LSTM oracle
          oracle_kwargs=dict(
@@ -870,9 +1031,51 @@ register('ChEMBL-LSTM-v0',
              # parameters used for building the validation set
              split_kwargs=dict(val_fraction=0.1,
                                subset=None,
-                               shard_size=5000,
+                               shard_size=50000,
                                to_disk=True,
-                               disk_target="chembl-GI50-CHEMBL1964047/split",
+                               disk_target="chembl-Potency-CHEMBL1794345/split",
+                               is_absolute=False)))
+
+
+register('ChEMBLMorganFingerprint-ResNet-v0',
+         'design_bench.datasets.discrete.chembl_dataset:ChEMBLDataset',
+         'design_bench.oracles.tensorflow:ResNetOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             distribution=None,
+             max_percentile=40,
+             min_percentile=0,
+             assay_chembl_id="CHEMBL1794345",
+             standard_type="Potency"),
+
+         # keyword arguments for training ResNet oracle
+         oracle_kwargs=dict(
+             noise_std=0.0,
+             max_samples=None,
+             distribution=None,
+             max_percentile=53,
+             min_percentile=0,
+
+             # process the data into morgan fingerprints
+             feature_extractor=MorganFingerprintFeatures(dtype=np.int32),
+
+             # parameters used for building the model
+             model_kwargs=dict(hidden_size=64,
+                               activation='relu',
+                               kernel_size=3,
+                               num_blocks=4,
+                               epochs=20,
+                               shuffle_buffer=5000,
+                               learning_rate=0.001),
+
+             # parameters used for building the validation set
+             split_kwargs=dict(val_fraction=0.1,
+                               subset=None,
+                               shard_size=50000,
+                               to_disk=True,
+                               disk_target="chembl-Potency-CHEMBL1794345/split",
                                is_absolute=False)))
 
 
@@ -886,8 +1089,8 @@ register('ChEMBL-ResNet-v0',
              distribution=None,
              max_percentile=40,
              min_percentile=0,
-             assay_chembl_id="CHEMBL1964047",
-             standard_type="GI50"),
+             assay_chembl_id="CHEMBL1794345",
+             standard_type="Potency"),
 
          # keyword arguments for training ResNet oracle
          oracle_kwargs=dict(
@@ -909,9 +1112,54 @@ register('ChEMBL-ResNet-v0',
              # parameters used for building the validation set
              split_kwargs=dict(val_fraction=0.1,
                                subset=None,
-                               shard_size=5000,
+                               shard_size=50000,
                                to_disk=True,
-                               disk_target="chembl-GI50-CHEMBL1964047/split",
+                               disk_target="chembl-Potency-CHEMBL1794345/split",
+                               is_absolute=False)))
+
+
+register('ChEMBLMorganFingerprint-Transformer-v0',
+         'design_bench.datasets.discrete.chembl_dataset:ChEMBLDataset',
+         'design_bench.oracles.tensorflow:TransformerOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             distribution=None,
+             max_percentile=40,
+             min_percentile=0,
+             assay_chembl_id="CHEMBL1794345",
+             standard_type="Potency"),
+
+         # keyword arguments for training Transformer oracle
+         oracle_kwargs=dict(
+             noise_std=0.0,
+             internal_batch_size=32,
+             max_samples=None,
+             distribution=None,
+             max_percentile=53,
+             min_percentile=0,
+
+             # process the data into morgan fingerprints
+             feature_extractor=MorganFingerprintFeatures(dtype=np.int32),
+
+             # parameters used for building the model
+             model_kwargs=dict(hidden_size=128,
+                               feed_forward_size=512,
+                               activation='relu',
+                               num_heads=4,
+                               num_blocks=4,
+                               epochs=20,
+                               shuffle_buffer=20000,
+                               learning_rate=0.0001,
+                               dropout_rate=0.2),
+
+             # parameters used for building the validation set
+             split_kwargs=dict(val_fraction=0.1,
+                               subset=None,
+                               shard_size=50000,
+                               to_disk=True,
+                               disk_target="chembl-Potency-CHEMBL1794345/split",
                                is_absolute=False)))
 
 
@@ -925,8 +1173,8 @@ register('ChEMBL-Transformer-v0',
              distribution=None,
              max_percentile=40,
              min_percentile=0,
-             assay_chembl_id="CHEMBL1964047",
-             standard_type="GI50"),
+             assay_chembl_id="CHEMBL1794345",
+             standard_type="Potency"),
 
          # keyword arguments for training Transformer oracle
          oracle_kwargs=dict(
@@ -951,9 +1199,9 @@ register('ChEMBL-Transformer-v0',
              # parameters used for building the validation set
              split_kwargs=dict(val_fraction=0.1,
                                subset=None,
-                               shard_size=5000,
+                               shard_size=50000,
                                to_disk=True,
-                               disk_target="chembl-GI50-CHEMBL1964047/split",
+                               disk_target="chembl-Potency-CHEMBL1794345/split",
                                is_absolute=False)))
 
 
