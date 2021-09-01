@@ -1,11 +1,12 @@
 import pickle as pkl
 import design_bench as db
 import numpy as np
+from design_bench.oracles.feature_extractors.morgan_fingerprint_features import MorganFingerprintFeatures
 
 
 if __name__ == "__main__":
 
-    with open("type_assay_pairs.pkl", "wb") as f:
+    with open("type_assay_pairs.pkl", "rb") as f:
         type_assay_pairs = pkl.load(f)
 
     all_rank_corr = []

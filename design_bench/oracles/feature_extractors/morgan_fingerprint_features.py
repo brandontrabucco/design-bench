@@ -101,12 +101,12 @@ class MorganFingerprintFeatures(FeatureExtractor):
             tokens = xi[1:stop_tokens[0] if stop_tokens.size > 0 else xi[1:]]
 
             # apply morgan fingerprint featurization using rdkit
-            value = self.featurizer.featurize(
-                self.tokenizer.decode(tokens).replace(" ", ""))[0]
+            token_string = self.tokenizer.decode(tokens).replace(" ", "")
+            value = self.featurizer.featurize(token_string)[0]
 
             # collate all results into a single numpy array
-            x_out.append(np.zeros([2048], dtype=self.dtype)
-                         if value is None
+            x_out.append(np.zeros([self.size], dtype=self.dtype)
+                         if value.size != self.size
                          else np.array(value, dtype=self.dtype))
 
         return np.asarray(x_out)
