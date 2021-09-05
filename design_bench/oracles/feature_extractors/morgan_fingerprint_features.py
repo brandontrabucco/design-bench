@@ -98,7 +98,7 @@ class MorganFingerprintFeatures(FeatureExtractor):
 
             # identify stop and start tokens so they can be removed
             stop_tokens = np.where(xi == 13)[0]
-            tokens = xi[1:stop_tokens[0] if stop_tokens.size > 0 else xi[1:]]
+            tokens = xi[1:stop_tokens[0]] if stop_tokens.size > 0 else xi[1:]
 
             # apply morgan fingerprint featurization using rdkit
             token_string = self.tokenizer.decode(tokens).replace(" ", "")
