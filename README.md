@@ -16,14 +16,14 @@ Design-Bench can be installed with the complete set of benchmarks via our pip pa
 
 ```bash
 conda install rdkit -c conda-forge
-pip install design-bench[all]==2.0.19
+pip install design-bench[all]==2.0.20
 pip install morphing-agents==1.5.1
 ```
 
 Alternatively, if you do not have MuJoCo, you may opt for a minimal install.
 
 ```bash
-pip install design-bench==2.0.19
+pip install design-bench==2.0.20
 ```
 
 ## Available Tasks
