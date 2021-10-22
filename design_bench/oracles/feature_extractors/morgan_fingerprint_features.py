@@ -1,5 +1,5 @@
 from design_bench.oracles.feature_extractors.feature_extractor import FeatureExtractor
-from design_bench.disk_resource import direct_download
+from design_bench.disk_resource import DiskResource
 from design_bench.disk_resource import DATA_DIR
 from design_bench.disk_resource import SERVER_URL
 from deepchem.feat.smiles_tokenizer import SmilesTokenizer
@@ -63,9 +63,13 @@ class MorganFingerprintFeatures(FeatureExtractor):
         self.radius = radius
         self.dtype = dtype
 
-        # download the molecule dataset if not already
-        direct_download(f'{SERVER_URL}/smiles_vocab.txt',
-                        os.path.join(DATA_DIR, 'smiles_vocab.txt'))
+        # download the vocabulary file is not present in the cache
+        vocab_file = DiskResource(
+            os.path.join(DATA_DIR, 'smiles_vocab.txt'),
+            download_method="direct",
+            download_target=f'{SERVER_URL}/smiles_vocab.txt')
+        if not vocab_file.is_downloaded:
+            vocab_file.download()
         self.tokenizer = SmilesTokenizer(
             os.path.join(DATA_DIR, 'smiles_vocab.txt'))
 

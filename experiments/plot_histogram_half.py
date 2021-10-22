@@ -23,11 +23,18 @@ if __name__ == '__main__':
 
     fig, axes = plt.subplots(nrows=1, ncols=4, figsize=(25.0, 5.0))
 
+    task_name_to_title = {
+        "TFBind10-Exact-v0": "TF Bind 10",
+        "ChEMBL_MCHC_CHEMBL3885882-RandomForest-v0": "ChEMBL",
+        "Superconductor-RandomForest-v0": "Superconductor",
+        "AntMorphology-Exact-v0": "Ant Morphology"
+    }
+
     for i, task_name in enumerate([
-            "GFP-Transformer-v0",
-            "ChEMBL-ResNet-v0",
+            "TFBind10-Exact-v0",
+            "ChEMBL_MCHC_CHEMBL3885882-RandomForest-v0",
             "Superconductor-RandomForest-v0",
-            "HopperController-Exact-v0"]):
+            "AntMorphology-Exact-v0"]):
 
         print(f"Evaluating: {task_name}")
 
@@ -40,8 +47,8 @@ if __name__ == '__main__':
 
         if task.is_discrete:
 
-            designs = np.random.multinomial(
-                1, [1 / x.shape[-1]] * x.shape[-1], size=x.shape[:-1])
+            num_classes = x.max()
+            designs = np.random.randint(num_classes, size=x.shape)
 
         else:
 
@@ -67,9 +74,11 @@ if __name__ == '__main__':
         axis.yaxis.set_ticks_position('left')
         axis.xaxis.set_ticks_position('bottom')
 
+        task_title = task_name_to_title[task_name]
+
         axis.set_xlabel(r'$\textbf{' + pretty(task.y_name) + '}$', fontsize=24)
         axis.set_ylabel(r'$\textbf{Number of samples}$', fontsize=24)
-        axis.set_title(r'$\textbf{' + task_name + '}$', fontsize=24, pad=20)
+        axis.set_title(r'$\textbf{' + task_title + '}$', fontsize=24, pad=20)
         axis.grid(color='grey',
                   linestyle='dotted',
                   linewidth=2)
