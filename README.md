@@ -15,7 +15,7 @@ The goal of model-based optimization is to find an input **x** that maximizes an
 Design-Bench can be installed with the complete set of benchmarks via our pip package.
 
 ```bash
-conda install rdkit -c conda-forge
+conda create -n mbo -c conda-forge rdkit
 pip install design-bench[all]==2.0.20
 pip install morphing-agents==1.5.1
 ```
@@ -23,6 +23,7 @@ pip install morphing-agents==1.5.1
 Alternatively, if you do not have MuJoCo, you may opt for a minimal install.
 
 ```bash
+conda create -n mbo -c conda-forge rdkit
 pip install design-bench==2.0.20
 ```
 
@@ -554,11 +555,20 @@ y_star = task.predict(x_star)
 Thanks for using our benchmark, and please cite our paper!
 
 ```
-@misc{
-    trabucco2021designbench,
-    title={Design-Bench: Benchmarks for Data-Driven Offline Model-Based Optimization},
-    author={Brandon Trabucco and Aviral Kumar and Xinyang Geng and Sergey Levine},
-    year={2021},
-    url={https://openreview.net/forum?id=cQzf26aA3vM}
+@article{DBLP:journals/corr/abs-2202-08450,
+  author    = {Brandon Trabucco and
+               Xinyang Geng and
+               Aviral Kumar and
+               Sergey Levine},
+  title     = {Design-Bench: Benchmarks for Data-Driven Offline Model-Based Optimization},
+  journal   = {CoRR},
+  volume    = {abs/2202.08450},
+  year      = {2022},
+  url       = {https://arxiv.org/abs/2202.08450},
+  eprinttype = {arXiv},
+  eprint    = {2202.08450},
+  timestamp = {Tue, 01 Mar 2022 14:36:22 +0100},
+  biburl    = {https://dblp.org/rec/journals/corr/abs-2202-08450.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
 }
 ```
