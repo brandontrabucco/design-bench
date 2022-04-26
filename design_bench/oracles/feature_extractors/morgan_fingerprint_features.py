@@ -109,7 +109,7 @@ class MorganFingerprintFeatures(FeatureExtractor):
             value = self.featurizer.featurize(token_string)[0]
 
             # collate all results into a single numpy array
-            x_out.append(np.zeros([self.size], dtype=self.dtype)
+            x_out.append(np.full([self.size], np.NaN, dtype=self.dtype)
                          if value.size != self.size
                          else np.array(value, dtype=self.dtype))
 
