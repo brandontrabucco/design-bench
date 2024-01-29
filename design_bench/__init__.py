@@ -1209,6 +1209,22 @@ register('HopperController-Exact-v0',
              noise_std=0.0))
 
 
+register('HopperController-Exact-v1',
+         'design_bench.datasets.continuous.hopper_controller_dataset:HopperControllerDataset',
+         'design_bench.oracles.exact:HopperControllerStochasticOracle',
+
+         # keyword arguments for building the dataset
+         dataset_kwargs=dict(
+             max_samples=None,
+             distribution=None,
+             max_percentile=100,
+             min_percentile=0),
+
+         # keyword arguments for building the exact oracle
+         oracle_kwargs=dict(
+             noise_std=0.0))
+
+
 register('HopperController-GP-v0',
          'design_bench.datasets.continuous.hopper_controller_dataset:HopperControllerDataset',
          'design_bench.oracles.sklearn:GaussianProcessOracle',
