@@ -249,6 +249,11 @@ class OracleBuilder(abc.ABC):
         if not self.check_input_format(dataset):
             raise ValueError("the given dataset is not compatible")
 
+        # grab the default lowest y value when designs are off-manifold
+        self.internal_min_y = self.dataset_to_oracle_y(
+            self.internal_dataset.y.min(
+                axis=0, keepdims=True), dataset=self.internal_dataset)[0, 0]
+
         # update the name of this oracle
         if self.feature_extractor is not None:
             self.name = self.name + "_" + self.feature_extractor.name
@@ -494,6 +499,12 @@ class OracleBuilder(abc.ABC):
             # convert from the dataset format to the oracle format
             x_sliced = self.dataset_to_oracle_x(x_sliced, dataset=dataset)
 
+            # the feature extractor returns NaN if a design is off-manifold
+            mask = np.any(np.isnan(x_sliced), axis=tuple(
+                range(1, len(x_sliced.shape))))[:, np.newaxis]
+            x_sliced = np.where(np.isnan(x_sliced),
+                                np.zeros_like(x_sliced), x_sliced)
+
             # if the inner score function is not batched squeeze the
             # outermost batch dimension of one
             if not self.is_batched:
@@ -508,6 +519,10 @@ class OracleBuilder(abc.ABC):
             # an outermost batch dimension of one
             if not self.is_batched:
                 y_sliced = y_sliced[np.newaxis]
+
+            # replace the y values with the dataset minimum if off-manifold
+            y_sliced = np.where(mask, np.full_like(
+                y_sliced, self.internal_min_y), y_sliced)
 
             # potentially add gaussian random noise to the score
             # to save on computation only do this when the std is > 0
