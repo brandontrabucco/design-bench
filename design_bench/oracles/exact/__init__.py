@@ -19,6 +19,11 @@ except ImportError as e:
     print("Skipping HopperControllerOracle import:", e)
 
 try:
+    from .hopper_controller_stochastic_oracle import HopperControllerStochasticOracle
+except ImportError as e:
+    print("Skipping HopperControllerStochasticOracle import:", e)
+
+try:
     from .nas_bench_oracle import NASBenchOracle
 except ImportError as e:
     print("Skipping NASBenchOracle import:", e)

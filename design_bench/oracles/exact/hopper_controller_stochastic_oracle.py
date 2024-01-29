@@ -5,7 +5,7 @@ import numpy as np
 import gym
 
 
-class HopperControllerOracle(ExactOracle):
+class HopperControllerStochasticOracle(ExactOracle):
     """An abstract class for managing the ground truth score functions f(x)
     for model-based optimization problems, where the
     goal is to find a design 'x' that maximizes a prediction 'y':
@@ -117,40 +117,43 @@ class HopperControllerOracle(ExactOracle):
             value 'x' in a model-based optimization problem
 
         """
-
         # extract weights from the vector design
         weights = []
         for s in ((self.obs_dim, self.hidden_dim),
-                  (self.hidden_dim,),
+                  (1, self.hidden_dim,),
                   (self.hidden_dim, self.hidden_dim),
-                  (self.hidden_dim,),
+                  (1, self.hidden_dim,),
                   (self.hidden_dim, self.action_dim),
-                  (self.action_dim,),
+                  (1, self.action_dim,),
                   (1, self.action_dim)):
             weights.append(x[0:np.prod(s)].reshape(s))
             x = x[np.prod(s):]
 
-        # the final weight is logstd and is not used
-        weights.pop(-1)
-
         # create a policy forward pass in numpy
         def mlp_policy(h):
+            h = h.reshape(1, -1)
             h = np.tanh(h @ weights[0] + weights[1])
             h = np.tanh(h @ weights[2] + weights[3])
-            return h @ weights[4] + weights[5]
+            h = h @ weights[4] + weights[5] + np.random.randn(1, self.action_dim) * np.exp(weights[6])
+            return h
 
         # make a copy of the policy and the environment
         env = gym.make(self.env_name)
 
         # perform a single rollout for quick evaluation
-        obs = env.reset()
-        done = False
         path_returns = np.zeros([1], dtype=np.float32)
-        while not done:
-            obs, rew, done, info = env.step(mlp_policy(obs))
-            if render:
-                env.render(**render_kwargs)
-            path_returns += rew.astype(np.float32)
+        total_return = 0.0
+        for _ in range(self.eval_n_trials):
+            obs = env.reset()
+            done = False
+            for step in range(1000):
+                obs, rew, done, info = env.step(mlp_policy(obs))
+                if render:
+                    env.render(**render_kwargs)
+                total_return += rew
+                if done:
+                    break
+        path_returns[0] = total_return / self.eval_n_trials
 
         # return the sum of rewards for a single trajectory
         return path_returns.astype(np.float32)
@@ -181,9 +184,10 @@ class HopperControllerOracle(ExactOracle):
         self.action_dim = 3
         self.hidden_dim = 64
         self.env_name = 'Hopper-v2'
+        self.eval_n_trials = 10
 
         # initialize the oracle using the super class
-        super(HopperControllerOracle, self).__init__(
+        super(HopperControllerStochasticOracle, self).__init__(
             dataset, internal_batch_size=1, is_batched=False,
             expect_normalized_y=False,
             expect_normalized_x=False, expect_logits=None, **kwargs)
