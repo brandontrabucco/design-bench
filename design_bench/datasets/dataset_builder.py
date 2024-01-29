@@ -453,7 +453,7 @@ class DatasetBuilder(abc.ABC):
         self._disable_transform = False
         self._disable_subsample = False
         self.dataset_visible_mask = np.full(
-            [self.dataset_size], True, dtype=np.bool)
+            [self.dataset_size], True, dtype=np.bool_)
 
         # handle requests to normalize and subsample the dataset
         if is_normalized_x:
@@ -1068,7 +1068,7 @@ class DatasetBuilder(abc.ABC):
             indices.size, max_samples, replace=False, p=probs / probs.sum())]
 
         # binary mask that determines which samples are visible
-        visible_mask = np.full([y.shape[0]], False, dtype=np.bool)
+        visible_mask = np.full([y.shape[0]], False, dtype=np.bool_)
         visible_mask[indices] = True
         self.dataset_visible_mask = visible_mask
         self.dataset_size = indices.size
